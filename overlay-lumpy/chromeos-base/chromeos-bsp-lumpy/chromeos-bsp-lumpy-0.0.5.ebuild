@@ -11,7 +11,6 @@ or portage actions."
 LICENSE="BSD"
 SLOT="0"
 KEYWORDS="amd64 x86"
-PROVIDE="virtual/chromeos-bsp"
 
 # Add dependencies on other ebuilds from within this board overlay
 RDEPEND="${RDEPEND}

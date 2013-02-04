@@ -11,7 +11,6 @@ LICENSE="BSD"
 SLOT="0"
 KEYWORDS="arm"
 IUSE="-snow -samsung_serial"
-PROVIDE="virtual/chromeos-bsp"
 
 DEPEND=""
 RDEPEND="

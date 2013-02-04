@@ -11,7 +11,6 @@ LICENSE="BSD"
 SLOT="0"
 KEYWORDS="arm"
 IUSE="opengles tegra-ldk"
-PROVIDE="virtual/chromeos-bsp"
 
 # TODO(dianders):
 # - Add any touchpad files needed for waluigi (AKA 50-touchpad-cmt-waluigi.conf)

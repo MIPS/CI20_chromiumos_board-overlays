@@ -9,7 +9,6 @@ LICENSE="BSD"
 SLOT="0"
 KEYWORDS="arm"
 IUSE=""
-PROVIDE="virtual/chromeos-bsp"
 
 DEPEND="chromeos-base/serial-tty"
 RDEPEND=""

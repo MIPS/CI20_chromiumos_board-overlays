@@ -11,7 +11,6 @@ LICENSE="BSD"
 SLOT="0"
 KEYWORDS="amd64 x86"
 IUSE=""
-PROVIDE="virtual/chromeos-bsp"
 
 # Add dependencies on other ebuilds from within this board overlay
 RDEPEND=""

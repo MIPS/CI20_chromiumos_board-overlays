@@ -11,7 +11,6 @@ LICENSE="BSD"
 SLOT="0"
 KEYWORDS="arm"
 IUSE=""
-PROVIDE="virtual/chromeos-bsp"
 
 RDEPEND="chromeos-base/brcmfmac-nvram
 	chromeos-base/xorg-conf-seaboard
