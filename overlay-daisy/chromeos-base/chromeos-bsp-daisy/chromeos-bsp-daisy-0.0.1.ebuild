@@ -21,6 +21,7 @@ RDEPEND="
 	media-libs/mfc-fw
 	sys-apps/daisydog
 	sys-boot/exynos-pre-boot
+	x11-drivers/mali-rules
 	x11-drivers/xf86-video-armsoc
 "
 
