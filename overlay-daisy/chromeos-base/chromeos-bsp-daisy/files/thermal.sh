@@ -29,12 +29,30 @@ declare -a DAISY_CPU_TEMP=("/sys/class/thermal/thermal_zone0/temp")
 
 # 52 -> 1.4Ghz, 60->1.1Ghz, 65->800Mhz
 declare -a THERMISTOR_TEMP_MAP=(49 50 51 52 55 58 60 62 64 65)
-declare -a DAISY_THERMISTOR_TEMP=( \
-    "/sys/devices/platform/ncp15wb473.0/temp1_input" \
-    "/sys/devices/platform/ncp15wb473.1/temp1_input" \
-    "/sys/devices/platform/ncp15wb473.2/temp1_input" \
-    "/sys/devices/platform/ncp15wb473.3/temp1_input")
 
+#######################################
+# Find thermistors available on system.
+#
+# Globals:
+#   DAISY_THERMISTOR_TEMP
+# Arguments:
+#   None
+# Returns:
+#   None
+#######################################
+find_thermistors() {
+    local i
+    local sensor
+
+    for i in $(seq 0 3); do
+        sensor="/sys/devices/platform/ncp15wb473.${i}/temp1_input"
+        if [[ -e ${sensor} ]] ; then
+            DAISY_THERMISTOR_TEMP[${i}]=${sensor}
+        else
+            logger -t "${PROG}" "WARN: No thermistor @ ${sensor}"
+        fi
+    done
+}
 
 read_temp() {
     sensor="$1"
@@ -93,6 +111,8 @@ set_max_cpu_freq() {
 
 # Only update cpu Freq if we need to change.
 let last_cpu_freq=0
+
+find_thermistors
 
 while true; do
     max_cpu_freq=${EXYNOS5_CPU_FREQ[0]}
