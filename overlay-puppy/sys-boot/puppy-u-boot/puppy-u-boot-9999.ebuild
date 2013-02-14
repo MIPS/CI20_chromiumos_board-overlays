@@ -30,10 +30,6 @@ CROS_WORKON_REPO="git://nv-tegra.nvidia.com"
 CROS_WORKON_PROJECT="3rdparty/u-boot"
 CROS_WORKON_LOCALNAME="../partner_private/nvidia-u-boot"
 
-# To move up to a new commit, you should update this and then bump the
-# symlink to a new rev.
-CROS_WORKON_COMMIT="bf00a3572f3afe0f52324893438e15c3ee40acd9"
-
 # This must be inherited *after* EGIT/CROS_WORKON variables defined
 inherit cros-debug toolchain-funcs cros-board flag-o-matic cros-workon
 
@@ -42,7 +38,7 @@ HOMEPAGE="http://www.denx.de/wiki/U-Boot"
 
 LICENSE="GPL-2"
 SLOT="0"
-KEYWORDS="arm"
+KEYWORDS="~arm"
 IUSE="dev profiling factory-mode"
 
 DEPEND="!sys-boot/x86-firmware-fdts
