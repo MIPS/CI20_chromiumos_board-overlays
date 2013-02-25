@@ -31,13 +31,15 @@ install_raspberrypi_bootloader() {
   sudo mount -o loop,offset=${efi_offset},sizelimit=${efi_size} "$1" \
     "${efi_dir}"
 
-  info "Downloading/installing firmware"
-  sudo wget "${git_url}/boot/arm240_start.elf" -O "${efi_dir}/start.elf"
-  sudo wget "${git_url}/boot/bootcode.bin" -O "${efi_dir}/bootcode.bin"
+  info "Installing firmware"
+  sudo cp "${ROOT}/firmware/rpi/"* "${efi_dir}/"
 
   info "Creating boot configuration files"
   sudo cp "${ROOT}/boot/cmdline.txt" "${efi_dir}/"
   sudo cp "${ROOT}/boot/config.txt" "${efi_dir}/"
+
+  info "Copying kernel.img"
+  sudo cp "${ROOT}/boot/kernel.img" "${efi_dir}/"
 
   sudo umount "${efi_dir}"
   rmdir "${efi_dir}"

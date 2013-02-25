@@ -20,13 +20,12 @@ DEPEND="!sys-kernel/chromeos-kernel-next
 RDEPEND="${DEPEND}"
 
 src_install() {
-  dodir /lib/firmware
-  cros-kernel2_src_install
+	cros-kernel2_src_install
 
-  ${FILESDIR}/mkimage/imagetool.py "$(get_build_dir)/arch/${ARCH}/boot/Image" \
-    "kernel.img"
+	"${FILESDIR}/mkimage/imagetool.py" \
+		"$(cros-workon_get_build_dir)/arch/${ARCH}/boot/Image" \
+		"kernel.img"
 
-  insinto /boot
-  doins ${FILESDIR}/cmdline.txt
-  doins ${FILESDIR}/config.txt
+	insinto /boot
+	doins "${FILESDIR}"/{cmdline,config}.txt
 }
