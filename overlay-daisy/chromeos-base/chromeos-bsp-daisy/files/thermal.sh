@@ -3,10 +3,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# Quick hack to monitor thermals on snow platform. Since we only have
+# Quick hack to monitor thermals on Exynos based platforms. Since we only have
 # passive cooling, the only thing we can do is limit CPU temp.
 #
-# TODO: validate readings from thermistors by comparing to each other.
+# TODO: validate readings from hwmon sensors by comparing to each other.
 #       We should ignore readings with more than 10C differences from peers.
 
 PROG=`basename $0`
@@ -28,30 +28,35 @@ declare -a CPU_TEMP_MAP=(60 61 62 63 65 67 68 69 71 73 75)
 declare -a DAISY_CPU_TEMP=("/sys/class/thermal/thermal_zone0/temp")
 
 # 52 -> 1.4Ghz, 60->1.1Ghz, 65->800Mhz
-declare -a THERMISTOR_TEMP_MAP=(49 50 51 52 55 58 60 62 64 65)
+declare -a HWMON_TEMP_MAP=(49 50 51 52 55 58 60 62 64 65)
 
 #######################################
-# Find thermistors available on system.
+# Find all hwmon thermal sensors.
 #
 # Globals:
-#   DAISY_THERMISTOR_TEMP
+#   HWMON_TEMP_SENSOR
 # Arguments:
 #   None
 # Returns:
 #   None
 #######################################
-find_thermistors() {
-    local i
+find_hwmon_sensors() {
+    local index=0
+    local hwmon_dir
     local sensor
 
-    for i in $(seq 0 3); do
-        sensor="/sys/devices/platform/ncp15wb473.${i}/temp1_input"
-        if [[ -e ${sensor} ]] ; then
-            DAISY_THERMISTOR_TEMP[${i}]=${sensor}
-        else
-            logger -t "${PROG}" "WARN: No thermistor @ ${sensor}"
+    for hwmon_dir in /sys/class/hwmon/hwmon*/device; do
+        for sensor in ${hwmon_dir}/temp*_input; do
+            HWMON_TEMP_SENSOR[${index}]=${sensor}
+            index=$((${index} + 1))
+        done
+        if [[ "${sensor}" == "" ]] ; then
+            logger -t "${PROG}" "WARN: No hwmon temp input @ ${hwmon_dir}"
         fi
     done
+    if [[ "${hwmon_dir}" == "" ]] ; then
+        logger -t "${PROG}" "WARN: No hwmon devices found."
+    fi
 }
 
 read_temp() {
@@ -65,7 +70,7 @@ read_temp() {
         fi
         let t=$raw/1000
 
-        # valid CPU range is 25 to 125C. Give thermistor more range.
+        # valid CPU range is 25 to 125C. Give hwmon sensors more range.
         if  [[ $t -lt 15 || $t -gt 140 ]] ; then
             # do nothing - ignore the reading
             logger -t "$PROG" "ERROR: temp $t out of range"
@@ -112,7 +117,7 @@ set_max_cpu_freq() {
 # Only update cpu Freq if we need to change.
 let last_cpu_freq=0
 
-find_thermistors
+find_hwmon_sensors
 
 while true; do
     max_cpu_freq=${EXYNOS5_CPU_FREQ[0]}
@@ -133,7 +138,7 @@ while true; do
 
     let j=0
     declare -a temps
-    for sensor in ${DAISY_THERMISTOR_TEMP[*]}
+    for sensor in ${HWMON_TEMP_SENSOR[*]}
     do
         read_temp $sensor
         let temp=$?
@@ -143,7 +148,7 @@ while true; do
         let j+=1
     done
 
-    # TODO validate thermistor readings.
+    # TODO validate hwmon sensor readings.
     # we should reject anything that is more than 5C off from all others.
     let max_temp=${temps[0]}
     for k in `seq 1 $j`
@@ -153,7 +158,7 @@ while true; do
         fi
     done
 
-    lookup_freq_idx $max_temp "${THERMISTOR_TEMP_MAP[@]}"
+    lookup_freq_idx $max_temp "${HWMON_TEMP_MAP[@]}"
     let f=$?
     let therm_cpu_freq=${EXYNOS5_CPU_FREQ[f]}
 
