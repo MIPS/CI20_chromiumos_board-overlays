@@ -1,1 +1,3 @@
 sys-apps/flashrom use_os_timer
+chromeos-base/chromeos-login egl
+chromeos-base/xorg-conf egl
