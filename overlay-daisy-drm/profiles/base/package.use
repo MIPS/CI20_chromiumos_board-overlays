@@ -1,2 +1,1 @@
-sys-apps/busybox make-symlinks savedconfig
 media-libs/mesa shared-glapi gles2 egl gbm
