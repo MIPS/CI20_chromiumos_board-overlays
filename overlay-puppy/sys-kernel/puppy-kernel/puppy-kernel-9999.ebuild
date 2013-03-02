@@ -29,6 +29,7 @@ EAPI=4
 CROS_WORKON_REPO="git://nv-tegra.nvidia.com"
 CROS_WORKON_PROJECT="chromeos/kernel"
 CROS_WORKON_LOCALNAME="../partner_private/nvidia-kernel"
+CROS_WORKON_BLACKLIST="1"
 
 # This must be inherited *after* EGIT/CROS_WORKON variables defined
 inherit cros-workon cros-kernel2

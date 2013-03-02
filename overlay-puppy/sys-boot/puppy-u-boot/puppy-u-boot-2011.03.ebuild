@@ -29,6 +29,7 @@ EAPI=4
 CROS_WORKON_REPO="git://nv-tegra.nvidia.com"
 CROS_WORKON_PROJECT="3rdparty/u-boot"
 CROS_WORKON_LOCALNAME="../partner_private/nvidia-u-boot"
+CROS_WORKON_BLACKLIST="1"
 
 # To move up to a new commit, you should update this and then bump the
 # symlink to a new rev.

@@ -5,6 +5,7 @@ EAPI=4
 
 CROS_WORKON_REPO="git://github.com/raspberrypi"
 CROS_WORKON_PROJECT="linux"
+CROS_WORKON_BLACKLIST="1"
 CROS_WORKON_COMMIT="05960cea116786864fd1f1bceb3a250b053adccb"
 
 # This must be inherited *after* EGIT/CROS_WORKON variables defined

@@ -29,6 +29,7 @@ EAPI=4
 CROS_WORKON_REPO="git://nv-tegra.nvidia.com"
 CROS_WORKON_PROJECT="3rdparty/u-boot"
 CROS_WORKON_LOCALNAME="../partner_private/nvidia-u-boot"
+CROS_WORKON_BLACKLIST="1"
 
 # This must be inherited *after* EGIT/CROS_WORKON variables defined
 inherit cros-debug toolchain-funcs cros-board flag-o-matic cros-workon
