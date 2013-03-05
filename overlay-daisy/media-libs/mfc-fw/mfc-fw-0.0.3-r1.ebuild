@@ -15,20 +15,13 @@ RDEPEND="${DEPEND}"
 
 URI_BASE="http://commondatastorage.googleapis.com/chromeos-localmirror/distfiles"
 CROS_BINARY_URI="${URI_BASE}/${PF}.tbz2"
-CROS_BINARY_SUM="ea7839636bf48ebebbb6e6827deeb21820d1a268"
+CROS_BINARY_SUM="bd06ac85f6cdfa606c8d368d6792a0f17b9249b1"
 CROS_BINARY_INSTALL_FLAGS="--strip-components=1"
 
 # The tbz2 file contains the following:
-# mfc-fw/lib/firmware/mfc_fw.bin
-
-# Workaround bad permissions in tarball for /lib/firmware
-# TODO(crosbug.com/p/10579): remove workaround when no longer needed
+# mfc-fw/lib/firmware/s5p-mfc-v6.fw
 src_install() {
+	dodir /lib/firmware
 	cros-binary_src_install
-	fperms 0755 /lib/firmware
-}
-
-# Hack to fix broken chroots
-pkg_postinst() {
-	chmod 0755 "${ROOT}/lib/firmware"
+	fowners root:root /lib/firmware/s5p-mfc-v6.fw
 }
