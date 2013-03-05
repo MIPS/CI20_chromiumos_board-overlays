@@ -31,7 +31,8 @@ install_beaglebone_bootloader() {
 
   sudo mount -o loop,offset=${efi_offset},sizelimit=${efi_size} "$1" "$efi_dir"
 
-  sudo cp "/build/${BOARD}/firmware/u-boot.img" "$efi_dir/"
+#  sudo cp "/build/${BOARD}/firmware/u-boot.img" "$efi_dir/"
+  sudo wget "http://git.sabayon.org/molecules.git/plain/boot/arm/beaglebone/u-boot.img" -O "$efi_dir/u-boot.img"
   sudo wget "http://git.sabayon.org/molecules.git/plain/boot/arm/beaglebone/MLO" -O "$efi_dir/MLO"
 
   sudo umount "$efi_dir"
