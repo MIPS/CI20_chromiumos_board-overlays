@@ -14,7 +14,6 @@ IUSE=""
 
 DEPEND=""
 RDEPEND="
-	chromeos-base/embedded-init
 	chromeos-base/serial-tty
 	dev-util/hdctools
 "
