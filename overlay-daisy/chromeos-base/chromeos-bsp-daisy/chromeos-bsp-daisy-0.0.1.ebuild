@@ -17,6 +17,7 @@ RDEPEND="
 	!<chromeos-base/chromeos-bsp-daisy-private-0.0.1-r11
 	snow? ( chromeos-base/chromeos-init )
 	samsung_serial? ( chromeos-base/serial-tty )
+	chromeos-base/default-zram-size
 	media-libs/media-rules
 	media-libs/mfc-fw
 	sys-apps/daisydog

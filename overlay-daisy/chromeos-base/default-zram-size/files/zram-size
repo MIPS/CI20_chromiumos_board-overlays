@@ -1,0 +1,11 @@
+# Copyright (c) 2013 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# This file is sourced by /etc/init/swap.conf and is expected to
+# set ZRAM_SIZE_KB to the default swap size for this platform.
+# Here we set the size to 2 GB.  Note that this is the size of
+# *uncompressed* swap, and we're looking at a near 3:1 compression
+# ratio.
+
+ZRAM_SIZE_KB=2000000
