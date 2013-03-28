@@ -17,7 +17,7 @@ RDEPEND="${DEPEND}
 	 chromeos-base/touch_updater"
 
 PRODUCT_ID="CYTRA-116002-00"
-FIRMWARE_VERSION="2.9"
+FIRMWARE_VERSION="2.13"
 
 CROS_BINARY_URI="${PF}.tbz2"
 CROS_BINARY_INSTALL_FLAGS="--strip-components=1"
