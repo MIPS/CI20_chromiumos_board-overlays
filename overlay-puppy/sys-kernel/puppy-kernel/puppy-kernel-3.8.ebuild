@@ -33,7 +33,7 @@ CROS_WORKON_BLACKLIST="1"
 
 # To move up to a new commit, you should update this and then bump the
 # symlink to a new rev.
-CROS_WORKON_COMMIT="a94649a79817895bfe89c2b67b343bfeffe40869"
+CROS_WORKON_COMMIT="nvidia-merged-3.8-rel_3"
 
 # This must be inherited *after* EGIT/CROS_WORKON variables defined
 inherit cros-workon cros-kernel2
