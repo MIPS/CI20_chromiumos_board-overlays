@@ -25,15 +25,12 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 EAPI=4
-
-CROS_WORKON_REPO="git://nv-tegra.nvidia.com"
-CROS_WORKON_PROJECT="3rdparty/u-boot"
-CROS_WORKON_LOCALNAME="../partner_private/nvidia-u-boot"
+CROS_WORKON_PROJECT="chromiumos/third_party/u-boot-next"
 CROS_WORKON_BLACKLIST="1"
 
 # To move up to a new commit, you should update this and then bump the
 # symlink to a new rev.
-CROS_WORKON_COMMIT="bf00a3572f3afe0f52324893438e15c3ee40acd9"
+CROS_WORKON_COMMIT="822d60a12a706978e1122b7b6476325127b911e6"
 
 # This must be inherited *after* EGIT/CROS_WORKON variables defined
 inherit cros-debug toolchain-funcs cros-board flag-o-matic cros-workon
@@ -186,7 +183,6 @@ src_install() {
 	local inst_dir="/firmware"
 	local files_to_copy=(
 		System.map
-		u-boot.bin
 	)
 	local ub_vendor="$(get_config_var ${CROS_U_BOOT_CONFIG} VENDOR)"
 	local ub_board="$(get_config_var ${CROS_U_BOOT_CONFIG} BOARD)"
@@ -196,6 +192,7 @@ src_install() {
 
 	doins "${files_to_copy[@]/#/${UB_BUILD_DIR}/}"
 	newins "${UB_BUILD_DIR}/u-boot" u-boot.elf
+	newins "${UB_BUILD_DIR}/u-boot-dtb-tegra.bin" u-boot.bin
 
 	if netboot_required; then
 		newins "${UB_BUILD_DIR_NB}/u-boot.bin" u-boot_netboot.bin

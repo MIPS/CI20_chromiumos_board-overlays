@@ -34,7 +34,7 @@ SLOT="0"
 KEYWORDS="arm"
 
 DEPEND="
-	sys-boot/puppy-u-boot
+	sys-boot/u-boot-next
 "
 
 RDEPEND="${DEPEND}"

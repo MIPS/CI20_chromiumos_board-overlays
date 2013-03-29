@@ -25,10 +25,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 EAPI=4
-
-CROS_WORKON_REPO="git://nv-tegra.nvidia.com"
-CROS_WORKON_PROJECT="3rdparty/u-boot"
-CROS_WORKON_LOCALNAME="../partner_private/nvidia-u-boot"
+CROS_WORKON_PROJECT="chromiumos/third_party/u-boot-next"
 CROS_WORKON_BLACKLIST="1"
 
 # This must be inherited *after* EGIT/CROS_WORKON variables defined
@@ -182,7 +179,6 @@ src_install() {
 	local inst_dir="/firmware"
 	local files_to_copy=(
 		System.map
-		u-boot.bin
 	)
 	local ub_vendor="$(get_config_var ${CROS_U_BOOT_CONFIG} VENDOR)"
 	local ub_board="$(get_config_var ${CROS_U_BOOT_CONFIG} BOARD)"
@@ -192,6 +188,7 @@ src_install() {
 
 	doins "${files_to_copy[@]/#/${UB_BUILD_DIR}/}"
 	newins "${UB_BUILD_DIR}/u-boot" u-boot.elf
+	newins "${UB_BUILD_DIR}/u-boot-dtb-tegra.bin" u-boot.bin
 
 	if netboot_required; then
 		newins "${UB_BUILD_DIR_NB}/u-boot.bin" u-boot_netboot.bin
