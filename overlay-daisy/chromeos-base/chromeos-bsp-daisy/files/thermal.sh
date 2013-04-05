@@ -10,6 +10,7 @@
 #       We should ignore readings with more than 10C differences from peers.
 
 PROG=`basename $0`
+PLATFORM=`mosys platform name`
 
 let debug=0
 if [[ "$1x" = '-dx' ]] ; then
@@ -22,13 +23,21 @@ declare -a EXYNOS5_CPU_FREQ=(1700000 1600000 1500000 1400000 1300000 \
     1200000 1100000 1000000 900000 800000 700000 600000 500000 400000 \
     300000 200000)
 
-# CPU temperature threshold we start limiting CPU Freq
-# 63 -> 1.4Ghz, 69 -> 1.1 Ghz, 75 -> 800Mhz
-declare -a CPU_TEMP_MAP=(60 61 62 63 65 67 68 69 71 73 75)
+# TODO(crosbug.com/p/17658) HACK: remove once characterized
+if [[ "${PLATFORM}" = "Spring" ]] ; then
+    t=$(( `cat /sys/class/thermal/thermal_zone0/trip_point_0_temp` / 1000 - 1 ))
+    declare -a CPU_TEMP_MAP=($t $t $t $t $t $t $t $t $t $t $t)
+    declare -a HWMON_TEMP_MAP=($t $t $t $t $t $t $t $t $t $t)
+else
+    # CPU temperature threshold we start limiting CPU Freq
+    # 63 -> 1.4Ghz, 69 -> 1.1 Ghz, 75 -> 800Mhz
+    declare -a CPU_TEMP_MAP=(60 61 62 63 65 67 68 69 71 73 75)
+    # 52 -> 1.4Ghz, 60->1.1Ghz, 65->800Mhz
+    declare -a HWMON_TEMP_MAP=(49 50 51 52 55 58 60 62 64 65)
+fi
+
 declare -a DAISY_CPU_TEMP=("/sys/class/thermal/thermal_zone0/temp")
 
-# 52 -> 1.4Ghz, 60->1.1Ghz, 65->800Mhz
-declare -a HWMON_TEMP_MAP=(49 50 51 52 55 58 60 62 64 65)
 
 #######################################
 # Find all hwmon thermal sensors.
