@@ -188,7 +188,7 @@ src_install() {
 
 	doins "${files_to_copy[@]/#/${UB_BUILD_DIR}/}"
 	newins "${UB_BUILD_DIR}/u-boot" u-boot.elf
-	newins "${UB_BUILD_DIR}/u-boot-dtb-tegra.bin" u-boot.bin
+	newins "${UB_BUILD_DIR}/u-boot-nodtb-tegra.bin" u-boot.bin
 
 	if netboot_required; then
 		newins "${UB_BUILD_DIR_NB}/u-boot.bin" u-boot_netboot.bin
