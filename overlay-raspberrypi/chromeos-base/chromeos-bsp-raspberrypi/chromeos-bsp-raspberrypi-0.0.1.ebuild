@@ -3,6 +3,8 @@
 
 EAPI=2
 
+inherit udev
+
 DESCRIPTION="Raspberry Pi bsp (meta package to pull in driver/tool dependencies)"
 
 LICENSE="BSD"
@@ -12,3 +14,7 @@ IUSE=""
 
 DEPEND="chromeos-base/serial-tty"
 RDEPEND=""
+
+src_install() {
+	udev_dorules "${FILESDIR}/10-vchiq-permissions.rules"
+}

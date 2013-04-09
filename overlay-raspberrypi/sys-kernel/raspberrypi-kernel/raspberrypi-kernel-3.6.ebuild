@@ -9,7 +9,7 @@ CROS_WORKON_BLACKLIST="1"
 CROS_WORKON_COMMIT="05960cea116786864fd1f1bceb3a250b053adccb"
 
 # This must be inherited *after* EGIT/CROS_WORKON variables defined
-inherit git cros-kernel2 cros-workon
+inherit git-2 cros-kernel2 cros-workon
 
 DESCRIPTION="Chrome OS Kernel-raspberrypi"
 KEYWORDS="arm"
@@ -24,8 +24,9 @@ src_install() {
 
 	"${FILESDIR}/mkimage/imagetool.py" \
 		"$(cros-workon_get_build_dir)/arch/${ARCH}/boot/Image" \
-		"kernel.img"
+		"${T}/kernel.img"
 
 	insinto /boot
 	doins "${FILESDIR}"/{cmdline,config}.txt
+	doins "${T}/kernel.img"
 }

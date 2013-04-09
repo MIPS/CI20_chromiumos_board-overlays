@@ -26,8 +26,6 @@ install_raspberrypi_bootloader() {
   local efi_size=$(( efi_size_sectors * 512 ))
   local efi_dir=$(mktemp -d)
 
-  local git_url="https://github.com/raspberrypi/firmware/raw/master"
-
   sudo mount -o loop,offset=${efi_offset},sizelimit=${efi_size} "$1" \
     "${efi_dir}"
 
