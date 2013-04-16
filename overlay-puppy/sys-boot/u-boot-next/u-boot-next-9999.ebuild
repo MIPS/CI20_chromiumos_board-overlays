@@ -26,6 +26,8 @@
 
 EAPI=4
 CROS_WORKON_PROJECT="chromiumos/third_party/u-boot-next"
+CROS_WORKON_LOCALNAME="u-boot-next"
+CROS_WORKON_SUBDIR="files"
 CROS_WORKON_BLACKLIST="1"
 
 # This must be inherited *after* EGIT/CROS_WORKON variables defined

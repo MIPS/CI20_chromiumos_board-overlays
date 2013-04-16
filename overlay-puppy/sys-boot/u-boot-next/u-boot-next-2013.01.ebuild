@@ -26,11 +26,13 @@
 
 EAPI=4
 CROS_WORKON_PROJECT="chromiumos/third_party/u-boot-next"
+CROS_WORKON_LOCALNAME="u-boot-next"
+CROS_WORKON_SUBDIR="files"
 CROS_WORKON_BLACKLIST="1"
 
 # To move up to a new commit, you should update this and then bump the
 # symlink to a new rev.
-CROS_WORKON_COMMIT="822d60a12a706978e1122b7b6476325127b911e6"
+CROS_WORKON_COMMIT="9704b389a1cb3c7183a5317028c904daa93ee5d5"
 
 # This must be inherited *after* EGIT/CROS_WORKON variables defined
 inherit cros-debug toolchain-funcs cros-board flag-o-matic cros-workon
