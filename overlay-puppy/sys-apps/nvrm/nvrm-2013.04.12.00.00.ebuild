@@ -29,7 +29,7 @@ EAPI=4
 inherit udev
 
 DESCRIPTION="NVIDIA binary nvrm daemon and libraries for Tegra4"
-SRC_URI="ftp://download.nvidia.com/chromeos/binary-ldk/t114/ER/2013_01_25_00_00/nvidia-binaries_armhf_2013_01_25_00_00.tbz2"
+SRC_URI="ftp://download.nvidia.com/chromeos/binary-ldk/t114/ER/${PV//./_}/nvidia-binaries_armhf_${PV//./_}.tbz2"
 
 LICENSE="NVIDIA"
 SLOT="0"
