@@ -29,14 +29,14 @@ EAPI=4
 inherit multilib
 
 DESCRIPTION="NVIDIA binary OpenGL|ES libraries for Tegra4"
-SRC_URI="ftp://download.nvidia.com/chromeos/binary-ldk/t114/ER/2013_01_25_00_00/nvidia-binaries_armhf_2013_01_25_00_00.tbz2"
+SRC_URI="ftp://download.nvidia.com/chromeos/binary-ldk/t114/ER/${PV//./_}/nvidia-binaries_armhf_${PV//./_}.tbz2"
 
 LICENSE="NVIDIA"
 SLOT="0"
 KEYWORDS="arm"
 IUSE=""
 
-RDEPEND="sys-apps/nvrm
+RDEPEND="=sys-apps/nvrm-${PV}
 	x11-drivers/opengles-headers
 	!x11-drivers/opengles"
 
@@ -48,9 +48,9 @@ src_unpack() {
 }
 
 src_install() {
-	newlib.so usr/lib/libEGL.so libEGL.so.1
+	dolib.so usr/lib/libEGL.so.1
 	dosym libEGL.so.1 /usr/$(get_libdir)/libEGL.so
 
-	newlib.so usr/lib/libGLESv2.so libGLESv2.so.2
+	dolib.so usr/lib/libGLESv2.so.2
 	dosym libGLESv2.so.2 /usr/$(get_libdir)/libGLESv2.so
 }
