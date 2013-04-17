@@ -25,14 +25,17 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 EAPI=4
-CROS_WORKON_PROJECT="chromiumos/third_party/u-boot-next"
-CROS_WORKON_LOCALNAME="u-boot-next"
-CROS_WORKON_SUBDIR="files"
+CROS_WORKON_PROJECT=("chromiumos/third_party/u-boot-next" "chromiumos/platform/vboot_reference")
+CROS_WORKON_LOCALNAME=("u-boot-next" "../platform/vboot_reference")
+CROS_WORKON_SUBDIR=("files" "")
+VBOOT_REFERENCE_DESTDIR="${S}/vboot_reference"
+CROS_WORKON_DESTDIR=("${S}" "${VBOOT_REFERENCE_DESTDIR}")
+
 CROS_WORKON_BLACKLIST="1"
 
 # To move up to a new commit, you should update this and then bump the
 # symlink to a new rev.
-CROS_WORKON_COMMIT="9704b389a1cb3c7183a5317028c904daa93ee5d5"
+CROS_WORKON_COMMIT=("9704b389a1cb3c7183a5317028c904daa93ee5d5" "464ccba4e492c93987c66ac5ada45a96bfe5e04d")
 
 # This must be inherited *after* EGIT/CROS_WORKON variables defined
 inherit cros-debug toolchain-funcs cros-board flag-o-matic cros-workon
