@@ -34,7 +34,7 @@ EAPI=4
 inherit multilib versionator
 
 DESCRIPTION="Tegra4 user-land drivers"
-ABI=$(get_major_version)
+MY_ABI=$(get_major_version)
 MY_PV=$(get_after_major_version)
 SRC_URI="ftp://download.nvidia.com/chromeos/binary-ldk/t114/ER/${MY_PV//./_}/nvidia-binaries_armhf_${MY_PV//./_}.tbz2"
 
@@ -44,7 +44,7 @@ KEYWORDS="arm"
 IUSE=""
 
 RDEPEND="=sys-apps/nvrm-${MY_PV}
-	=x11-base/xorg-server-1.${ABI}*"
+	=x11-base/xorg-server-1.${MY_ABI}*"
 
 S=${WORKDIR}
 
@@ -55,5 +55,5 @@ src_unpack() {
 
 src_install() {
 	exeinto /usr/$(get_libdir)/xorg/modules/drivers
-	newexe usr/lib/xorg/modules/drivers/tegra_drv.abi${ABI}.so tegra_drv.so
+	newexe usr/lib/xorg/modules/drivers/tegra_drv.abi${MY_ABI}.so tegra_drv.so
 }
