@@ -37,7 +37,7 @@ DEPEND="sys-boot/chromeos-bootimage"
 RDEPEND="
 	chromeos-base/serial-tty
 	tegra-ldk? (
-		opengles? ( media-libs/openmax )
+		opengles? ( media-libs/openmax media-libs/openmax-codecs )
 		<x11-drivers/tegra-drivers-13.0.0.4
 	)
 "
