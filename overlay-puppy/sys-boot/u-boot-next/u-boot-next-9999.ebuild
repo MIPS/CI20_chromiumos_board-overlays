@@ -73,7 +73,7 @@ get_current_u_boot_config() {
 	local use_config
 	for use_config in ${IUSE_CONFIGS}; do
 		if use ${use_config}; then
-			echo "${use_config#${U_BOOT_CONFIG_USE_PREFIX}}_config"
+			echo "chromeos_${use_config#${U_BOOT_CONFIG_USE_PREFIX}}_config"
 			return
 		fi
 	done
