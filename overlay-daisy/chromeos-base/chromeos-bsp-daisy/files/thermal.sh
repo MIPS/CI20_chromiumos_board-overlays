@@ -17,6 +17,18 @@ if [[ "$1x" = '-dx' ]] ; then
     let debug=1
 fi
 
+# if PLATFORM is empty, try again
+for i in $(seq 5) ; do
+    if [[ "${PLATFORM}" != "" ]] ; then
+        break;
+    fi
+    sleep 1
+    logger -t "${PROG}" "Unable to get platform name, retry ${i} of 5"
+    PLATFORM=`mosys platform name`
+done
+# Log the platform
+logger -t "${PROG}" "Platform ${PLATFORM}"
+
 # cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies
 # 1700000 1600000 1500000 ...
 declare -a EXYNOS5_CPU_FREQ=(1700000 1600000 1500000 1400000 1300000 \
