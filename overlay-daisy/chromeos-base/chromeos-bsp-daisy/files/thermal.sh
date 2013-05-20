@@ -142,6 +142,10 @@ let last_cpu_freq=0
 
 find_hwmon_sensors
 
+# Get frequency throttling set by the firmware to limit power draw
+let power_cap=`cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq`
+logger -t "$PROG" "CPU max freq set to $((${power_cap} / 1000)) Mhz at boot"
+
 while true; do
     max_cpu_freq=${EXYNOS5_CPU_FREQ[0]}
     # read the list of temp sensors
@@ -188,6 +192,23 @@ while true; do
     # we have a valid reading and it's lower than others
     if [[ $therm_cpu_freq -gt 0 && $therm_cpu_freq -lt $max_cpu_freq ]] ; then
         max_cpu_freq=$therm_cpu_freq
+    fi
+
+    # Handle the power cap if the battery is too low.
+    if [[ "${PLATFORM}" = "Spring" && $power_cap -lt ${EXYNOS5_CPU_FREQ[0]} ]]
+    then
+        power_supply="/sys/class/power_supply/sbs-6-000b"
+        let battery_percent=$((`cat ${power_supply}/energy_now` * 100 / \
+                               `cat ${power_supply}/energy_full`))
+        # if we have charged, restore the full CPU frequency range
+        if [[ $battery_percent -gt 5 ]] ; then
+            power_cap=${EXYNOS5_CPU_FREQ[0]}
+            logger -t "$PROG" "Freq cap reset to $((${power_cap} / 1000)) Mhz"
+        fi
+        # force to stay below the cap set to limit total power draw
+        if [[ $max_cpu_freq -gt $power_cap ]] ; then
+            max_cpu_freq=$power_cap
+        fi
     fi
 
     if [[ debug -gt 0 ]] ; then
