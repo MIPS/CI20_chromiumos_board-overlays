@@ -17,5 +17,5 @@ src_install() {
 	# The tbz2 file contains the following:
 	# exynos-pre-boot/firmware/E5250.nbl1.bin
 	insinto /firmware
-	doins firmware/*.bin
+	newins firmware/*.bin u-boot.bl1.bin
 }
