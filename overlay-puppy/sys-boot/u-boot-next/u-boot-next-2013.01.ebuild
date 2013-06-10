@@ -35,7 +35,7 @@ CROS_WORKON_BLACKLIST="1"
 
 # To move up to a new commit, you should update this and then bump the
 # symlink to a new rev.
-CROS_WORKON_COMMIT=("1a2052ba3e11afa01cfc4344a8d416f0a1dc7921" "7e3f8601ba7240c86581f9bcfb6cb4c38f2ebb44")
+CROS_WORKON_COMMIT=("13c2c9093254462066cc38d6b7a9bca436518529" "7e3f8601ba7240c86581f9bcfb6cb4c38f2ebb44")
 
 # This must be inherited *after* EGIT/CROS_WORKON variables defined
 inherit cros-debug toolchain-funcs cros-board flag-o-matic cros-workon
