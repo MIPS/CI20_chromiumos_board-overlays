@@ -46,10 +46,11 @@ HOMEPAGE="http://www.denx.de/wiki/U-Boot"
 LICENSE="GPL-2"
 SLOT="0"
 KEYWORDS="arm"
-IUSE="dev profiling factory-mode"
+IUSE="dev profiling factory-mode dalmore"
 
 DEPEND="!sys-boot/x86-firmware-fdts
 	!sys-boot/exynos-u-boot
+	!sys-boot/tegra2-public-firmware-fdts
 	"
 
 RDEPEND="${DEPEND}
@@ -60,7 +61,6 @@ UB_BUILD_DIR_NB="${UB_BUILD_DIR%/}_nb"
 
 U_BOOT_CONFIG_USE_PREFIX="u_boot_config_use_"
 ALL_CONFIGS=(
-	dalmore
 	puppy
 )
 IUSE_CONFIGS=${ALL_CONFIGS[@]/#/${U_BOOT_CONFIG_USE_PREFIX}}
@@ -74,16 +74,15 @@ REQUIRED_USE="${REQUIRED_USE} ^^ ( ${IUSE_CONFIGS} )"
 # Finds the config for the current board by searching USE for an entry
 # signifying which version to use.
 get_current_u_boot_config() {
-	local use_config
-	for use_config in ${IUSE_CONFIGS}; do
-		if use ${use_config}; then
-			echo "chromeos_${use_config#${U_BOOT_CONFIG_USE_PREFIX}}_config"
-			return
-		fi
-	done
-	die "Unable to determine current U-Boot config."
+	if use dalmore; then
+		echo "chromeos_dalmore_config"
+	else
+		echo "chromeos_venice_config"
+	fi
 }
 
+# @FUNCTION: netboot_required
+# @DESCRIPTION:
 # Checks if netboot image also needs to be generated.
 netboot_required() {
 	# Build netbootable image for Link unconditionally for now.
@@ -92,7 +91,8 @@ netboot_required() {
 	#                 legacy image.
 	local board=$(get_current_board_with_variant)
 
-	use factory-mode
+	use factory-mode || [[ "${board}" == "link" ]] || \
+		[[ "${board}" == "daisy_spring" ]]
 }
 
 # @FUNCTION: get_config_var
@@ -142,10 +142,14 @@ src_configure() {
 		DEV_TREE_SEPARATE=1
 		"HOSTCC=${BUILD_CC}"
 		HOSTSTRIP=true
+		USE_STDINT=1
 	)
 	if use dev; then
 		# Avoid hiding the errors and warnings
-		COMMON_MAKE_FLAGS+=( -s )
+		COMMON_MAKE_FLAGS+=(
+			-s
+			QUIET=1
+		)
 	else
 		COMMON_MAKE_FLAGS+=(
 			-k
@@ -188,34 +192,27 @@ src_install() {
 	local inst_dir="/firmware"
 	local files_to_copy=(
 		System.map
+		u-boot.bin
+		u-boot.img
 	)
 	local ub_vendor="$(get_config_var ${CROS_U_BOOT_CONFIG} VENDOR)"
 	local ub_board="$(get_config_var ${CROS_U_BOOT_CONFIG} BOARD)"
 	local ub_arch="$(get_config_var ${CROS_U_BOOT_CONFIG} ARCH)"
+	local f
 
 	insinto "${inst_dir}"
 
-	doins "${files_to_copy[@]/#/${UB_BUILD_DIR}/}"
+	for f in "${files_to_copy[@]}"; do
+		[[ -f "${UB_BUILD_DIR}/${f}" ]] &&
+			doins "${f/#/${UB_BUILD_DIR}/}"
+	done
 	newins "${UB_BUILD_DIR}/u-boot" u-boot.elf
-	newins "${UB_BUILD_DIR}/u-boot-nodtb-tegra.bin" u-boot.bin
 
 	if netboot_required; then
 		newins "${UB_BUILD_DIR_NB}/u-boot.bin" u-boot_netboot.bin
 		newins "${UB_BUILD_DIR_NB}/u-boot" u-boot_netboot.elf
 	fi
 
-	insinto "${inst_dir}/dts"
-	local dts_dir dts_dirs=(
-		"board/${ub_vendor}/dts"
-		"board/${ub_vendor}/${ub_board}"
-		"arch/${ub_arch}/dts"
-		"cros/dts"
-	)
-	for dts_dir in "${dts_dirs[@]}"; do
-		files_to_copy=$(find ${dts_dir} -regex '.*\.dtsi?')
-		if [[ -n ${files_to_copy} ]]; then
-			elog "Installing device tree files in ${dts_dir}"
-			doins ${files_to_copy}
-		fi
-	done
+	insinto "${inst_dir}/dtb"
+	doins "${UB_BUILD_DIR}/dts/"*.dtb
 }
