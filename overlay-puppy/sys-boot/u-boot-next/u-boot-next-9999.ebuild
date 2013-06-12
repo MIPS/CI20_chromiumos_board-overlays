@@ -188,7 +188,6 @@ src_install() {
 	local inst_dir="/firmware"
 	local files_to_copy=(
 		System.map
-		u-boot.bin
 		u-boot.img
 	)
 	local ub_vendor="$(get_config_var ${CROS_U_BOOT_CONFIG} VENDOR)"
@@ -203,6 +202,7 @@ src_install() {
 			doins "${f/#/${UB_BUILD_DIR}/}"
 	done
 	newins "${UB_BUILD_DIR}/u-boot" u-boot.elf
+	newins "${UB_BUILD_DIR}/u-boot-nodtb-tegra.bin" u-boot.bin
 
 	if netboot_required; then
 		newins "${UB_BUILD_DIR_NB}/u-boot.bin" u-boot_netboot.bin
