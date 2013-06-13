@@ -24,28 +24,4 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-CHROMEOS_KERNEL_SPLITCONFIG="chromeos-tegra114"
-
-ARM_FPU=neon
-
-MARCH_TUNE="-march=armv7-a -mtune=cortex-a9 -mfpu=${ARM_FPU} -mfloat-abi=hard"
-CFLAGS="${CFLAGS} ${MARCH_TUNE}"
-CXXFLAGS="${CXXFLAGS} ${MARCH_TUNE}"
-
-# This is so that ebuilds in this overlay can pull files off of an
-# NVIDIA-hosted FTP server.
-FEATURES="${FEATURES} -force-mirror"
-
-EXTRA_BUILD_ARGS="proprietary_codecs=1"
-
-INPUT_DEVICES="${INPUT_DEVICES} cmt"
-
-USE="${USE} bootflash-emmc -cmt neon new_power_button -opengl"
-USE="${USE} opengles serial_use_ttyS0 tegra tegra-ldk hardfp"
-USE="${USE} device_tree"
-
-# This USE flag selects the DTB that the package
-# chromeos-overlay/sys-boot/chromeos-bootimage uses.  This use flag is meant
-# to possibly be overridden by subprofiles defined in
-# overlays/overlay-puppy/profiles.
-USE="${USE} tegra114-venice_dtb"
+../base
