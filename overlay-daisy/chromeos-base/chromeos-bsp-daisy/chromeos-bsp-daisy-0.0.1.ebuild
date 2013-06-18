@@ -14,7 +14,7 @@ IUSE="-spring -snow -samsung_serial"
 
 DEPEND=""
 RDEPEND="
-	!<chromeos-base/chromeos-bsp-daisy-private-0.0.1-r11
+	!<chromeos-base/chromeos-bsp-daisy-private-0.0.1-r24
 	snow? ( chromeos-base/chromeos-init )
 	samsung_serial? ( chromeos-base/serial-tty )
 	chromeos-base/default-zram-size
@@ -48,4 +48,8 @@ src_install() {
 		insinto "/lib/udev/rules.d"
 		doins "${FILESDIR}/50-rtc.rules" || die "installation failed ($?)"
 	fi
+
+	# Install platform specific upstart jobs
+	insinto /etc/init
+	doins "${FILESDIR}/send-asv-metrics.conf" || die
 }
