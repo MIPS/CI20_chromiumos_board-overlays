@@ -1,0 +1,5 @@
+# o3d requires gtk+ which doesn't work on x32 (or at least, the
+# old version that we ship currently).  We don't really care at
+# this point though, so just ignore both.
+media-plugins/o3d-203170
+chromeos-base/gtalk-48040949
