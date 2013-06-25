@@ -24,4 +24,4 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-USE="dalmore -tegra114-venice_dtb tegra114-dalmore_dtb"
+USE="dalmore -highdpi tegra114-dalmore_dtb -tegra114-venice_dtb"
