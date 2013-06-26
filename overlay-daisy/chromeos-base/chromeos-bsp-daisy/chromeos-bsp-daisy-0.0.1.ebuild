@@ -37,7 +37,6 @@ src_install() {
 	# Install platform specific usb device list for laptop mode tools
 	insinto "/etc/laptop-mode/conf.d/board-specific"
 	doins "${FILESDIR}/usb-autosuspend.conf" || die "installation failed ($?)"
-	doins "${FILESDIR}/cpufreq.conf" || die "installation failed ($?)"
 	doins "${FILESDIR}/runtime-pm.conf" || die "installation failed ($?)"
 
 	if use snow || use spring; then
