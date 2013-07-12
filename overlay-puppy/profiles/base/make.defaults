@@ -2,3 +2,4 @@
 # Distributed under the terms of the GNU General Public License v2
 
 U_BOOT_CONFIG_USE="puppy"
+U_BOOT_FDT_USE="tegra114-venice"
