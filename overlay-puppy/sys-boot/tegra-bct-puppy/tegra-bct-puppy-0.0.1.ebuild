@@ -31,6 +31,8 @@ src_configure() {
 
 	TEGRA_BCT_SDRAM_CONFIG="${board}/sdram.cfg"
 
+	TEGRA_BCT_ODM_DATA_CONFIG="${board}/odmdata.cfg"
+
 	TEGRA_BCT_CHIP_FAMILY="t114"
 
 	tegra-bct_src_configure
