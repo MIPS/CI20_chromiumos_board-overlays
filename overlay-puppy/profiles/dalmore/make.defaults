@@ -1,5 +1,5 @@
 # Copyright (c) 2013 The Chromium OS Authors. All rights reserved.
 # Distributed under the terms of the GNU General Public License v2
 
-USE="dalmore -highdpi"
+USE="bootflash-emmc -bootflash-spi dalmore -highdpi"
 U_BOOT_FDT_USE="tegra114-dalmore"
