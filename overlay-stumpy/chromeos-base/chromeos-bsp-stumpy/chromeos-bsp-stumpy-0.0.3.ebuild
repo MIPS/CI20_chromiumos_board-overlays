@@ -28,5 +28,6 @@ src_install() {
 	dosbin "${FILESDIR}/board_factory_reset.sh"
 
 	insinto "/usr/share/power_manager/board_specific"
+	doins "${FILESDIR}/avoid_suspend_when_headphone_jack_plugged"
 	doins "${FILESDIR}/require_usb_input_device_to_suspend"
 }
