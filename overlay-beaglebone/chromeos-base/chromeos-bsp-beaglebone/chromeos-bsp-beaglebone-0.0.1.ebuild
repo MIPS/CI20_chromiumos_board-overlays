@@ -3,8 +3,6 @@
 
 EAPI=2
 
-inherit toolchain-funcs
-
 DESCRIPTION="Beaglebone bsp (meta package to pull in driver/tool dependencies)"
 
 LICENSE="BSD"
@@ -12,8 +10,12 @@ SLOT="0"
 KEYWORDS="arm"
 IUSE=""
 
+# TODO(jrbarnette):  The sys-boot/u-boot package is meant to have a
+# short lifetime; we'd rather depend on virtual/u-boot instead.
+# http://crbug.com/302022
 DEPEND=""
 RDEPEND="
 	chromeos-base/serial-tty
 	dev-util/hdctools
+	sys-boot/u-boot
 "

@@ -1,0 +1,41 @@
+diff --git a/include/configs/am335x_evm.h b/include/configs/am335x_evm.h
+index c5a6d4b..4b643cb 100644
+--- a/include/configs/am335x_evm.h
++++ b/include/configs/am335x_evm.h
+@@ -34,6 +34,7 @@
+ #define MACH_TYPE_TIAM335EVM		3589	/* Until the next sync */
+ #define CONFIG_MACH_TYPE		MACH_TYPE_TIAM335EVM
+ 
++#define CONFIG_FIT
+ #define CONFIG_OF_LIBFDT
+ #define CONFIG_CMD_BOOTZ
+ #define CONFIG_CMDLINE_TAG		/* enable passing of ATAGs */
+@@ -49,7 +50,7 @@
+ #define CONFIG_VERSION_VARIABLE
+ 
+ /* set to negative value for no autoboot */
+-#define CONFIG_BOOTDELAY		1
++#define CONFIG_BOOTDELAY		-1
+ #define CONFIG_ENV_VARS_UBOOT_CONFIG
+ #define CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG
+ #ifndef CONFIG_SPL_BUILD
+@@ -105,7 +106,7 @@
+ 		"nfsroot=${serverip}:${rootpath},${nfsopts} rw " \
+ 		"ip=dhcp\0" \
+ 	"bootenv=uEnv.txt\0" \
+-	"loadbootenv=load mmc ${mmcdev} ${loadaddr} ${bootenv}\0" \
++	"loadbootenv=load mmc ${mmcdev}:c ${loadaddr} ${bootenv}\0" \
+ 	"importbootenv=echo Importing environment from mmc ...; " \
+ 		"env import -t $loadaddr $filesize\0" \
+ 	"ramargs=setenv bootargs console=${console} " \
+@@ -210,6 +211,10 @@
+ #define CONFIG_CMD_EXT4
+ #define CONFIG_CMD_FS_GENERIC
+ 
++#ifndef CONFIG_SPL_BUILD
++#define CONFIG_EFI_PARTITION
++#endif
++
+ #define CONFIG_SPI
+ #define CONFIG_OMAP3_SPI
+ #define CONFIG_MTD_DEVICE

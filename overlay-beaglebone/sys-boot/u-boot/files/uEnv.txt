@@ -1,0 +1,5 @@
+fdtfile=dts/am335x-bone.dtb
+bootfile=vmlinuz
+bootpart=0:3
+optargs=loglevel=7 init=/sbin/init cros_debug oops=panic panic=-1 noinitrd vt.global_cursor_default=0
+mmcroot=/dev/mmcblk0p3 ro

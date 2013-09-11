@@ -21,6 +21,7 @@
         "num": 7,
         "label":"ROOT-C",
         "type":"rootfs",
+        "fs_format":"ext2",
         "blocks":"1"
       },
       {
@@ -55,6 +56,7 @@
         "num": 8,
         "label":"OEM",
         "type":"data",
+        "fs_format":"ext4",
         "blocks":"32768"
       },
       {
@@ -65,12 +67,14 @@
         "num": 12,
         "label":"EFI-SYSTEM",
         "type":"efi",
+        "fs_format":"vfat",
         "blocks":"32768"
       },
       {
         "num": 1,
         "label":"STATE",
         "type":"data",
+        "fs_format":"ext4",
         "blocks":"2097152",
         "features":["expand"]
       },
@@ -78,6 +82,7 @@
         "num": 5,
         "label":"ROOT-B",
         "type":"rootfs",
+        "fs_format":"ext2",
         "blocks":"819200",
         "fs_blocks":"89600"
       },
@@ -85,6 +90,7 @@
         "num": 3,
         "label":"ROOT-A",
         "type":"rootfs",
+        "fs_format":"ext2",
         "blocks":"819200",
         "fs_blocks":"89600"
       }

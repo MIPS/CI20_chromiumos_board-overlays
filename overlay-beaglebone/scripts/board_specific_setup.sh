@@ -27,16 +27,17 @@ install_beaglebone_bootloader() {
   local efi_size_sectors=$(partsize "$1" 12)
   local efi_offset=$(( efi_offset_sectors * 512 ))
   local efi_size=$(( efi_size_sectors * 512 ))
+  local mount_opts=loop,offset=${efi_offset},sizelimit=${efi_size}
   local efi_dir=$(mktemp -d)
 
-  sudo mount -o loop,offset=${efi_offset},sizelimit=${efi_size} "$1" "$efi_dir"
+  sudo mount -o "${mount_opts}"  "$1" "${efi_dir}"
 
-#  sudo cp "/build/${BOARD}/firmware/u-boot.img" "$efi_dir/"
-  sudo wget "http://git.sabayon.org/molecules.git/plain/boot/arm/beaglebone/u-boot.img" -O "$efi_dir/u-boot.img"
-  sudo wget "http://git.sabayon.org/molecules.git/plain/boot/arm/beaglebone/MLO" -O "$efi_dir/MLO"
+  sudo cp "${BOARD_ROOT}/firmware/u-boot.img" "${efi_dir}/"
+  sudo cp "${BOARD_ROOT}/firmware/MLO" "${efi_dir}/"
+  sudo cp "${BOARD_ROOT}/firmware/uEnv.txt" "${efi_dir}/"
 
-  sudo umount "$efi_dir"
-  rmdir "$efi_dir"
+  sudo umount "${efi_dir}"
+  rmdir "${efi_dir}"
 }
 
 board_setup() {
