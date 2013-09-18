@@ -15,6 +15,7 @@ IUSE=""
 # Add dependencies on other ebuilds from within this board overlay
 RDEPEND="
 	chromeos-base/oem-customization
+	chromeos-base/jabra-vold
 "
 DEPEND=""
 
