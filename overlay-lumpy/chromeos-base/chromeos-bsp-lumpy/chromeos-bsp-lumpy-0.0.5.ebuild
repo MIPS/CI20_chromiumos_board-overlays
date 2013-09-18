@@ -35,7 +35,6 @@ RDEPEND="${RDEPEND}
 
 src_install() {
 	doappid "{A854E62E-9CB3-4DBE-8BBE-88C48FD65787}" || die "appid failed ($?)"
-	dosbin "${FILESDIR}/activate_date" || die "installation failed ($?)"
 	dosbin "${FILESDIR}/battery_cut_off.sh" || die "installation failed ($?)"
 	dosbin "${FILESDIR}/board_factory_wipe.sh" || die "installation failed ($?)"
 	dosbin "${FILESDIR}/board_factory_reset.sh" || die "installation failed ($?)"
