@@ -1,1 +1,2 @@
 chromeos-base/chromeos-login egl
+x11-base/xorg-server dga xinerama
