@@ -23,7 +23,6 @@ S=${WORKDIR}
 src_install() {
 	doappid "{2EE05B2F-3769-43B9-B78C-792F4A027971}"
 
-	dosbin "${FILESDIR}/activate_date"
 	dosbin "${FILESDIR}/board_factory_wipe.sh"
 	dosbin "${FILESDIR}/board_factory_reset.sh"
 
