@@ -39,6 +39,9 @@ src_install() {
 	dosbin "${FILESDIR}/board_factory_wipe.sh" || die "installation failed ($?)"
 	dosbin "${FILESDIR}/board_factory_reset.sh" || die "installation failed ($?)"
 
+	insinto "/etc/laptop-mode/conf.d/board-specific"
+	doins "${FILESDIR}/runtime-pm.conf" || die "installation failed ($?)"
+
 	# Install platform specific config file for power_manager
 	insinto "/usr/share/power_manager"
 	doins "${FILESDIR}/wakeup_input_device_names" || die "installation failed ($?)"
