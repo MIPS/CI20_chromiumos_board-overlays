@@ -15,6 +15,7 @@ IUSE=""
 
 # Add dependencies on other ebuilds from within this board overlay
 RDEPEND="${RDEPEND}
+	sys-apps/bootcache
 	sys-apps/iotools
 "
 DEPEND=""
