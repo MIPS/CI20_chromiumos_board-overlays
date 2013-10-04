@@ -13,6 +13,10 @@ IUSE="opengles tegra-ldk"
 DEPEND="sys-boot/chromeos-bootimage"
 RDEPEND="
 	chromeos-base/serial-tty
+	tegra-ldk? (
+		opengles? ( media-libs/openmax media-libs/openmax-codecs )
+		x11-drivers/tegra-drivers
+	)
 "
 
 S=${WORKDIR}
