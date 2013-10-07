@@ -16,22 +16,30 @@ DEPEND=""
 RDEPEND="${DEPEND}
 	 chromeos-base/touch_updater"
 
-PRODUCT_ID="CYTRA-116002-00"
-FIRMWARE_VERSION="2.13"
+CYPRESS_PRODUCT_ID="CYTRA-116002-00"
+CYPRESS_FIRMWARE_VERSION="2.13"
+
+ATMEL_PRODUCT_ID="130.35"
+ATMEL_FIRMWARE_VERSION="2.0.170"
+
 
 CROS_BINARY_URI="${PF}.tbz2"
 CROS_BINARY_INSTALL_FLAGS="--strip-components=1"
 
 cros-binary_add_overlay_uri daisy-private "${CROS_BINARY_URI}"
 
-FW_NAME="${PRODUCT_ID}_${FIRMWARE_VERSION}.bin"
-SYM_LINK_PATH="/lib/firmware/cyapa.bin"
+CYPRESS_FW_NAME="${CYPRESS_PRODUCT_ID}_${CYPRESS_FIRMWARE_VERSION}.bin"
+CYPRESS_SYM_LINK_PATH="/lib/firmware/cyapa.bin"
+
+ATMEL_FW_NAME="${ATMEL_PRODUCT_ID}_${ATMEL_FIRMWARE_VERSION}.bin"
+ATMEL_SYM_LINK_PATH="/lib/firmware/maxtouch-tp.fw"
 
 S=${WORKDIR}
 
 src_install() {
 	cros-binary_src_install
 
-	# Create symlink at /lib/firmware to the firmware binary.
-	dosym "/opt/google/touch/firmware/${FW_NAME}" "${SYM_LINK_PATH}"
+	# Create symlinks at /lib/firmware to the firmware binaries.
+	dosym "/opt/google/touch/firmware/${CYPRESS_FW_NAME}" "${CYPRESS_SYM_LINK_PATH}"
+	dosym "/opt/google/touch/firmware/${ATMEL_FW_NAME}" "${ATMEL_SYM_LINK_PATH}"
 }
