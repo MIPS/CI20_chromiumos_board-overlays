@@ -32,10 +32,11 @@ S=${WORKDIR}
 src_install() {
 	# Install the proper appid depending on the board being built.
 	# This would normally be done with board_use_$BOARD USE flags.
-	if use snow; then
-		doappid "{D851316B-7E57-4805-A7CE-01829AC1443E}"
-	elif use spring; then
+	if use spring; then
+		# Have to check spring first since it's a superset of snow.
 		doappid "{ADA16F7B-283C-4907-AE27-ABBF5CA4F7F1}"
+	elif use snow; then
+		doappid "{D851316B-7E57-4805-A7CE-01829AC1443E}"
 	fi
 
 	# Install platform specific config file for power_manager
