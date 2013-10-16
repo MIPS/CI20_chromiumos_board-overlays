@@ -19,6 +19,8 @@ DEPEND=""
 #       sshd at boot time.
 #     chromeos-base/serial-tty - upstart job to start agetty
 #       for console login.
+#     chromeos-base/u-boot-scripts - Chrome OS bootstrap support for
+#       partition selection during autoupdate.
 #     dev-util/hdctools - servod support.
 #     sys-boot/u-boot - Beaglebone bootstrap code.
 #
@@ -28,6 +30,7 @@ DEPEND=""
 RDEPEND="
 	chromeos-base/chromeos-dev-init
 	chromeos-base/serial-tty
+	chromeos-base/u-boot-scripts
 	dev-util/hdctools
 	sys-boot/u-boot
 "

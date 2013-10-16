@@ -1,5 +1,17 @@
+# These settings override settings from the compiled-in defaults
 fdtfile=dts/am335x-bone.dtb
 bootfile=vmlinuz
-bootpart=0:3
 optargs=loglevel=7 init=/sbin/init cros_debug oops=panic panic=-1 noinitrd vt.global_cursor_default=0
-mmcroot=/dev/mmcblk0p3 ro
+
+# Support for selecting the Chromium OS boot partition; we load a
+# boot script file selected by the install/update process.  The
+# script contains two settings:  ${kernelpart} and ${rootpart}.
+# Currently, we use only the ${kernelpart} setting.
+bootscript=u-boot/boot.scr.uimg
+loadscript=load mmc ${mmcdev}:c ${loadaddr} ${bootscript}
+setbootpart=setenv bootpart ${mmcdev}:${rootpart}
+setmmcroot=setenv mmcroot /dev/mmcblk${mmcdev}p${rootpart} ro
+
+# The beaglebone compiled-in boot command runs uenvcmd after
+# loading this file, and before loading/booting the kernel.
+uenvcmd=run loadscript ; source ${loadaddr} ; run setbootpart ; run setmmcroot
