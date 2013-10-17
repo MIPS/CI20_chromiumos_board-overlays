@@ -22,6 +22,7 @@ DEPEND=""
 #     chromeos-base/u-boot-scripts - Chrome OS bootstrap support for
 #       partition selection during autoupdate.
 #     dev-util/hdctools - servod support.
+#     net-misc/openssh - ssh client, sshd server, and related tools.
 #     sys-boot/u-boot - Beaglebone bootstrap code.
 #
 # TODO(jrbarnette):  The sys-boot/u-boot package is meant to have a
@@ -32,6 +33,7 @@ RDEPEND="
 	chromeos-base/serial-tty
 	chromeos-base/u-boot-scripts
 	dev-util/hdctools
+	net-misc/openssh
 	sys-boot/u-boot
 "
 
