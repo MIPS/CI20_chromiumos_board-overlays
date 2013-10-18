@@ -1,5 +1,2 @@
-# Copyright (c) 2013 The Chromium OS Authors. All rights reserved.
-# Distributed under the terms of the GNU General Public License v2
-
-/usr/local/portage/chromiumos/profiles/default/linux/arm/10.0/chromeos
-/usr/local/portage/chromiumos/profiles/features/kernel-next
+chromiumos:default/linux/arm/10.0/chromeos
+chromiumos:features/kernel-next
