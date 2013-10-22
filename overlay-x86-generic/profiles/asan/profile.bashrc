@@ -7,8 +7,8 @@
 # Currently only Chrome supports Clang build.
 case "${PN}" in
 	"chromeos-chrome")
-		export CC=clang
-		export CXX=clang++
+		export CC=${CHOST}-clang
+		export CXX=${CHOST}-clang++
 		# We want to be able to easily symbolize possible asan failure logs.
 		export KEEP_CHROME_DEBUG_SYMBOLS=1
                 ;;
