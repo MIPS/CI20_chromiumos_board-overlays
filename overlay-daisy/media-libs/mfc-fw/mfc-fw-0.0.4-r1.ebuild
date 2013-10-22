@@ -15,7 +15,7 @@ RDEPEND="${DEPEND}"
 
 URI_BASE="http://commondatastorage.googleapis.com/chromeos-localmirror/distfiles"
 CROS_BINARY_URI="${URI_BASE}/${PF}.tbz2"
-CROS_BINARY_SUM="bd06ac85f6cdfa606c8d368d6792a0f17b9249b1"
+CROS_BINARY_SUM="68b0109b477e03e87eab1be3650dffe7025c7d6b"
 CROS_BINARY_INSTALL_FLAGS="--strip-components=1"
 
 # The tbz2 file contains the following:
