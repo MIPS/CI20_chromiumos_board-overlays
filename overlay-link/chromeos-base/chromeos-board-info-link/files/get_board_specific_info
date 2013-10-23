@@ -1,0 +1,26 @@
+#!/bin/sh
+
+# Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+#
+# This script generates board specific info that will be shown under
+# the "board-specific" section in chrome://system
+
+echo "Atmel Touchscreen Firmware Version"
+echo $(cat /sys/bus/i2c/drivers/atmel_mxt_ts/2-004a/fw_version)
+
+echo "Atmel Touchscreen Config Checksum"
+echo $(cat /sys/bus/i2c/drivers/atmel_mxt_ts/2-004a/config_csum)
+
+echo "Atmel Touchscreen Object Value"
+echo $(cat /sys/kernel/debug/atmel_mxt_ts/2-004a/object)
+
+echo "Atmel Trackpad Firmware Version"
+echo $(cat /sys/bus/i2c/drivers/atmel_mxt_ts/1-004b/fw_version)
+
+echo "Atmel Trackpad Config Checksum"
+echo $(cat /sys/bus/i2c/drivers/atmel_mxt_ts/1-004b/config_csum)
+
+echo "Atmel Trackpad Object Value"
+echo $(cat /sys/kernel/debug/atmel_mxt_ts/1-004b/object)

@@ -1,0 +1,3 @@
+# Workaround: ensure the LTE modem is power-cycled if it doesn't respond after
+# an autosuspend.
+ACTION=="add|change", SUBSYSTEM=="usb", ATTRS{idVendor}=="1410", ATTRS{idProduct}=="9010", RUN+="/usr/sbin/lte-quirks.sh"
