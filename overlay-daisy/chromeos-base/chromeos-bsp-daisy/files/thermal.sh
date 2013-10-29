@@ -56,6 +56,8 @@ declare -a DAISY_CPU_TEMP=("${cpu_tpath}/temp")
 #######################################
 # Find all hwmon thermal sensors.
 #
+# It's OK if there are none.
+#
 # Globals:
 #   HWMON_TEMP_SENSOR
 # Arguments:
@@ -70,16 +72,12 @@ find_hwmon_sensors() {
 
     for hwmon_dir in /sys/class/hwmon/hwmon*/device; do
         for sensor in ${hwmon_dir}/temp*_input; do
-            HWMON_TEMP_SENSOR[${index}]=${sensor}
-            index=$((${index} + 1))
+            if [[ -r ${sensor} ]] ; then
+                HWMON_TEMP_SENSOR[${index}]=${sensor}
+                index=$((${index} + 1))
+            fi
         done
-        if [[ "${sensor}" == "" ]] ; then
-            logger -t "${PROG}" "WARN: No hwmon temp input @ ${hwmon_dir}"
-        fi
     done
-    if [[ "${hwmon_dir}" == "" ]] ; then
-        logger -t "${PROG}" "WARN: No hwmon devices found."
-    fi
 }
 
 read_temp() {
@@ -163,35 +161,38 @@ while true; do
         fi
     done
 
-    let j=0
     declare -a temps
-    for sensor in ${HWMON_TEMP_SENSOR[*]}
-    do
-        read_temp $sensor
-        let temp=$?
+    if [[ ${#HWMON_TEMP_SENSOR[@]} -gt 0 ]]; then
+        let j=0
+        for sensor in ${HWMON_TEMP_SENSOR[*]}
+        do
+            read_temp $sensor
+            let temp=$?
 
-        # record temps for (DEBUG and) validation later
-        temps[$j]=$temp
-        let j+=1
-    done
+            # record temps for (DEBUG and) validation later
+            temps[$j]=$temp
+            let j+=1
+        done
 
-    # TODO validate hwmon sensor readings.
-    # we should reject anything that is more than 5C off from all others.
-    let max_temp=${temps[0]}
-    for k in `seq 1 $j`
-    do
-        if [[ $max_temp -lt ${temps[k]} ]] ; then
-            let max_temp=${temps[k]}
+        # TODO validate hwmon sensor readings.
+        # we should reject anything that is more than 5C off from all others.
+        let max_temp=${temps[0]}
+        for k in `seq 1 $j`
+        do
+            if [[ $max_temp -lt ${temps[k]} ]] ; then
+                let max_temp=${temps[k]}
+            fi
+        done
+
+        lookup_freq_idx $max_temp "${HWMON_TEMP_MAP[@]}"
+        let f=$?
+        let therm_cpu_freq=${EXYNOS5_CPU_FREQ[f]}
+
+        # we have a valid reading and it's lower than others
+        if [[ $therm_cpu_freq -gt 0 &&
+              $therm_cpu_freq -lt $max_cpu_freq ]] ; then
+            max_cpu_freq=$therm_cpu_freq
         fi
-    done
-
-    lookup_freq_idx $max_temp "${HWMON_TEMP_MAP[@]}"
-    let f=$?
-    let therm_cpu_freq=${EXYNOS5_CPU_FREQ[f]}
-
-    # we have a valid reading and it's lower than others
-    if [[ $therm_cpu_freq -gt 0 && $therm_cpu_freq -lt $max_cpu_freq ]] ; then
-        max_cpu_freq=$therm_cpu_freq
     fi
 
     # Handle the power cap if the battery is too low.
