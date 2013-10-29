@@ -20,6 +20,7 @@ RDEPEND="chromeos-base/chromeos-board-info-link
 	chromeos-base/light-sensor
 	chromeos-base/lte-quirks
 	chromeos-base/temp-metrics
+	chromeos-base/oem-customization
 "
 DEPEND="${RDEPEND}"
 
