@@ -17,6 +17,7 @@ RDEPEND="
 	!<chromeos-base/chromeos-bsp-rambi-private-0.0.1-r2
 	chromeos-base/chromeos-touch-config-rambi
 	pcserial? ( chromeos-base/serial-tty )
+	sys-kernel/linux-firmware
 "
 DEPEND="${RDEPEND}"
 
