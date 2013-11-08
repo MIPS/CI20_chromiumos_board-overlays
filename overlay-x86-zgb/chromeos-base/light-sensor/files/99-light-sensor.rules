@@ -1,0 +1,2 @@
+# Calibrate the light sensor when the tsl2563 driver is installed.
+ACTION=="add", SUBSYSTEM=="drivers", KERNEL=="tsl2563", RUN+="light-sensor-set-multiplier.sh"

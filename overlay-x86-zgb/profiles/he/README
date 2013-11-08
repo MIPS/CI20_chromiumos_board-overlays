@@ -1,0 +1,1 @@
+This profile masks USE flags to remove Qulacomm Gobi modem related packages from the dependency tree.
