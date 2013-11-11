@@ -144,6 +144,8 @@ find_hwmon_sensors
 let power_cap=`cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq`
 logger -t "$PROG" "CPU max freq set to $((${power_cap} / 1000)) Mhz at boot"
 
+# Print power info on first pass, then every other 4 passes.
+power_info_pass=4
 while true; do
     max_cpu_freq=${EXYNOS5_CPU_FREQ[0]}
     # read the list of temp sensors
@@ -225,5 +227,26 @@ while true; do
         set_max_cpu_freq $max_cpu_freq
     fi
 
+    if [[ "${PLATFORM}" = "Spring" ]] ; then
+        # Send UMA sample when a charger is plugged in
+        # and the current limit is greater than 2.8 A.
+        # Distinguish between original charger and others.
+        if [[ "$power_info_pass" = "4" ]] ; then
+            power_info_pass=0
+            uma_event=$(ectool powerinfo | awk '\
+/USB Device Type: /   { type = $4; } \
+/USB Current Limit: / { limit = $4; } \
+END  { \
+if (type == "0x20010" && limit > 2800) { \
+   print "SpringPowerSupply.Original.High"; \
+} else if (type != "0x0" && limit > 2800) { \
+   print "SpringPowerSupply.Other.High"; \
+}}')
+            if [[ -n "$uma_event" ]]; then
+                metrics_client -v "$uma_event"
+            fi
+        fi
+        power_info_pass=$((power_info_pass + 1))
+    fi
     sleep 15
 done
