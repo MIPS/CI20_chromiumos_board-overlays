@@ -30,5 +30,4 @@ src_install() {
 	insinto "/etc/laptop-mode/conf.d/board-specific"
 	doins "${FILESDIR}/hdparm.conf"
 	doins "${FILESDIR}/runtime-pm.conf"
-	doins "${FILESDIR}/usb-autosuspend.conf"
 }

@@ -37,6 +37,5 @@ src_install() {
 	# Install board-specific info.
 	insinto "/etc/laptop-mode/conf.d/board-specific"
 	doins "${FILESDIR}/intel-hda-powersave.conf"
-	doins "${FILESDIR}/usb-autosuspend.conf"
 	doins "${FILESDIR}/runtime-pm.conf"
 }
