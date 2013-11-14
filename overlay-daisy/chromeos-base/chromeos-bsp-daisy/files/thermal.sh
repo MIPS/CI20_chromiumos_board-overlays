@@ -234,6 +234,8 @@ while true; do
         # Also report a couple other situations.
         if [[ "$power_info_pass" = "4" ]] ; then
             power_info_pass=0
+            retrying=false
+        try_again:
             uma_event=$(ectool powerinfo | awk '\
 /AC Voltage: /        { voltage = $3; } \
 /USB Device Type: /   { type = $4; } \
@@ -248,6 +250,15 @@ if (type == "0x20010" && limit > 2800) { \
 } else if (type == "0x0" && voltage > 4500) { \
    print "SpringPowerSupply.ChargerIdle";
 }}')
+            if [[ "$uma_event" = "SpringPowerSupply.ChargerIdle" ]]; then
+                # There is a short interval right after insertion where this
+                # reading does not actually mean a "charger idle" condition.
+                if [[ $retrying = "false" ]]; then
+                    sleep 0.2
+                    retrying=true
+                    goto try_again
+                fi
+            fi
             if [[ -n "$uma_event" ]]; then
                 metrics_client -v "$uma_event"
             fi
