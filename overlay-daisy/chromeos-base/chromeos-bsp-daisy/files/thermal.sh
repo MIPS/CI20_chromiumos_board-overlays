@@ -231,16 +231,22 @@ while true; do
         # Send UMA sample when a charger is plugged in
         # and the current limit is greater than 2.8 A.
         # Distinguish between original charger and others.
+        # Also report a couple other situations.
         if [[ "$power_info_pass" = "4" ]] ; then
             power_info_pass=0
             uma_event=$(ectool powerinfo | awk '\
+/AC Voltage: /        { voltage = $3; } \
 /USB Device Type: /   { type = $4; } \
 /USB Current Limit: / { limit = $4; } \
 END  { \
 if (type == "0x20010" && limit > 2800) { \
    print "SpringPowerSupply.Original.High"; \
+} else if (type == "0x20010") { \
+   print "SpringPowerSupply.Original.Low"; \
 } else if (type != "0x0" && limit > 2800) { \
    print "SpringPowerSupply.Other.High"; \
+} else if (type == "0x0" && voltage > 4500) { \
+   print "SpringPowerSupply.ChargerIdle";
 }}')
             if [[ -n "$uma_event" ]]; then
                 metrics_client -v "$uma_event"
