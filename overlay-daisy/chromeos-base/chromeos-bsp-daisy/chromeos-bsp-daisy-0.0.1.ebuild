@@ -44,7 +44,12 @@ src_install() {
 	doins "${FILESDIR}/battery_poll_short_interval_ms"
 	doins "${FILESDIR}/low_battery_shutdown_percent"
 	doins "${FILESDIR}/low_battery_shutdown_time_s"
-	doins "${FILESDIR}/wakeup_input_device_names"
+
+        if use spring; then
+		newins "${FILESDIR}/wakeup_input_device_names_spring" "wakeup_input_device_names"
+        elif use snow; then
+		newins "${FILESDIR}/wakeup_input_device_names_snow" "wakeup_input_device_names"
+        fi
 
 	# Install platform specific usb device list for laptop mode tools
 	insinto "/etc/laptop-mode/conf.d/board-specific"
