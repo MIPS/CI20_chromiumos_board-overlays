@@ -1,5 +1,5 @@
 diff --git a/include/configs/am335x_evm.h b/include/configs/am335x_evm.h
-index c5a6d4b..4b643cb 100644
+index c5a6d4b..5b70499 100644
 --- a/include/configs/am335x_evm.h
 +++ b/include/configs/am335x_evm.h
 @@ -34,6 +34,7 @@
@@ -15,7 +15,7 @@ index c5a6d4b..4b643cb 100644
  
  /* set to negative value for no autoboot */
 -#define CONFIG_BOOTDELAY		1
-+#define CONFIG_BOOTDELAY		-1
++#define CONFIG_BOOTDELAY		5
  #define CONFIG_ENV_VARS_UBOOT_CONFIG
  #define CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG
  #ifndef CONFIG_SPL_BUILD
