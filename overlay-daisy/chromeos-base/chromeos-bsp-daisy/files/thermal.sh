@@ -228,39 +228,16 @@ while true; do
     fi
 
     if [[ "${PLATFORM}" = "Spring" ]] ; then
-        # Send UMA sample when a charger is plugged in
-        # and the current limit is greater than 2.8 A.
-        # Distinguish between original charger and others.
-        # Also report a couple other situations.
+        # Report charger type.
         if [[ "$power_info_pass" = "4" ]] ; then
             power_info_pass=0
-            retrying=false
-        try_again:
-            uma_event=$(ectool powerinfo | awk '\
-/AC Voltage: /        { voltage = $3; } \
-/USB Device Type: /   { type = $4; } \
-/USB Current Limit: / { limit = $4; } \
-END  { \
-if (type == "0x20010" && limit > 2800) { \
-   print "SpringPowerSupply.Original.High"; \
-} else if (type == "0x20010") { \
-   print "SpringPowerSupply.Original.Low"; \
-} else if (type != "0x0" && limit > 2800) { \
-   print "SpringPowerSupply.Other.High"; \
-} else if (type == "0x0" && voltage > 4500) { \
-   print "SpringPowerSupply.ChargerIdle";
-}}')
-            if [[ "$uma_event" = "SpringPowerSupply.ChargerIdle" ]]; then
-                # There is a short interval right after insertion where this
-                # reading does not actually mean a "charger idle" condition.
-                if [[ $retrying = "false" ]]; then
-                    sleep 0.2
-                    retrying=true
-                    goto try_again
-                fi
-            fi
-            if [[ -n "$uma_event" ]]; then
-                metrics_client -v "$uma_event"
+            # Charger type is 4-byte hex, but metric_client accepts only
+            # decimal.  Sparse histograms use 32-bit bucket indices, but
+            # the 64-bit values produced by awk are truncated correctly.
+            charger_type=$(($(ectool powerinfo | awk \
+              '/USB Device Type:/ { print $4; }')))
+            if [[ -n "$charger_type" ]]; then
+                metrics_client -s Platform.SpringChargerType $charger_type
             fi
         fi
         power_info_pass=$((power_info_pass + 1))
