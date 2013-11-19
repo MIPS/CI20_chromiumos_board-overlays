@@ -1,1 +1,2 @@
-sys-kernel/chromeos-kernel	smatch
+# Disable web audio because it's too heavy for Mario.
+chromeos-base/chromeos-login disable_webaudio
