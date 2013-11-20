@@ -17,6 +17,8 @@ DEPEND=""
 # test lab:
 #     chromeos-base/chromeos-dev-init - upstart job to start
 #       sshd at boot time.
+#     chromeos-base/chromeos-test-testauthkeys - install Chromium OS
+#       test key to /root/.ssh/authorized_keys.
 #     chromeos-base/serial-tty - upstart job to start agetty
 #       for console login.
 #     chromeos-base/u-boot-scripts - Chrome OS bootstrap support for
@@ -30,6 +32,7 @@ DEPEND=""
 # infrastructure.  http://crbug.com/302022
 RDEPEND="
 	chromeos-base/chromeos-dev-init
+	chromeos-base/chromeos-test-testauthkeys
 	chromeos-base/serial-tty
 	chromeos-base/u-boot-scripts
 	dev-util/hdctools
