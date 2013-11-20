@@ -22,7 +22,7 @@ src_install() {
 
 	# Install platform specific config file for power_manager
 	insinto "/usr/share/power_manager/board_specific"
-	doins "${FILESDIR}/battery_current_stabilized_after_resume_ms"
+	doins "${FILESDIR}/battery_stabilized_after_resume_ms"
 	doins "${FILESDIR}/low_battery_shutdown_percent"
 	doins "${FILESDIR}/low_battery_shutdown_time_s"
 	doins "${FILESDIR}/power_supply_full_factor"
