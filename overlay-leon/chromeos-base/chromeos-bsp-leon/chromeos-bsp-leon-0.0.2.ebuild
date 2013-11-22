@@ -20,7 +20,7 @@ S="${WORKDIR}"
 # on chromeos-ec only to get a working ectool binary. The EC ends up getting
 # built for board=bds
 RDEPEND="
-	!<chromeos-base/chromeos-bsp-leon-private-0.0.1-r7
+	!<chromeos-base/chromeos-bsp-leon-private-0.0.1-r9
 	chromeos-base/chromeos-ec
 	media-gfx/ply-image
 	chromeos-base/ec-utils
@@ -39,4 +39,6 @@ src_install() {
 	# Install platform specific config file for power_manager
 	insinto "/usr/share/power_manager/board_specific"
 	doins "${FILESDIR}/wakeup_input_device_names"
+	doins "${FILESDIR}/low_battery_shutdown_percent"
+	doins "${FILESDIR}/low_battery_shutdown_time_s"
 }
