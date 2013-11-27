@@ -40,16 +40,16 @@ src_install() {
 	dolib.so usr/lib/libnvddk_disp.so
 	dolib.so usr/lib/libnvddk_vic.so
 	dolib.so usr/lib/libnvfusebypass.so
-	dolib.so usr/lib/libnvidia-eglcore.so.334.00
-	dosym libnvidia-eglcore.so.334.00 /usr/$(get_libdir)/libnvidia-eglcore.so
-	dolib.so usr/lib/libnvidia-glcore.so.334.00
-	dosym libnvidia-glcore.so.334.00 /usr/$(get_libdir)/libnvidia-glcore.so
-	dolib.so usr/lib/libnvidia-glsi.so.334.00
-	dosym libnvidia-glsi.so.334.00 /usr/$(get_libdir)/libnvidia-glsi.so
-	dolib.so usr/lib/libnvidia-rmapi-tegra.so.334.00
-	dosym libnvidia-rmapi-tegra.so.334.00 /usr/$(get_libdir)/libnvidia-rmapi-tegra.so
-	dolib.so usr/lib/libnvidia-tls.so.334.00
-	dosym libnvidia-tls.so.334.00 /usr/$(get_libdir)/libnvidia-tls.so
+	dolib.so usr/lib/libnvidia-eglcore.so.19.002
+	dosym libnvidia-eglcore.so.19.002 /usr/$(get_libdir)/libnvidia-eglcore.so
+	dolib.so usr/lib/libnvidia-glcore.so.19.002
+	dosym libnvidia-glcore.so.19.002 /usr/$(get_libdir)/libnvidia-glcore.so
+	dolib.so usr/lib/libnvidia-glsi.so.19.002
+	dosym libnvidia-glsi.so.19.002 /usr/$(get_libdir)/libnvidia-glsi.so
+	dolib.so usr/lib/libnvidia-rmapi-tegra.so.19.002
+	dosym libnvidia-rmapi-tegra.so.19.002 /usr/$(get_libdir)/libnvidia-rmapi-tegra.so
+	dolib.so usr/lib/libnvidia-tls.so.19.002
+	dosym libnvidia-tls.so.19.002 /usr/$(get_libdir)/libnvidia-tls.so
 	dolib.so usr/lib/libnvmedia_audio.so
 	dolib.so usr/lib/libnvmm_audio.so
 	dolib.so usr/lib/libnvmm_camera.so
@@ -78,6 +78,7 @@ src_install() {
 	dolib.so usr/lib/libnvtvmr.so
 	dolib.so usr/lib/libnvwinsys.so
 	dolib.so usr/lib/libnvwsi.so
+	dolib.so usr/lib/libtegrav4l2.so
 
 	udev_dorules "${FILESDIR}"/51-nvrm.rules
 }
