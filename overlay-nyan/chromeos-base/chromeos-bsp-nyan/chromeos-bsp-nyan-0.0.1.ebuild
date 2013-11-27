@@ -3,6 +3,8 @@
 
 EAPI=4
 
+inherit appid
+
 DESCRIPTION="Nyan bsp (meta package to pull in driver/tool dependencies)"
 
 LICENSE="BSD"
@@ -22,6 +24,8 @@ RDEPEND="
 S=${WORKDIR}
 
 src_install() {
+	doappid "{334FF5FA-CEE5-7688-1C73-78CE7F5B24A9}"
+
 	# Override default CPU clock speed governor
 	insinto "/etc/laptop-mode/conf.d/board-specific"
 	doins "${FILESDIR}/cpufreq.conf"
