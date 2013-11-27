@@ -13,15 +13,7 @@ COREBOOT_BUILD_ROOT="builds/nyan"
 inherit cros-board cros-workon cros-coreboot
 
 KEYWORDS="~arm"
-IUSE="fwserial"
 
 DEPEND="dev-embedded/cbootimage"
 
 RDEPEND="chromeos-base/vboot_reference"
-
-src_prepare() {
-	if use fwserial; then
-		elog "   - enabling firmware serial console"
-		echo "CONFIG_CONSOLE_SERIAL=y" >> .config
-	fi
-}
