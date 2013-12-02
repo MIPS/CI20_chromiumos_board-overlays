@@ -1,0 +1,32 @@
+diff --git a/arch/arm/boot/dts/am335x-bone-common.dtsi b/arch/arm/boot/dts/am335x-bone-common.dtsi
+index cd009ea..b0de839 100644
+--- a/arch/arm/boot/dts/am335x-bone-common.dtsi
++++ b/arch/arm/boot/dts/am335x-bone-common.dtsi
+@@ -41,6 +41,12 @@
+ 				0x18c 0x70	/* i2c0_scl, SLEWCTRL_SLOW | INPUT_PULLUP | MODE0 */
+ 			>;
+ 		};
++		i2c1_pins: pinmux_i2c1_pins {
++			pinctrl-single,pins = <
++				0x158 0x72 	/* uart1_ctsn.i2c2_sda, SLEWCTRL_SLOW | INPUT_PULLUP | MODE2 */
++				0x15c 0x72 	/* uart1_rtsn.i2c2_scl, SLEWCTRL_SLOW | INPUT_PULLUP | MODE2 */
++			>;
++		};
+ 		i2c2_pins: pinmux_i2c2_pins {
+ 			pinctrl-single,pins = <
+ 				0x178 0x73 	/* uart1_ctsn.i2c2_sda, SLEWCTRL_SLOW | INPUT_PULLUP | MODE3 */
+@@ -398,6 +404,14 @@
+ 	};
+ };
+ 
++&i2c1 {
++	status = "okay";
++	pinctrl-names = "default";
++	pinctrl-0 = <&i2c1_pins>;
++
++	clock-frequency = <100000>;
++};
++
+ &i2c2 {
+ 	status = "okay";
+ 	pinctrl-names = "default";
