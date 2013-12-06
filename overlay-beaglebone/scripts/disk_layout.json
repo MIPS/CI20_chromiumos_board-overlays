@@ -1,4 +1,5 @@
 {
+  "hybrid_mbr": true,
   "metadata":{
     "block_size": 512,
     "fs_block_size": 4096
