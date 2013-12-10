@@ -4,8 +4,8 @@
 
 # This file is sourced by /etc/init/swap.conf and is expected to
 # set ZRAM_SIZE_KB to the default swap size for this platform.
-# Here we set the size to 2 GB.  Note that this is the size of
+
+# Set the size to that of total RAM.  Note that this is the size of
 # *uncompressed* swap, and we're looking at a near 3:1 compression
 # ratio.
-
-ZRAM_SIZE_KB=2000000
+ZRAM_SIZE_KB=$(awk '/MemTotal/ { print $2; }' /proc/meminfo)
