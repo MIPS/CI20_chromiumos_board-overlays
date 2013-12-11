@@ -1,0 +1,83 @@
+diff --git a/firmware/Makefile b/firmware/Makefile
+index 677d634..de933e7 100644
+--- a/firmware/Makefile
++++ b/firmware/Makefile
+@@ -190,7 +190,8 @@ fw-shipped-$(CONFIG_CAPE_BEAGLEBONE) += \
+ 	BB-BONE-SERL-03-00A1.dtbo \
+ 	BB-BONE-BACON-00A0.dtbo \
+ 	BB-BONE-BACONE-00A0.dtbo \
+-	BB-BONE-BACONE2-00A0.dtbo
++	BB-BONE-BACONE2-00A0.dtbo \
++	bone-servo-gpios-00A0.dtbo
+ 
+ # the geiger cape
+ fw-shipped-$(CONFIG_CAPE_BEAGLEBONE_GEIGER) += \
+diff --git a/firmware/capes/bone-servo-gpios-00A0.dts b/firmware/capes/bone-servo-gpios-00A0.dts
+new file mode 100644
+index 0000000..fb198c4
+--- /dev/null
++++ b/firmware/capes/bone-servo-gpios-00A0.dts
+@@ -0,0 +1,63 @@
++// Copyright (c) 2013 The Chromium OS Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++/dts-v1/;
++/plugin/;
++
++/ {
++        compatible = "ti,beaglebone";
++
++        /* identification */
++        part-number = "servo-gpios-0";
++
++        fragment@0 {
++                target = <&am33xx_pinmux>;
++                __overlay__ {
++                        pinctrl_test: pinctrl_test_0_pins {
++                                pinctrl-single,pins = <
++                                        0x090 0x27        /* gpio0_2  */
++                                        0x010 0x27        /* gpio1_4  */
++                                        0x098 0x27        /* gpio2_4  */
++                                        0x094 0x27        /* gpio2_3  */
++                                        0x0ac 0x27        /* gpio2_9  */
++
++                                        0x0cc 0x27        /* gpio2_17 */
++                                        0x07c 0x27        /* gpio1_29 */
++                                        0x0b4 0x27        /* gpio2_11 */
++                                        0x09c 0x27        /* gpio2_5  */
++                                        0x0a4 0x27        /* gpio2_7  */
++
++                                        0x0bc 0x27        /* gpio2_13 */
++                                        0x008 0x27        /* gpio1_2  */
++                                        0x0ec 0x27        /* gpio2_25 */
++                                        0x0dc 0x27        /* gpio0_11 */
++                                        0x0d8 0x27        /* gpio0_10 */
++
++                                        0x0d4 0x27        /* gpio0_9  */
++                                        0x040 0x27        /* gpio1_16 */
++                                        0x078 0x27        /* gpio1_28 */
++                                        0x0e4 0x27        /* gpio2_23 */
++                                        0x0d0 0x27        /* gpio0_8  */
++
++                                        0x000 0x27        /* gpio1_0  */
++                                        0x0c8 0x27        /* gpio2_16 */
++                                        0x0e8 0x27        /* gpio2_24 */
++                                        0x024 0x27        /* gpio2_23 */
++                                        0x03c 0x27        /* gpio1_15 */
++
++                                        0x018 0x27        /* gpio1_6  */
++                                        0x038 0x27        /* gpio1_14 */
++                                        0x02c 0x27        /* gpio0_26 */
++                                        0x034 0x27        /* gpio1_13 */
++                                        0x070 0x27        /* gpio0_30 */
++
++                                        0x074 0x27        /* gpio0_31 */
++                                        0x0e0 0x27        /* gpio2_22 */
++                                        0x020 0x27        /* gpio0_22 */
++                                        0x0a8 0x27        /* gpio2_8  */
++                                >;
++                        };
++                };
++        };
++};
