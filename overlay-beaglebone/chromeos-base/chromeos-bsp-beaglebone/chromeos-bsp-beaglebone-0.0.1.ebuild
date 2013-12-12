@@ -37,6 +37,7 @@ RDEPEND="
 	chromeos-base/u-boot-scripts
 	dev-util/hdctools
 	net-misc/openssh
+	sys-apps/flashrom
 	sys-boot/u-boot
 "
 
