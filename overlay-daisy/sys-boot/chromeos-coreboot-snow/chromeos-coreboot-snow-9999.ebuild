@@ -5,10 +5,6 @@ EAPI=4
 CROS_WORKON_PROJECT="chromiumos/third_party/coreboot"
 CROS_WORKON_LOCALNAME="coreboot"
 
-COREBOOT_BOARD="snow"
-COREBOOT_BOARD_ROOT="google/snow"
-COREBOOT_BUILD_ROOT="builds/snow"
-
 inherit cros-board cros-workon cros-coreboot
 
 KEYWORDS="~arm"

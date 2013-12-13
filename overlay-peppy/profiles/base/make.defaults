@@ -3,5 +3,3 @@
 # found in the LICENSE file.
 U_BOOT_CONFIG_USE="coreboot"
 U_BOOT_FDT_USE="peppy"
-COREBOOT_BOARD="peppy"
-COREBOOT_BUILD_ROOT="builds/peppy"

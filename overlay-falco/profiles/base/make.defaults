@@ -3,5 +3,3 @@
 # found in the LICENSE file.
 U_BOOT_CONFIG_USE="coreboot"
 U_BOOT_FDT_USE="falco"
-COREBOOT_BOARD="falco"
-COREBOOT_BUILD_ROOT="builds/falco"
