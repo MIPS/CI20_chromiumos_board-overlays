@@ -1,0 +1,5 @@
+This overlay is for use in conjunction with hwtests on another device.
+
+It produces an image you boot on a Beaglebone and connect a servo board.
+
+There is no UI/Chrome on this board, nor should there be.
