@@ -7,10 +7,6 @@ CROS_WORKON_TREE="f0745fb41e82cbf338c3e6a197e195084249d7d3"
 CROS_WORKON_PROJECT="chromiumos/third_party/coreboot"
 CROS_WORKON_LOCALNAME="coreboot"
 
-COREBOOT_BOARD="snow"
-COREBOOT_BOARD_ROOT="google/snow"
-COREBOOT_BUILD_ROOT="builds/snow"
-
 inherit cros-board cros-workon cros-coreboot
 
 KEYWORDS="arm"

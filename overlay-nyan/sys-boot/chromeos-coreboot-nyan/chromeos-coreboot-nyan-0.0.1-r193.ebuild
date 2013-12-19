@@ -8,10 +8,6 @@ CROS_WORKON_PROJECT=("chromiumos/third_party/coreboot" "chromiumos/platform/vboo
 CROS_WORKON_LOCALNAME=("coreboot" "../platform/vboot_reference")
 CROS_WORKON_DESTDIR=("${S}" "${S}/vboot_reference")
 
-COREBOOT_BOARD="nyan"
-COREBOOT_BOARD_ROOT="google/nyan"
-COREBOOT_BUILD_ROOT="builds/nyan"
-
 inherit cros-board cros-workon cros-coreboot
 
 KEYWORDS="arm"
