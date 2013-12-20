@@ -24,7 +24,6 @@ RDEPEND="
 	chromeos-base/chromeos-ec
 	media-gfx/ply-image
 	chromeos-base/ec-utils
-	chromeos-base/power_manager
 "
 
 DEPEND="${RDEPEND}"

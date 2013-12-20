@@ -36,6 +36,6 @@ src_install() {
 	doins "${FILESDIR}/runtime-pm.conf"
 
 	# Install platform specific config file for power_manager
-	insinto "/usr/share/power_manager"
+	insinto "/usr/share/power_manager/board_specific"
 	doins "${FILESDIR}/wakeup_input_device_names"
 }

@@ -12,11 +12,6 @@ IUSE=""
 
 RDEPEND=""
 
-# Prevent file conflicts with the old revisions of power_manager.
-RDEPEND="${RDEPEND}
-	!<=chromeos-base/power_manager-0.0.1-r165
-"
-
 src_install() {
 	# Install light sensor tuning script.
 	exeinto "/lib/udev"

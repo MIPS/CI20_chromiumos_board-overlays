@@ -13,7 +13,6 @@ IUSE=""
 
 RDEPEND="
 	!<chromeos-base/chromeos-bsp-butterfly-private-0.0.2
-	chromeos-base/power_manager
 "
 
 S=${WORKDIR}
