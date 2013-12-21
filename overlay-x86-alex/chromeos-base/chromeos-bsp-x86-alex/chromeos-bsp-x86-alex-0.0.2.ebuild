@@ -1,11 +1,11 @@
-# Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
+# Copyright (c) 2013 The Chromium OS Authors. All rights reserved.
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI="4"
 
-inherit appid udev
+inherit toolchain-funcs udev
 
-DESCRIPTION="Board-specific packages for ZGB"
+DESCRIPTION="Board-specific packages for x86-alex"
 HOMEPAGE="http://src.chromium.org"
 SRC_URI=""
 
@@ -15,20 +15,10 @@ KEYWORDS="amd64 x86"
 IUSE=""
 
 DEPEND="!chromeos-base/light-sensor"
-# modemmanager provides Ericsson support.
-RDEPEND="${DEPEND}
-	app-laptop/laptop-mode-tools
-	chromeos-base/chrontel
-	chromeos-base/vpd
-	sys-apps/iotools
-	virtual/modemmanager
-"
 
-S=${WORKDIR}
+S="${WORKDIR}"
 
 src_install() {
-	doappid "{23F5C60F-7655-4BF4-90FB-BFDE16408308}"
-
 	# Install platform-specific ambient light sensor configuration.
 	udev_dorules "${FILESDIR}/99-light-sensor.rules"
 	exeinto $(udev_get_udevdir)
