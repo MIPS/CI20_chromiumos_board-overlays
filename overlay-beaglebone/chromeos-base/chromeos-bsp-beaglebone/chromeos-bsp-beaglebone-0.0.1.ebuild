@@ -15,7 +15,7 @@ DEPEND=""
 # Mission critical dependencies; these are included because
 # they're basic requirements for operation in the Chrome OS
 # test lab:
-#     chromeos-base/chromeos-dev-init - upstart job to start
+#     chromeos-base/openssh-server-init - upstart job to start
 #       sshd at boot time.
 #     chromeos-base/chromeos-test-testauthkeys - install Chromium OS
 #       test key to /root/.ssh/authorized_keys.
@@ -31,8 +31,8 @@ DEPEND=""
 # short lifetime; we'd rather depend on the Chrome OS U-Boot
 # infrastructure.  http://crbug.com/302022
 RDEPEND="
-	chromeos-base/chromeos-dev-init
 	chromeos-base/chromeos-test-testauthkeys
+	chromeos-base/openssh-server-init
 	chromeos-base/serial-tty
 	chromeos-base/u-boot-scripts
 	dev-util/hdctools

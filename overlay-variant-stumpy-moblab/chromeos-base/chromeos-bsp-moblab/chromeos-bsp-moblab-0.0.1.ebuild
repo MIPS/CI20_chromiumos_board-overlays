@@ -14,8 +14,10 @@ IUSE=""
 
 # Add dependencies on other ebuilds from within this board overlay
 RDEPEND="
+	chromeos-base/openssh-server-init
 	chromeos-base/jabra-vold
 "
+
 DEPEND=""
 
 S=${WORKDIR}
