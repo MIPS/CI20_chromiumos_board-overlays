@@ -3,7 +3,7 @@
 
 EAPI=4
 
-inherit appid
+inherit appid cros-board
 
 DESCRIPTION="Nyan bsp (meta package to pull in driver/tool dependencies)"
 
@@ -24,7 +24,11 @@ RDEPEND="
 S=${WORKDIR}
 
 src_install() {
-	doappid "{334FF5FA-CEE5-7688-1C73-78CE7F5B24A9}"
+	# Variants of nyan will have their own appids
+	local board=$(get_current_board_with_variant)
+	if [[ "$board" = "nyan" ]]; then
+		doappid "{334FF5FA-CEE5-7688-1C73-78CE7F5B24A9}"
+	fi
 
 	# Override default CPU clock speed governor
 	insinto "/etc/laptop-mode/conf.d/board-specific"
