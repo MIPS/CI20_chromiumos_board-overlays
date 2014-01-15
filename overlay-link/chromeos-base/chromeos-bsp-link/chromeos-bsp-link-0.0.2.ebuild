@@ -3,7 +3,7 @@
 
 EAPI="4"
 
-inherit appid
+inherit appid udev
 
 DESCRIPTION="Ebuild which pulls in any necessary ebuilds as dependencies
 or portage actions."
