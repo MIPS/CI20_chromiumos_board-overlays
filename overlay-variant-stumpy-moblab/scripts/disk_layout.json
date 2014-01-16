@@ -1,0 +1,45 @@
+{
+  "_comment": "See http://www.chromium.org/chromium-os/building-chromium-os/disk-layout-format",
+  "metadata":{
+    "block_size": 512,
+    "fs_block_size": 4096
+  },
+  "parent": "legacy_disk_layout.json",
+  "layouts":{
+    "usb": [
+      {
+        "num": 1,
+        "blocks":"6291456"
+      },
+      {
+        "num": 3,
+        "blocks":"4194304",
+        "fs_blocks":"512000"
+      },
+      {
+        "num": 5,
+        "blocks":"4194304"
+      }
+    ],
+    "base":[
+      {
+        "num": 1,
+        "label":"STATE",
+        "type":"data",
+        "fs_format":"ext4",
+        "blocks":"2097152",
+        "features":["expand"],
+        "uuid": "random"
+      },
+      {
+        "num": 3,
+        "label":"ROOT-A",
+        "type":"rootfs",
+        "fs_format":"ext2",
+        "blocks":"4194304",
+        "fs_blocks":"262144",
+        "uuid": "clear"
+      }
+    ]
+  }
+}

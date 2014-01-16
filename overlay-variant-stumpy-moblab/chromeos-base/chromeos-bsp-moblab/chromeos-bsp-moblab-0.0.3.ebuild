@@ -12,12 +12,19 @@ SLOT="0"
 KEYWORDS="amd64 x86"
 IUSE=""
 
-# Add dependencies on other ebuilds from within this board overlay
+# These packages are meant to set up the Chromium OS Basic environment to
+# properly handle the services required by the lab infrastructure.
 RDEPEND="
 	chromeos-base/chromeos-init
 	chromeos-base/openssh-server-init
 	chromeos-base/jabra-vold
 	net-misc/dhcp
+"
+
+# Chromium OS Autotest Server and Devserver Deps.
+RDEPEND="${RDEPEND}
+	chromeos-base/autotest-server-deps
+	chromeos-base/devserver-deps
 "
 
 DEPEND=""
