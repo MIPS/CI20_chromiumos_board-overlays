@@ -14,6 +14,7 @@ IUSE=""
 
 # Add dependencies on other ebuilds from within this board overlay
 RDEPEND="
+	chromeos-base/chromeos-init
 	chromeos-base/openssh-server-init
 	chromeos-base/jabra-vold
 "
@@ -24,6 +25,9 @@ S=${WORKDIR}
 
 src_install() {
 	doappid "{0A54D104-EC0D-450D-8588-FB106B2C6703}"
+
+	insinto /etc/init
+	doins "${FILESDIR}/moblab-network-init.conf"
 
 	insinto "/usr/share/power_manager/board_specific"
 	doins "${FILESDIR}/avoid_suspend_when_headphone_jack_plugged"
