@@ -15,6 +15,7 @@ IUSE="opengles tegra-ldk"
 DEPEND="sys-boot/chromeos-bootimage"
 RDEPEND="
 	chromeos-base/serial-tty
+	sys-kernel/tegra_lp0_resume
 	tegra-ldk? (
 		opengles? ( media-libs/openmax media-libs/openmax-codecs )
 		x11-drivers/tegra-drivers
