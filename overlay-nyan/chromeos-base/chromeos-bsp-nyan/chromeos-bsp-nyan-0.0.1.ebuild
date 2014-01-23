@@ -19,6 +19,7 @@ RDEPEND="
 		opengles? ( media-libs/openmax media-libs/openmax-codecs )
 		x11-drivers/tegra-drivers
 	)
+	sys-apps/daisydog
 "
 
 S=${WORKDIR}
