@@ -17,6 +17,7 @@ RDEPEND="
 	chromeos-base/chromeos-init
 	chromeos-base/openssh-server-init
 	chromeos-base/jabra-vold
+	net-misc/dhcp
 "
 
 DEPEND=""
@@ -28,6 +29,10 @@ src_install() {
 
 	insinto /etc/init
 	doins "${FILESDIR}/moblab-network-init.conf"
+	doins "${FILESDIR}/moblab-dhcpd-init.conf"
+
+	insinto /etc/dhcp
+	doins "${FILESDIR}/dhcpd-moblab.conf"
 
 	insinto "/usr/share/power_manager/board_specific"
 	doins "${FILESDIR}/avoid_suspend_when_headphone_jack_plugged"
