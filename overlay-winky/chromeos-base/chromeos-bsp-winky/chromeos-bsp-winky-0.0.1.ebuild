@@ -14,6 +14,7 @@ IUSE="-pcserial"
 S="${WORKDIR}"
 
 RDEPEND="
+	chromeos-base/ec-utils
 	pcserial? ( chromeos-base/serial-tty )
 	sys-kernel/linux-firmware
 "
