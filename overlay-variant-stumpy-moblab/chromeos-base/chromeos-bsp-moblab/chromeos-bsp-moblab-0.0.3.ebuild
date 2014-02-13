@@ -16,6 +16,7 @@ IUSE=""
 # properly handle the services required by the lab infrastructure.
 RDEPEND="
 	chromeos-base/chromeos-init
+	chromeos-base/chromeos-test-testauthkeys
 	chromeos-base/openssh-server-init
 	chromeos-base/jabra-vold
 	net-misc/dhcp
@@ -23,8 +24,8 @@ RDEPEND="
 
 # Chromium OS Autotest Server and Devserver Deps.
 RDEPEND="${RDEPEND}
-	chromeos-base/autotest-server-deps
-	chromeos-base/devserver-deps
+	chromeos-base/autotest-server
+	chromeos-base/devserver
 "
 
 DEPEND=""
@@ -37,6 +38,7 @@ src_install() {
 	insinto /etc/init
 	doins "${FILESDIR}/moblab-network-init.conf"
 	doins "${FILESDIR}/moblab-dhcpd-init.conf"
+	doins "${FILESDIR}/moblab-database-init.conf"
 
 	insinto /etc/dhcp
 	doins "${FILESDIR}/dhcpd-moblab.conf"
@@ -44,4 +46,11 @@ src_install() {
 	insinto "/usr/share/power_manager/board_specific"
 	doins "${FILESDIR}/avoid_suspend_when_headphone_jack_plugged"
 	doins "${FILESDIR}/require_usb_input_device_to_suspend"
+
+	dosym /home/chronos/user/.boto /root/.boto
+
+	# TODO (crbug.com/348172) - This is a temporary fix to not wipe
+	# stateful when booting off USB as a base image.
+	dodir "/mnt/stateful_partition"
+	touch "${D}/mnt/stateful_partition/.developer_mode"
 }
