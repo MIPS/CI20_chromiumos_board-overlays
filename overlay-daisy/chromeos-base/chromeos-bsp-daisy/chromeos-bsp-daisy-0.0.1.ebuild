@@ -18,7 +18,8 @@ DEPEND="
 	!chromeos-base/light-sensor
 "
 RDEPEND="${DEPEND}
-	snow? ( chromeos-base/chromeos-init )
+	snow? ( chromeos-base/chromeos-init chromeos-base/thermal )
+	spring? ( chromeos-base/chromeos-init chromeos-base/thermal )
 	samsung_serial? ( chromeos-base/serial-tty )
 	chromeos-base/default-zram-size
 	media-libs/media-rules
@@ -64,10 +65,6 @@ src_install() {
 	doins "${FILESDIR}/runtime-pm.conf"
 
 	if use snow || use spring; then
-		# Install platform specific config file for thermal monitoring
-		dosbin "${FILESDIR}/thermal.sh"
-		insinto "/etc/init/"
-		doins "${FILESDIR}/thermal.conf"
 		udev_dorules "${FILESDIR}/50-rtc.rules"
 	fi
 
