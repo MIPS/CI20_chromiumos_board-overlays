@@ -10,7 +10,7 @@ DESCRIPTION="Daisy public bsp (meta package to pull in driver/tool dependencies)
 LICENSE="BSD"
 SLOT="0"
 KEYWORDS="arm"
-IUSE="-spring -snow -samsung_serial"
+IUSE="-spring -snow -skate -samsung_serial"
 
 DEPEND="
 	!<chromeos-base/chromeos-bsp-spring-private-0.0.1-r16
@@ -54,6 +54,8 @@ src_install() {
 		newins "${FILESDIR}/wakeup_input_device_names_spring" "wakeup_input_device_names"
 	elif use snow; then
 		newins "${FILESDIR}/wakeup_input_device_names_snow" "wakeup_input_device_names"
+	elif use skate; then
+		newins "${FILESDIR}/wakeup_input_device_names_skate" "wakeup_input_device_names"
 	fi
 
 	# Install platform specific usb device list for laptop mode tools
