@@ -61,6 +61,7 @@ RDEPEND="${RDEPEND}
 	sys-apps/i2c-tools
 	sys-apps/less
 	sys-apps/usbutils
+	sys-kernel/linux-firmware
 	sys-process/procps
 	sys-process/psmisc
 	sys-process/time
