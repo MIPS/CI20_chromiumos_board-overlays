@@ -18,6 +18,7 @@ DEPEND="
 	!chromeos-base/light-sensor
 "
 RDEPEND="${DEPEND}
+	skate? ( chromeos-base/chromeos-init chromeos-base/thermal )
 	snow? ( chromeos-base/chromeos-init chromeos-base/thermal )
 	spring? ( chromeos-base/chromeos-init chromeos-base/thermal )
 	samsung_serial? ( chromeos-base/serial-tty )
