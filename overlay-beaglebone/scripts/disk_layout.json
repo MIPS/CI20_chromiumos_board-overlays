@@ -9,25 +9,25 @@
     "base":[
       {
         "num": 5,
-        "blocks":"819200",
-        "fs_blocks":"89600"
+        "size":"400 MiB",
+        "fs_size":"350 MiB"
       },
       {
         "num": 3,
-        "blocks":"819200",
-        "fs_blocks":"89600"
+        "size":"400 MiB",
+        "fs_size":"350 MiB"
       }
     ],
     "usb":[
       {
         "num": 5,
-        "blocks":"819200",
-        "fs_blocks":"89600"
+        "size":"400 MiB",
+        "fs_size":"350 MiB"
       },
       {
         "num": 3,
-        "blocks":"819200",
-        "fs_blocks":"89600"
+        "size":"400 MiB",
+        "fs_size":"350 MiB"
       }
     ]
   }

@@ -12,7 +12,7 @@
         "label":"OEM",
         "type":"data",
         "fs_format":"ext4",
-        "blocks":"1638400"
+        "size":"800 MiB"
       }
     ]
   }

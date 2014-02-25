@@ -9,16 +9,16 @@
     "usb": [
       {
         "num": 1,
-        "blocks":"6291456"
+        "size":"3072 MiB"
       },
       {
         "num": 3,
-        "blocks":"4194304",
-        "fs_blocks":"512000"
+        "size":"2048 MiB",
+        "fs_size":"2000 MiB"
       },
       {
         "num": 5,
-        "blocks":"4194304"
+        "size":"2048 MiB"
       }
     ],
     "base":[
@@ -27,7 +27,7 @@
         "label":"STATE",
         "type":"data",
         "fs_format":"ext4",
-        "blocks":"2097152",
+        "size":"1024 MiB",
         "features":["expand"],
         "uuid": "random"
       },
@@ -36,8 +36,8 @@
         "label":"ROOT-A",
         "type":"rootfs",
         "fs_format":"ext2",
-        "blocks":"4194304",
-        "fs_blocks":"262144",
+        "size":"2048 MiB",
+        "fs_size":"1024 MiB",
         "uuid": "clear"
       }
     ]
