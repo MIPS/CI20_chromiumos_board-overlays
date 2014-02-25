@@ -3,7 +3,7 @@
 
 EAPI=4
 
-inherit tegra-bct
+inherit tegra-bct cros-board
 
 DESCRIPTION="Nyan BCT file"
 HOMEPAGE="http://src.chromium.org"
@@ -21,7 +21,7 @@ PROVIDE="virtual/tegra-bct"
 S=${WORKDIR}
 
 src_configure() {
-	local board=venice2
+	local board=$(get_current_board_no_variant)
 
 	if use bootflash-emmc; then
 		TEGRA_BCT_FLASH_CONFIG="${board}/emmc.cfg"
