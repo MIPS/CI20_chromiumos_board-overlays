@@ -11,7 +11,7 @@ IMG_PATH="/usr/share/factory/images"
 TTY="/dev/tty1"
 
 modprobe i2c_dev
-if (ectool battery | grep AC_PRESENT); then
+if (ectool battery | grep -q AC_PRESENT); then
   if [ -e "${IMG_PATH}/remove_ac.png" ]; then
     ply-image --clear 0x000000 "${IMG_PATH}/remove_ac.png"
   else
@@ -20,7 +20,7 @@ if (ectool battery | grep AC_PRESENT); then
     echo "============================================" >"$TTY"
     echo "" >"$TTY"
   fi
-  while (ectool battery | grep AC_PRESENT) ; do
+  while (ectool battery | grep -q AC_PRESENT) ; do
     sleep 0.5;
   done
 fi

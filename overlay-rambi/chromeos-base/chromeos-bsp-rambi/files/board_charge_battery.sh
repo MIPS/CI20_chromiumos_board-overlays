@@ -21,9 +21,9 @@ mkdir -p /var/lib/power_manager
 
 if [[ $(get_percentage) -le $MIN_LEVEL ]]; then
   # Ask for AC power
-  if [ -z "$(ectool battery | grep AC_PRESENT)" ]; then
+  if [ -z "$(ectool battery | grep -q AC_PRESENT)" ]; then
     ply-image --clear 0x000000 "${IMG_PATH}/connect_ac.png"
-    while [ -z "$(ectool battery | grep AC_PRESENT)" ]; do
+    while [ -z "$(ectool battery | grep -q AC_PRESENT)" ]; do
       sleep 0.5;
     done
   fi
