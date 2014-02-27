@@ -20,7 +20,7 @@ SLOT="0"
 KEYWORDS="arm"
 IUSE=""
 
-RDEPEND="=sys-apps/nvrm-${MY_PV}
+RDEPEND="~sys-apps/nvrm-${MY_PV}
 	=x11-base/xorg-server-1.${MY_ABI}*"
 
 S=${WORKDIR}

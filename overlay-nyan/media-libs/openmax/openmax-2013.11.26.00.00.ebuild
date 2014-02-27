@@ -13,7 +13,7 @@ SLOT="0"
 KEYWORDS="arm"
 IUSE=""
 
-RDEPEND="=sys-apps/nvrm-${PV}
+RDEPEND="~sys-apps/nvrm-${PV}
 	virtual/opengles
 	"
 
