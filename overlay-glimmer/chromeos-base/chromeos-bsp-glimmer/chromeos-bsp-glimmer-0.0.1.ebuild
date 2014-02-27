@@ -13,6 +13,7 @@ KEYWORDS="amd64 x86"
 IUSE="-pcserial"
 
 RDEPEND="
+        chromeos-base/chromeos-touch-config-glimmer
 	chromeos-base/ec-utils
 	pcserial? ( chromeos-base/serial-tty )
 	sys-kernel/linux-firmware
