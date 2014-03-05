@@ -6,7 +6,7 @@ EAPI=4
 DESCRIPTION="OpenMAX binary libraries"
 SRC_URI="http://commondatastorage.googleapis.com/chromeos-localmirror/distfiles/${P}.tbz2"
 
-LICENSE="NVIDIA-codecs"
+LICENSE="NVIDIA-r2"
 SLOT="0"
 KEYWORDS="arm"
 IUSE=""

@@ -8,7 +8,7 @@ inherit multilib
 DESCRIPTION="NVIDIA binary OpenGL|ES libraries for Tegra4"
 SRC_URI="http://commondatastorage.googleapis.com/chromeos-localmirror/distfiles/${P}.tbz2"
 
-LICENSE="NVIDIA"
+LICENSE="NVIDIA-r2"
 SLOT="0"
 KEYWORDS="arm"
 IUSE=""
