@@ -39,6 +39,13 @@ src_install() {
 	doins "${FILESDIR}/moblab-network-init.conf"
 	doins "${FILESDIR}/moblab-dhcpd-init.conf"
 	doins "${FILESDIR}/moblab-database-init.conf"
+	doins "${FILESDIR}/moblab-apache-init.conf"
+	doins "${FILESDIR}/moblab-python-fix-init.conf"
+	doins "${FILESDIR}/moblab-scheduler-init.conf"
+	doins "${FILESDIR}/moblab-sshkey-init.conf"
+
+	insinto /etc/apache2/modules.d
+	doins "${FILESDIR}/moblab-apache-settings.conf"
 
 	insinto /etc/dhcp
 	doins "${FILESDIR}/dhcpd-moblab.conf"
