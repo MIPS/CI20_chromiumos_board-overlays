@@ -27,6 +27,7 @@ src_install() {
 	# Install platform specific config files for power_manager.
 	insinto "/usr/share/power_manager/board_specific"
 	doins "${FILESDIR}/wakeup_input_device_names"
+	doins "${FILESDIR}/power_supply_full_factor"
 
 	# Battery cut off
 	dosbin "${FILESDIR}/battery_cut_off.sh"
