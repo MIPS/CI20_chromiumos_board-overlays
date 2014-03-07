@@ -25,6 +25,10 @@ S="${WORKDIR}"
 src_install() {
 	doappid "{BBCEB6C1-5567-09B4-1619-DAD125AC892D}"
 
+	# Install platform specific config files for power_manager.
+	insinto "/usr/share/power_manager/board_specific"
+	doins "${FILESDIR}/battery_stabilized_after_startup_ms"
+
 	# Battery cut-off
 	dosbin "${FILESDIR}/battery_cut_off.sh"
 	dosbin "${FILESDIR}/board_factory_wipe.sh"
