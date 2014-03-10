@@ -3,7 +3,7 @@
 
 EAPI="4"
 
-inherit appid
+inherit appid user
 
 DESCRIPTION="Ebuild which pulls in any necessary ebuilds as dependencies or portage actions"
 
@@ -32,17 +32,16 @@ DEPEND=""
 
 S=${WORKDIR}
 
+pkg_setup() {
+	enewgroup moblab
+	enewuser moblab
+}
+
 src_install() {
 	doappid "{0A54D104-EC0D-450D-8588-FB106B2C6703}"
 
 	insinto /etc/init
-	doins "${FILESDIR}/moblab-network-init.conf"
-	doins "${FILESDIR}/moblab-dhcpd-init.conf"
-	doins "${FILESDIR}/moblab-database-init.conf"
-	doins "${FILESDIR}/moblab-apache-init.conf"
-	doins "${FILESDIR}/moblab-python-fix-init.conf"
-	doins "${FILESDIR}/moblab-scheduler-init.conf"
-	doins "${FILESDIR}/moblab-sshkey-init.conf"
+	doins "${FILESDIR}"/init/*.conf
 
 	insinto /etc/apache2/modules.d
 	doins "${FILESDIR}/moblab-apache-settings.conf"
@@ -54,7 +53,8 @@ src_install() {
 	doins "${FILESDIR}/avoid_suspend_when_headphone_jack_plugged"
 	doins "${FILESDIR}/require_usb_input_device_to_suspend"
 
-	dosym /home/chronos/user/.boto /root/.boto
+	insinto "/usr/share/power_manager/"
+	doins "${FILESDIR}/disable_idle_suspend"
 
 	# TODO (crbug.com/348172) - This is a temporary fix to not wipe
 	# stateful when booting off USB as a base image.
