@@ -29,6 +29,7 @@ src_install() {
 
 	insinto "/etc/laptop-mode/conf.d/board-specific"
 	doins "${FILESDIR}/runtime-pm.conf"
+	doins "${FILESDIR}/intel-hda-powersave.conf"
 
 	# Install platform-specific ambient light sensor configuration.
 	udev_dorules "${FILESDIR}/99-light-sensor.rules"
