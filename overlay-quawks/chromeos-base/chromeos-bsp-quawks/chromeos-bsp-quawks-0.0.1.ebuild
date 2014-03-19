@@ -23,4 +23,8 @@ S="${WORKDIR}"
 
 src_install() {
 	doappid "{A772AA64-E906-A01E-1DFD-1856870D39EC}"
+
+	# Install platform specific config files for power_manager.
+	insinto "/usr/share/power_manager/board_specific"
+	doins "${FILESDIR}/low_battery_shutdown_percent"
 }
