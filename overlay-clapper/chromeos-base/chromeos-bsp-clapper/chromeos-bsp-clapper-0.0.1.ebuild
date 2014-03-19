@@ -13,7 +13,8 @@ KEYWORDS="amd64 x86"
 IUSE="-pcserial"
 
 RDEPEND="
-        chromeos-base/chromeos-touch-config-clapper
+	chromeos-base/chromeos-accelerometer-init
+	chromeos-base/chromeos-touch-config-clapper
 	chromeos-base/ec-utils
 	pcserial? ( chromeos-base/serial-tty )
 	sys-kernel/linux-firmware
