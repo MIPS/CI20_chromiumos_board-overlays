@@ -1,1 +1,0 @@
-xhci-firmware-2014.03.11.00.00-r1.ebuild
