@@ -23,4 +23,8 @@ src_install() {
 	udev_dorules "${FILESDIR}/99-light-sensor.rules"
 	exeinto $(udev_get_udevdir)
 	doexe "${FILESDIR}/light-sensor-set-multiplier.sh"
+
+	# Install board-specific info
+	insinto "/etc/laptop-mode/conf.d/board-specific"
+	doins "${FILESDIR}/intel-hda-powersave.conf"
 }
