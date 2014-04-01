@@ -1,0 +1,1 @@
+chromeos-bsp-swanky-0.0.1.ebuild
