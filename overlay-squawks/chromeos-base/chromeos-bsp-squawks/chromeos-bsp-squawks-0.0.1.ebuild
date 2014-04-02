@@ -42,4 +42,7 @@ src_install() {
 	doins "${FILESDIR}/cutoff_failed.png"
 	doins "${FILESDIR}/charging.png"
 	doins "${FILESDIR}/connect_ac.png"
+
+	exeinto "/opt/google/touch"
+	doexe "${FILESDIR}/touch-control.sh"
 }
