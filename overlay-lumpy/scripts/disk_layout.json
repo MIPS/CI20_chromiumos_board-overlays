@@ -5,14 +5,5 @@
   },
   "parent": "legacy_disk_layout.json",
   "layouts":{
-    "base":[
-      {
-        "num": 8,
-        "label":"OEM",
-        "type":"data",
-        "fs_format":"ext4",
-        "size":"800 MiB"
-      }
-    ]
   }
 }
