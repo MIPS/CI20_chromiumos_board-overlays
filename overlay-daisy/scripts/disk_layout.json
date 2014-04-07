@@ -1,9 +1,0 @@
-{
-  "_comment": "See http://www.chromium.org/chromium-os/building-chromium-os/disk-layout-format",
-  "metadata":{
-    "rootdev_base": "/sys/devices/12200000.dwmmc0/mmc_host/mmc0/mmc0:0001/block/mmcblk0"
-  },
-  "parent": "legacy_disk_layout.json",
-  "layouts":{
-  }
-}

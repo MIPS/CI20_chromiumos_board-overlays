@@ -1,7 +1,8 @@
 {
   "_comment": "See http://www.chromium.org/chromium-os/building-chromium-os/disk-layout-format",
   "metadata":{
-    "rootdev_base": "/sys/devices/pci0000:00/0000:00:1f.2/ata1/host*/target*/*/block/sd*"
+    "block_size": 512,
+    "fs_block_size": 4096
   },
   "parent": "legacy_disk_layout.json",
   "layouts":{

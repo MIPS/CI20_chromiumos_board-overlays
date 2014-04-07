@@ -1,7 +1,8 @@
 {
   "hybrid_mbr": true,
   "metadata":{
-    "rootdev_base": "/sys/devices/ocp.2/mmc.3/mmc_host/mmc0/mmc0:55db/block/mmcblk0"
+    "block_size": 512,
+    "fs_block_size": 4096
   },
   "parent": "legacy_disk_layout.json",
   "layouts":{
