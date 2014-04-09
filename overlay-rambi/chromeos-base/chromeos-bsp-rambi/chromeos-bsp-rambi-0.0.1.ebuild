@@ -10,14 +10,13 @@ DESCRIPTION="Rambi private bsp (meta package to pull in driver/tool deps)"
 LICENSE="BSD-Google"
 SLOT="0"
 KEYWORDS="-* amd64 x86"
-IUSE="-pcserial"
+IUSE=""
 S="${WORKDIR}"
 
 RDEPEND="
 	!<chromeos-base/chromeos-bsp-rambi-private-0.0.1-r2
 	chromeos-base/chromeos-touch-config-rambi
 	chromeos-base/ec-utils
-	pcserial? ( chromeos-base/serial-tty )
 	sys-kernel/linux-firmware
 	media-gfx/ply-image
 "

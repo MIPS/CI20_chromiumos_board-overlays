@@ -5,14 +5,13 @@ EAPI=4
 
 DESCRIPTION="Puppy bsp (meta package to pull in driver/tool dependencies)"
 
-LICENSE="BSD"
+LICENSE="BSD-Google"
 SLOT="0"
 KEYWORDS="arm"
 IUSE="opengles tegra-ldk"
 
 DEPEND="sys-boot/chromeos-bootimage"
 RDEPEND="
-	chromeos-base/serial-tty
 	tegra-ldk? (
 		opengles? ( media-libs/openmax media-libs/openmax-codecs )
 		<x11-drivers/tegra-drivers-13.0.0.4

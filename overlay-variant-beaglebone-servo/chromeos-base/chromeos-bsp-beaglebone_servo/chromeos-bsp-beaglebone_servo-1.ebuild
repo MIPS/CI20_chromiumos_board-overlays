@@ -5,7 +5,7 @@ EAPI=4
 
 DESCRIPTION="Servo bsp (meta package to pull in driver/tool dependencies)"
 
-LICENSE="BSD"
+LICENSE="BSD-Google"
 SLOT="0"
 KEYWORDS="arm"
 IUSE=""
@@ -19,8 +19,6 @@ DEPEND=""
 #       sshd at boot time.
 #     chromeos-base/chromeos-test-testauthkeys - install Chromium OS
 #       test key to /root/.ssh/authorized_keys.
-#     chromeos-base/serial-tty - upstart job to start agetty
-#       for console login.
 #     chromeos-base/u-boot-scripts - Chrome OS bootstrap support for
 #       partition selection during autoupdate.
 #     dev-util/hdctools - servod support.
@@ -33,7 +31,6 @@ DEPEND=""
 RDEPEND="
 	chromeos-base/chromeos-test-testauthkeys
 	chromeos-base/openssh-server-init
-	chromeos-base/serial-tty
 	chromeos-base/u-boot-scripts
 	dev-util/hdctools
 	net-misc/openssh

@@ -7,12 +7,12 @@ inherit udev
 
 DESCRIPTION="Raspberry Pi bsp (meta package to pull in driver/tool dependencies)"
 
-LICENSE="BSD"
+LICENSE="BSD-Google"
 SLOT="0"
 KEYWORDS="arm"
 IUSE=""
 
-DEPEND="chromeos-base/serial-tty"
+DEPEND=""
 RDEPEND=""
 
 src_install() {

@@ -5,10 +5,10 @@ EAPI=4
 
 DESCRIPTION="Beaglebone bsp (meta package to pull in driver/tool dependencies)"
 
-LICENSE="BSD"
+LICENSE="BSD-Google"
 SLOT="0"
 KEYWORDS="-* arm"
-IUSE="+pcserial"
+IUSE=""
 
 DEPEND=""
 
@@ -16,7 +16,6 @@ DEPEND=""
 # short lifetime; we'd rather depend on the Chrome OS U-Boot
 # infrastructure.  http://crbug.com/302022
 RDEPEND="
-	pcserial? ( chromeos-base/serial-tty )
 	chromeos-base/u-boot-scripts
 	sys-boot/u-boot
 "

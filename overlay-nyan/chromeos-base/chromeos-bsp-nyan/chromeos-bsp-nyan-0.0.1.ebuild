@@ -7,14 +7,13 @@ inherit appid cros-board
 
 DESCRIPTION="Nyan bsp (meta package to pull in driver/tool dependencies)"
 
-LICENSE="BSD"
+LICENSE="BSD-Google"
 SLOT="0"
 KEYWORDS="arm"
 IUSE="opengles tegra-ldk"
 
 DEPEND="sys-boot/chromeos-bootimage"
 RDEPEND="
-	chromeos-base/serial-tty
 	sys-kernel/tegra_lp0_resume
 	tegra-ldk? (
 		opengles? ( media-libs/openmax media-libs/openmax-codecs )

@@ -7,15 +7,14 @@ inherit appid
 
 DESCRIPTION="Winky bsp (meta package to pull in driver/tool deps)"
 
-LICENSE="BSD"
+LICENSE="BSD-Google"
 SLOT="0"
 KEYWORDS="amd64 x86"
-IUSE="-pcserial"
+IUSE=""
 S="${WORKDIR}"
 
 RDEPEND="
 	chromeos-base/ec-utils
-	pcserial? ( chromeos-base/serial-tty )
 	sys-kernel/linux-firmware
 "
 DEPEND="${RDEPEND}"

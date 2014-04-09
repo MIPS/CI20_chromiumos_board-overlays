@@ -7,10 +7,10 @@ inherit appid toolchain-funcs udev
 
 DESCRIPTION="Daisy public bsp (meta package to pull in driver/tool dependencies)"
 
-LICENSE="BSD"
+LICENSE="BSD-Google"
 SLOT="0"
 KEYWORDS="arm"
-IUSE="-spring -snow -skate -samsung_serial"
+IUSE="-spring -snow -skate"
 
 DEPEND="
 	!<chromeos-base/chromeos-bsp-spring-private-0.0.1-r16
@@ -21,7 +21,6 @@ RDEPEND="${DEPEND}
 	skate? ( chromeos-base/chromeos-init chromeos-base/thermal )
 	snow? ( chromeos-base/chromeos-init chromeos-base/thermal )
 	spring? ( chromeos-base/chromeos-init chromeos-base/thermal )
-	samsung_serial? ( chromeos-base/serial-tty )
 	chromeos-base/default-zram-size
 	media-libs/media-rules
 	media-libs/mfc-fw
