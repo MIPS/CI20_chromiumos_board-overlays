@@ -1,0 +1,2 @@
+media-libs/mesa shared-glapi gles2 egl gbm
+chromeos-base/chromeos-login -X
