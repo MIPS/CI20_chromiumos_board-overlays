@@ -1,0 +1,6 @@
+This variant overlay is used to select the 'he' profile from the
+x86-alex-private overlay when building. The purpose of the 'he' profile
+is to remove Qualcomm Gobi related packages from the build.
+
+Please put ebuilds and configuration into the x86-alex overlay and
+not here.

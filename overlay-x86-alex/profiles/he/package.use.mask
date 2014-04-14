@@ -1,0 +1,5 @@
+chromeos-base/chromeos-bsp-alex gobi
+chromeos-base/chromeos-bsp-x86-alex gobi
+chromeos-base/gobi-firmware google_qdl
+chromeos-base/gobi3k-sdk google_qdl
+chromeos-base/oem-customization gobi
