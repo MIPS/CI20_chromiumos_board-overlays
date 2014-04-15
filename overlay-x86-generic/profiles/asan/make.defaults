@@ -1,2 +1,2 @@
-USE="clang asan tests_logging_AsanCrash tests_logging_AsanCrashTelemetry"
+USE="clang asan tests_logging_AsanCrash"
 LDFLAGS="${LDFLAGS} -fsanitize=address"
