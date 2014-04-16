@@ -30,4 +30,7 @@ src_install() {
 	insinto "/etc/laptop-mode/conf.d/board-specific"
 	doins "${FILESDIR}/hdparm.conf"
 	doins "${FILESDIR}/runtime-pm.conf"
+
+	exeinto "/opt/google/touch"
+	doexe "${FILESDIR}/touch-control.sh"
 }
