@@ -39,4 +39,7 @@ src_install() {
 	# Install platform specific config files for power_manager.
 	insinto "/usr/share/power_manager/board_specific"
 	doins "${FILESDIR}/wakeup_input_device_names"
+
+	exeinto "/opt/google/touch"
+	doexe "${FILESDIR}/touch-control.sh"
 }
