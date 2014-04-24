@@ -39,4 +39,8 @@ src_install() {
 	doins "${FILESDIR}/nv-cpu-auto-hotplug.conf"
 	exeinto "/usr/share/laptop-mode-tools/modules"
 	doexe "${FILESDIR}/nv-cpu-auto-hotplug"
+
+	# Install platform specific config files for power_manager.
+	insinto "/usr/share/power_manager/board_specific"
+	doins "${FILESDIR}/min_visible_backlight_level"
 }
