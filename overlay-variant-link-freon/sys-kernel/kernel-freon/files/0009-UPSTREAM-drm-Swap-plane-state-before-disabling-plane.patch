@@ -1,0 +1,34 @@
+From 00fc295a93948173d69389fd2872be4b676ed061 Mon Sep 17 00:00:00 2001
+From: Sean Paul <seanpaul@chromium.org>
+Date: Mon, 3 Mar 2014 16:22:52 -0500
+Subject: [PATCH 09/15] UPSTREAM: drm: Swap plane state before disabling plane
+
+This ensures that drivers have the correct plane->crtc mapping before
+disabling a plane.
+
+BUG=chromium:336809
+TEST=Tested on pit, no regressions noted
+
+Change-Id: I48014785f688e76e6c8bb1784633d4ce53e6f810
+Signed-off-by: Sean Paul <seanpaul@chromium.org>
+---
+ drivers/gpu/drm/drm_atomic_helper.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/drm_atomic_helper.c b/drivers/gpu/drm/drm_atomic_helper.c
+index ec60d4e..0953cc0a 100644
+--- a/drivers/gpu/drm/drm_atomic_helper.c
++++ b/drivers/gpu/drm/drm_atomic_helper.c
+@@ -401,8 +401,8 @@ drm_atomic_helper_commit_plane_state(struct drm_plane *plane,
+ 		}
+ 	} else {
+ 		old_fb = plane->state->fb;
+-		plane->funcs->disable_plane(plane);
+ 		swap_plane_state(plane, pstate->state);
++		plane->funcs->disable_plane(plane);
+ 	}
+ 
+ 
+-- 
+1.8.3.2
+

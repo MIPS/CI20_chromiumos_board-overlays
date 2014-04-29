@@ -1,0 +1,158 @@
+From 1c24d575b0a8f84d0b020ddf7bfe4727ea7c1709 Mon Sep 17 00:00:00 2001
+From: Rob Clark <robdclark@gmail.com>
+Date: Mon, 25 Nov 2013 09:47:35 -0500
+Subject: [PATCH 12/15] UPSTREAM: drm: push locking down into
+ restore_fbdev_mode
+
+All the call-sites save one need locking.  By pushing it down and adding
+a lockless flag, we can use the new spiffy atomic ww_mutex crtc locking
+and simplify all the call-sites.
+
+Signed-off-by: Rob Clark <robdclark@gmail.com>
+
+BUG=chromium:336809
+TEST=Tested on pit, no regressions noted
+
+Change-Id: Ia89609d4dfa84c62e88d3c183ec66e18d6af6792
+Signed-off-by: Sean Paul <seanpaul@chromium.org>
+---
+ drivers/gpu/drm/drm_fb_cma_helper.c       |  4 +---
+ drivers/gpu/drm/drm_fb_helper.c           | 10 +++++++---
+ drivers/gpu/drm/exynos/exynos_drm_fbdev.c |  2 +-
+ drivers/gpu/drm/gma500/psb_drv.c          |  4 +---
+ drivers/gpu/drm/i915/intel_fb.c           |  4 +---
+ drivers/staging/omapdrm/omap_drv.c        |  4 +---
+ include/drm/drm_fb_helper.h               |  3 ++-
+ 7 files changed, 14 insertions(+), 17 deletions(-)
+
+diff --git a/drivers/gpu/drm/drm_fb_cma_helper.c b/drivers/gpu/drm/drm_fb_cma_helper.c
+index 1b6ba2d..36d7f05 100644
+--- a/drivers/gpu/drm/drm_fb_cma_helper.c
++++ b/drivers/gpu/drm/drm_fb_cma_helper.c
+@@ -389,10 +389,8 @@ EXPORT_SYMBOL_GPL(drm_fbdev_cma_fini);
+  */
+ void drm_fbdev_cma_restore_mode(struct drm_fbdev_cma *fbdev_cma)
+ {
+-	drm_modeset_lock_all(dev);
+ 	if (fbdev_cma)
+-		drm_fb_helper_restore_fbdev_mode(&fbdev_cma->fb_helper);
+-	drm_modeset_unlock_all(dev);
++		drm_fb_helper_restore_fbdev_mode(&fbdev_cma->fb_helper, false);
+ }
+ EXPORT_SYMBOL_GPL(drm_fbdev_cma_restore_mode);
+ 
+diff --git a/drivers/gpu/drm/drm_fb_helper.c b/drivers/gpu/drm/drm_fb_helper.c
+index 691de92..90bfe72 100644
+--- a/drivers/gpu/drm/drm_fb_helper.c
++++ b/drivers/gpu/drm/drm_fb_helper.c
+@@ -242,12 +242,15 @@ EXPORT_SYMBOL(drm_fb_helper_debug_leave);
+ /**
+  * drm_fb_helper_restore_fbdev_mode - restore fbdev configuration
+  * @fb_helper: fbcon to restore
++ * @lockless: true in drm_fb_helper_force_kernel_mode() path, to avoid
++ *   blocking in panic case, everywhere else should use false
+  *
+  * This should be called from driver's drm->lastclose callback when implementing
+  * an fbcon on top of kms using this helper. This ensures that the user isn't
+  * greeted with a black screen when e.g. X dies.
+  */
+-bool drm_fb_helper_restore_fbdev_mode(struct drm_fb_helper *fb_helper)
++bool drm_fb_helper_restore_fbdev_mode(struct drm_fb_helper *fb_helper,
++		bool lockless)
+ {
+ 	struct drm_device *dev = fb_helper->dev;
+ 	struct drm_plane *plane;
+@@ -255,7 +258,8 @@ bool drm_fb_helper_restore_fbdev_mode(struct drm_fb_helper *fb_helper)
+ 	void *state;
+ 	int i;
+ 
+-	state = dev->driver->atomic_begin(dev, 0);
++	state = dev->driver->atomic_begin(dev, lockless ?
++			DRM_MODE_ATOMIC_NOLOCK : 0);
+ 	if (IS_ERR(state)) {
+ 		DRM_ERROR("failed to restore fbdev mode\n");
+ 		return true;
+@@ -303,7 +307,7 @@ static bool drm_fb_helper_force_kernel_mode(void)
+ 		if (helper->dev->switch_power_state == DRM_SWITCH_POWER_OFF)
+ 			continue;
+ 
+-		ret = drm_fb_helper_restore_fbdev_mode(helper);
++		ret = drm_fb_helper_restore_fbdev_mode(helper, true);
+ 		if (ret)
+ 			error = true;
+ 	}
+diff --git a/drivers/gpu/drm/exynos/exynos_drm_fbdev.c b/drivers/gpu/drm/exynos/exynos_drm_fbdev.c
+index 8b68d34..20f1f32 100644
+--- a/drivers/gpu/drm/exynos/exynos_drm_fbdev.c
++++ b/drivers/gpu/drm/exynos/exynos_drm_fbdev.c
+@@ -393,5 +393,5 @@ void exynos_drm_fbdev_restore_mode(struct drm_device *dev)
+ 	if (!private || !private->fb_helper)
+ 		return;
+ 
+-	drm_fb_helper_restore_fbdev_mode(private->fb_helper);
++	drm_fb_helper_restore_fbdev_mode(private->fb_helper, false);
+ }
+diff --git a/drivers/gpu/drm/gma500/psb_drv.c b/drivers/gpu/drm/gma500/psb_drv.c
+index a871db4..a347ab5 100644
+--- a/drivers/gpu/drm/gma500/psb_drv.c
++++ b/drivers/gpu/drm/gma500/psb_drv.c
+@@ -153,11 +153,9 @@ static void psb_lastclose(struct drm_device *dev)
+ 	struct drm_psb_private *dev_priv = dev->dev_private;
+ 	struct psb_fbdev *fbdev = dev_priv->fbdev;
+ 
+-	drm_modeset_lock_all(dev);
+-	ret = drm_fb_helper_restore_fbdev_mode(&fbdev->psb_fb_helper);
++	ret = drm_fb_helper_restore_fbdev_mode(&fbdev->psb_fb_helper, false);
+ 	if (ret)
+ 		DRM_DEBUG("failed to restore crtc mode\n");
+-	drm_modeset_unlock_all(dev);
+ 
+ 	return;
+ }
+diff --git a/drivers/gpu/drm/i915/intel_fb.c b/drivers/gpu/drm/i915/intel_fb.c
+index e863a44..9e7f216 100644
+--- a/drivers/gpu/drm/i915/intel_fb.c
++++ b/drivers/gpu/drm/i915/intel_fb.c
+@@ -281,9 +281,7 @@ void intel_fb_restore_mode(struct drm_device *dev)
+ 	struct drm_mode_config *config = &dev->mode_config;
+ 	struct drm_plane *plane;
+ 
+-	drm_modeset_lock_all(dev);
+-
+-	ret = drm_fb_helper_restore_fbdev_mode(&dev_priv->fbdev->helper);
++	ret = drm_fb_helper_restore_fbdev_mode(&dev_priv->fbdev->helper, false);
+ 	if (ret)
+ 		DRM_DEBUG("failed to restore crtc mode\n");
+ 
+diff --git a/drivers/staging/omapdrm/omap_drv.c b/drivers/staging/omapdrm/omap_drv.c
+index 17bbac8..c54ef25 100644
+--- a/drivers/staging/omapdrm/omap_drv.c
++++ b/drivers/staging/omapdrm/omap_drv.c
+@@ -451,9 +451,7 @@ static void dev_lastclose(struct drm_device *dev)
+ 		}
+ 	}
+ 
+-	drm_modeset_lock_all(dev);
+-	ret = drm_fb_helper_restore_fbdev_mode(priv->fbdev);
+-	drm_modeset_unlock_all(dev);
++	ret = drm_fb_helper_restore_fbdev_mode(priv->fbdev, false);
+ 	if (ret)
+ 		DBG("failed to restore crtc mode");
+ }
+diff --git a/include/drm/drm_fb_helper.h b/include/drm/drm_fb_helper.h
+index 5120b01..12a273c 100644
+--- a/include/drm/drm_fb_helper.h
++++ b/include/drm/drm_fb_helper.h
+@@ -102,7 +102,8 @@ int drm_fb_helper_setcolreg(unsigned regno,
+ 			    unsigned transp,
+ 			    struct fb_info *info);
+ 
+-bool drm_fb_helper_restore_fbdev_mode(struct drm_fb_helper *fb_helper);
++bool drm_fb_helper_restore_fbdev_mode(struct drm_fb_helper *fb_helper,
++		bool lockless);
+ void drm_fb_helper_restore(void);
+ void drm_fb_helper_fill_var(struct fb_info *info, struct drm_fb_helper *fb_helper,
+ 			    uint32_t fb_width, uint32_t fb_height);
+-- 
+1.8.3.2
+

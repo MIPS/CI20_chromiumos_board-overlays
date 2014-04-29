@@ -1,0 +1,76 @@
+From 3be390ed57709ad681f9a4b08e6fa2c0528de40d Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= <ville.syrjala@linux.intel.com>
+Date: Mon, 25 Nov 2013 09:47:32 -0500
+Subject: [PATCH 07/15] UPSTREAM: drm: Refactor object property check code
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Refactor the code to check whether an object has a specific property
+to a new function.
+
+v1: original
+v2: rebase on atomic -- Rob Clark
+v3: EINVAL->ENOENT
+
+Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
+Signed-off-by: Rob Clark <robdclark@gmail.com>
+
+BUG=chromium:336809
+TEST=Tested on pit, no regressions noted
+
+Change-Id: Ie4816af31af2a6af3eaeb113726750be2768b5e2
+Signed-off-by: Sean Paul <seanpaul@chromium.org>
+---
+ drivers/gpu/drm/drm_crtc.c | 25 ++++++++++++++-----------
+ 1 file changed, 14 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/gpu/drm/drm_crtc.c b/drivers/gpu/drm/drm_crtc.c
+index 2d4c197..85be1be 100644
+--- a/drivers/gpu/drm/drm_crtc.c
++++ b/drivers/gpu/drm/drm_crtc.c
+@@ -3706,6 +3706,19 @@ static int drm_mode_set_obj_prop(struct drm_mode_object *obj,
+ 	return -EINVAL;
+ }
+ 
++static bool object_has_prop(const struct drm_mode_object *obj, u32 prop_id)
++{
++	int i;
++
++	if (!obj->properties)
++		return false;
++
++	for (i = 0; i < obj->properties->count; i++)
++		if (obj->properties->ids[i] == prop_id)
++			return true;
++	return false;
++}
++
+ /* call with mode_config mutex held */
+ static int drm_mode_set_obj_prop_id(struct drm_device *dev, void *state,
+ 		uint32_t obj_id, uint32_t obj_type,
+@@ -3713,20 +3726,10 @@ static int drm_mode_set_obj_prop_id(struct drm_device *dev, void *state,
+ {
+ 	struct drm_mode_object *arg_obj;
+ 	struct drm_property *property;
+-	int i;
+ 
+ 	arg_obj = drm_mode_object_find(dev, obj_id, obj_type);
+-	if (!arg_obj)
++	if (!(arg_obj && object_has_prop(arg_obj, prop_id)))
+ 		return -ENOENT;
+-	if (!arg_obj->properties)
+-		return -EINVAL;
+-
+-	for (i = 0; i < arg_obj->properties->count; i++)
+-		if (arg_obj->properties->ids[i] == prop_id)
+-			break;
+-
+-	if (i == arg_obj->properties->count)
+-		return -EINVAL;
+ 
+ 	property = drm_property_find(dev, prop_id);
+ 	if (!property)
+-- 
+1.8.3.2
+

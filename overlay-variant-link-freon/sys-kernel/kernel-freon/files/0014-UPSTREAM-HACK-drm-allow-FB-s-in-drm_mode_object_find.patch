@@ -1,0 +1,40 @@
+From a6925df43b7d564d57402d6075d51a075f9eff98 Mon Sep 17 00:00:00 2001
+From: Rob Clark <robdclark@gmail.com>
+Date: Mon, 25 Nov 2013 09:47:38 -0500
+Subject: [PATCH 14/15] UPSTREAM: HACK: drm: allow FB's in drm_mode_object_find
+
+Ugg.. we do actually want to permit FB's in atomic case, since FB will
+be looked up like any other object property value.
+
+Currently we do the FB refcnt'ing dance in atomic->commit(), and would
+rather not have to special case FB's or collect an FB ref when we look
+up the property.  Not sure if it is better to rework the atomic FB
+refcnt'ing or loosen this restriction?
+
+Signed-off-by: Rob Clark <robdclark@gmail.com>
+
+BUG=chromium:336809
+TEST=Tested on pit, no regressions noted
+
+Change-Id: Id2bd19b8774419d7a1e51ca9eb0eb1a1eb061ebf
+Signed-off-by: Sean Paul <seanpaul@chromium.org>
+---
+ drivers/gpu/drm/drm_crtc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/drm_crtc.c b/drivers/gpu/drm/drm_crtc.c
+index 90be884..bfa7e49 100644
+--- a/drivers/gpu/drm/drm_crtc.c
++++ b/drivers/gpu/drm/drm_crtc.c
+@@ -424,7 +424,7 @@ struct drm_mode_object *drm_mode_object_find(struct drm_device *dev,
+ 
+ 	/* Framebuffers are reference counted and need their own lookup
+ 	 * function.*/
+-	WARN_ON(type == DRM_MODE_OBJECT_FB);
++//	WARN_ON(type == DRM_MODE_OBJECT_FB);
+ 
+ 	mutex_lock(&dev->mode_config.idr_mutex);
+ 	obj = idr_find(&dev->mode_config.crtc_idr, id);
+-- 
+1.8.3.2
+

@@ -1,0 +1,315 @@
+From c15db293124be6e2c3ecc7f174c551d03a0e67c9 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= <ville.syrjala@linux.intel.com>
+Date: Mon, 25 Nov 2013 09:47:36 -0500
+Subject: [PATCH 13/15] UPSTREAM: drm: Atomic modeset ioctl
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The atomic modeset ioctl cna be used to push any number of new values
+for object properties. The driver can then check the full device
+configuration as single unit, and try to apply the changes atomically.
+
+The ioctl simply takes a list of object IDs and property IDs and their
+values. For setting values to blob properties, the property value
+indicates the length of the data, and the actual data is passed via
+another blob pointer.
+
+The caller can demand non-blocking operation from the ioctl, and if the
+driver can't satisfy that requirement an error will be returned.
+
+The caller can also request to receive asynchronous completion events
+after the operation has reached the hardware. An event is sent for each
+object specified by the caller, whether or not the actual state of
+that object changed. Each event also carries a framebuffer ID, which
+indicates to user space that the specified object is no longer
+accessing that framebuffer.
+
+Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
+Signed-off-by: Rob Clark <robdclark@gmail.com>
+
+BUG=chromium:336809
+TEST=Tested on pit, no regressions noted
+
+Change-Id: Idf782bd0c7fdaf7fe7fcd64bf2379fa59efd0aed
+Signed-off-by: Sean Paul <seanpaul@chromium.org>
+---
+ drivers/gpu/drm/drm_crtc.c  | 156 ++++++++++++++++++++++++++++++++++++++++++++
+ drivers/gpu/drm/drm_drv.c   |   1 +
+ include/drm/drmP.h          |   6 ++
+ include/drm/drm_crtc.h      |   2 +
+ include/uapi/drm/drm.h      |  12 ++++
+ include/uapi/drm/drm_mode.h |  20 ++++++
+ 6 files changed, 197 insertions(+)
+
+diff --git a/drivers/gpu/drm/drm_crtc.c b/drivers/gpu/drm/drm_crtc.c
+index c8b2c54..90be884 100644
+--- a/drivers/gpu/drm/drm_crtc.c
++++ b/drivers/gpu/drm/drm_crtc.c
+@@ -4687,3 +4687,159 @@ int drm_format_vert_chroma_subsampling(uint32_t format)
+ 	}
+ }
+ EXPORT_SYMBOL(drm_format_vert_chroma_subsampling);
++
++int drm_mode_atomic_ioctl(struct drm_device *dev,
++			  void *data, struct drm_file *file_priv)
++{
++	struct drm_mode_atomic *arg = data;
++	uint32_t __user *objs_ptr = (uint32_t __user *)(unsigned long)(arg->objs_ptr);
++	uint32_t __user *count_props_ptr = (uint32_t __user *)(unsigned long)(arg->count_props_ptr);
++	uint32_t __user *props_ptr = (uint32_t __user *)(unsigned long)(arg->props_ptr);
++	uint64_t __user *prop_values_ptr = (uint64_t __user *)(unsigned long)(arg->prop_values_ptr);
++	uint64_t __user *blob_values_ptr = (uint64_t __user *)(unsigned long)(arg->blob_values_ptr);
++	unsigned int copied_objs, copied_props, copied_blobs;
++	void *state;
++	int ret = 0;
++	unsigned int i, j;
++
++	if (arg->flags & ~DRM_MODE_ATOMIC_FLAGS)
++		return -EINVAL;
++
++	/* can't test and expect an event at the same time. */
++	if ((arg->flags & DRM_MODE_ATOMIC_TEST_ONLY) &&
++			(arg->flags & DRM_MODE_PAGE_FLIP_EVENT))
++		return -EINVAL;
++
++retry:
++	copied_objs = 0;
++	copied_props = 0;
++	copied_blobs = 0;
++
++	state = dev->driver->atomic_begin(dev, arg->flags);
++	if (IS_ERR(state)) {
++		ret = PTR_ERR(state);
++		goto out;
++	}
++
++	for (i = 0; i < arg->count_objs; i++) {
++		uint32_t obj_id, count_props;
++		struct drm_mode_object *obj;
++
++		if (get_user(obj_id, objs_ptr + copied_objs)) {
++			ret = -EFAULT;
++			goto out;
++		}
++
++		obj = drm_mode_object_find(dev, obj_id, DRM_MODE_OBJECT_ANY);
++		if (!obj || !obj->properties) {
++			ret = -ENOENT;
++			goto out;
++		}
++
++		if ((obj->type == DRM_MODE_OBJECT_CRTC) &&
++				(arg->flags & DRM_MODE_PAGE_FLIP_EVENT)) {
++			struct drm_pending_vblank_event *e =
++				create_vblank_event(dev, file_priv, arg->user_data);
++			if (!e) {
++				ret = -ENOMEM;
++				goto out;
++			}
++			ret = dev->driver->atomic_set_event(dev, state, obj, e);
++			if (ret) {
++				destroy_vblank_event(dev, file_priv, e);
++				goto out;
++			}
++		}
++
++		if (get_user(count_props, count_props_ptr + copied_objs)) {
++			ret = -EFAULT;
++			goto out;
++		}
++
++		copied_objs++;
++
++		for (j = 0; j < count_props; j++) {
++			uint32_t prop_id;
++			uint64_t prop_value;
++			struct drm_property *prop;
++			void *blob_data = NULL;
++
++			if (get_user(prop_id, props_ptr + copied_props)) {
++				ret = -EFAULT;
++				goto out;
++			}
++
++			if (!object_has_prop(obj, prop_id)) {
++				ret = -EINVAL;
++				goto out;
++			}
++
++			prop = drm_property_find(dev, prop_id);
++			if (!prop) {
++				ret = -ENOENT;
++				goto out;
++			}
++
++			if (get_user(prop_value, prop_values_ptr + copied_props)) {
++				ret = -EFAULT;
++				goto out;
++			}
++
++			if (!drm_property_change_is_valid(prop, prop_value)) {
++				ret = -EINVAL;
++				goto out;
++			}
++
++			if ((prop->flags & DRM_MODE_PROP_BLOB) && prop_value) {
++				uint64_t blob_ptr;
++
++				if (get_user(blob_ptr, blob_values_ptr + copied_blobs)) {
++					ret = -EFAULT;
++					goto out;
++				}
++
++				blob_data = kmalloc(prop_value, GFP_KERNEL);
++				if (!blob_data) {
++					ret = -ENOMEM;
++					goto out;
++				}
++
++				if (copy_from_user(blob_data, (void __user *)(unsigned long)blob_ptr, prop_value)) {
++					kfree(blob_data);
++					ret = -EFAULT;
++					goto out;
++				}
++			}
++
++			/* User space sends the blob pointer even if we
++			 * don't use it (length==0).
++			 */
++			if (prop->flags & DRM_MODE_PROP_BLOB)
++				copied_blobs++;
++
++			/* The driver will be in charge of blob_data from now on. */
++			ret = drm_mode_set_obj_prop(obj, state, prop,
++					prop_value, blob_data);
++			if (ret)
++				goto out;
++
++			copied_props++;
++		}
++	}
++
++	ret = dev->driver->atomic_check(dev, state);
++	if (ret)
++		goto out;
++
++	if (arg->flags & DRM_MODE_ATOMIC_TEST_ONLY)
++		goto out;
++
++	ret = dev->driver->atomic_commit(dev, state);
++
++ out:
++	dev->driver->atomic_end(dev, state);
++	if (ret == -EDEADLK)
++		goto retry;
++
++	return ret;
++}
+diff --git a/drivers/gpu/drm/drm_drv.c b/drivers/gpu/drm/drm_drv.c
+index 024157b..842feb2 100644
+--- a/drivers/gpu/drm/drm_drv.c
++++ b/drivers/gpu/drm/drm_drv.c
+@@ -166,6 +166,7 @@ static struct drm_ioctl_desc drm_ioctls[] = {
+ 	DRM_IOCTL_DEF(DRM_IOCTL_MODE_DESTROY_DUMB, drm_mode_destroy_dumb_ioctl, DRM_CONTROL_ALLOW|DRM_UNLOCKED),
+ 	DRM_IOCTL_DEF(DRM_IOCTL_MODE_OBJ_GETPROPERTIES, drm_mode_obj_get_properties_ioctl, DRM_CONTROL_ALLOW|DRM_UNLOCKED),
+ 	DRM_IOCTL_DEF(DRM_IOCTL_MODE_OBJ_SETPROPERTY, drm_mode_obj_set_property_ioctl, DRM_MASTER|DRM_CONTROL_ALLOW|DRM_UNLOCKED),
++	DRM_IOCTL_DEF(DRM_IOCTL_MODE_ATOMIC, drm_mode_atomic_ioctl, DRM_MASTER|DRM_CONTROL_ALLOW|DRM_UNLOCKED),
+ };
+ 
+ #define DRM_CORE_IOCTL_COUNT	ARRAY_SIZE( drm_ioctls )
+diff --git a/include/drm/drmP.h b/include/drm/drmP.h
+index 437c859..2980e7b 100644
+--- a/include/drm/drmP.h
++++ b/include/drm/drmP.h
+@@ -1139,6 +1139,12 @@ struct drm_pending_vblank_event {
+ 	struct drm_event_vblank event;
+ };
+ 
++struct drm_pending_atomic_event {
++	struct drm_pending_event base;
++	int pipe;
++	struct drm_event_atomic event;
++};
++
+ /**
+  * DRM device structure. This structure represent a complete card that
+  * may contain multiple heads.
+diff --git a/include/drm/drm_crtc.h b/include/drm/drm_crtc.h
+index 043ca1e..46dfa76 100644
+--- a/include/drm/drm_crtc.h
++++ b/include/drm/drm_crtc.h
+@@ -1416,6 +1416,8 @@ extern int drm_mode_obj_get_properties_ioctl(struct drm_device *dev, void *data,
+ 					     struct drm_file *file_priv);
+ extern int drm_mode_obj_set_property_ioctl(struct drm_device *dev, void *data,
+ 					   struct drm_file *file_priv);
++extern int drm_mode_atomic_ioctl(struct drm_device *dev,
++				 void *data, struct drm_file *file_priv);
+ 
+ extern void drm_fb_get_bpp_depth(uint32_t format, unsigned int *depth,
+ 				 int *bpp);
+diff --git a/include/uapi/drm/drm.h b/include/uapi/drm/drm.h
+index 8898238..6a1ac22 100644
+--- a/include/uapi/drm/drm.h
++++ b/include/uapi/drm/drm.h
+@@ -732,6 +732,7 @@ struct drm_prime_handle {
+ #define DRM_IOCTL_MODE_ADDFB2		DRM_IOWR(0xB8, struct drm_mode_fb_cmd2)
+ #define DRM_IOCTL_MODE_OBJ_GETPROPERTIES	DRM_IOWR(0xB9, struct drm_mode_obj_get_properties)
+ #define DRM_IOCTL_MODE_OBJ_SETPROPERTY	DRM_IOWR(0xBA, struct drm_mode_obj_set_property)
++#define DRM_IOCTL_MODE_ATOMIC		DRM_IOWR(0xBC, struct drm_mode_atomic)
+ 
+ /**
+  * Device specific ioctls should only be in their respective headers
+@@ -784,6 +785,17 @@ struct drm_event_vblank {
+ #define DRM_PRIME_CAP_IMPORT 0x1
+ #define DRM_PRIME_CAP_EXPORT 0x2
+ 
++struct drm_event_atomic {
++	struct drm_event base;
++	__u64 user_data;
++	__u32 tv_sec;
++	__u32 tv_usec;
++	__u32 sequence;
++	__u32 obj_id;
++	__u32 old_fb_id;
++	__u32 reserved;
++};
++
+ /* typedef area */
+ #ifndef __KERNEL__
+ typedef struct drm_clip_rect drm_clip_rect_t;
+diff --git a/include/uapi/drm/drm_mode.h b/include/uapi/drm/drm_mode.h
+index f1965aa..edd3cf2 100644
+--- a/include/uapi/drm/drm_mode.h
++++ b/include/uapi/drm/drm_mode.h
+@@ -484,7 +484,27 @@ struct drm_mode_destroy_dumb {
+ 	uint32_t handle;
+ };
+ 
++/* page-flip flags are valid, plus: */
++#define DRM_MODE_ATOMIC_TEST_ONLY 0x0100
+ #define DRM_MODE_ATOMIC_NONBLOCK  0x0200
+ #define DRM_MODE_ATOMIC_NOLOCK    0x8000  /* only used internally */
+ 
++#define DRM_MODE_ATOMIC_FLAGS (\
++		DRM_MODE_PAGE_FLIP_EVENT |\
++		DRM_MODE_PAGE_FLIP_ASYNC |\
++		DRM_MODE_ATOMIC_TEST_ONLY |\
++		DRM_MODE_ATOMIC_NONBLOCK)
++
++/* FIXME come up with some sane error reporting mechanism? */
++struct drm_mode_atomic {
++	__u32 flags;
++	__u32 count_objs;
++	__u64 objs_ptr;
++	__u64 count_props_ptr;
++	__u64 props_ptr;
++	__u64 prop_values_ptr;
++	__u64 blob_values_ptr;
++	__u64 user_data;
++};
++
+ #endif
+-- 
+1.8.3.2
+

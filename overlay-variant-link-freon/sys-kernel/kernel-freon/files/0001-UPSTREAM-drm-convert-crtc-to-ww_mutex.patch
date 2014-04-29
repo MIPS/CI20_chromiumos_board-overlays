@@ -1,0 +1,733 @@
+From 1caa546f1323d238bc45dd20f8fccc9367984880 Mon Sep 17 00:00:00 2001
+From: Rob Clark <robdclark@gmail.com>
+Date: Mon, 25 Nov 2013 09:47:26 -0500
+Subject: [PATCH 01/15] UPSTREAM: drm: convert crtc to ww_mutex
+
+For atomic, it will be quite convenient to not have to care so much
+about locking order.  And 'state' gives us a convenient place to stash a
+ww_ctx for any sort of update that needs to grab multiple crtc locks.
+
+Because we will want to eventually make locking even more fine grained
+(giving locks to planes, connectors, etc), split out drm_modeset_lock
+so that the atomic state won't eventually have to keep separate lists of
+locked planes/crtcs/etc.
+
+The state keeps track of which locks it has aquired, and for the benefit
+of NONBLOCK operations, supports transfering "locked" resources to
+driver worker/thread to complete the asynchronous state change.
+
+Signed-off-by: Rob Clark <robdclark@gmail.com>
+
+BUG=chromium:336809
+TEST=Tested on pit, no regressions noted
+
+Change-Id: I88ff4b4b78dcc3f65c4b688f7112178479efc410
+Signed-off-by: Sean Paul <seanpaul@chromium.org>
+---
+ drivers/gpu/drm/drm_atomic_helper.c  | 140 ++++++++++++++++++++++++++++++++++-
+ drivers/gpu/drm/drm_crtc.c           | 105 +++++++++++++++++++++++---
+ drivers/gpu/drm/i915/intel_display.c |  11 +--
+ drivers/gpu/drm/vmwgfx/vmwgfx_kms.c  |   8 +-
+ drivers/staging/omapdrm/omap_crtc.c  |  10 +--
+ include/drm/drmP.h                   |   5 --
+ include/drm/drm_atomic_helper.h      |  17 +++++
+ include/drm/drm_crtc.h               |  75 +++++++++++++++++--
+ include/uapi/drm/drm_mode.h          |   3 +
+ 9 files changed, 338 insertions(+), 36 deletions(-)
+
+diff --git a/drivers/gpu/drm/drm_atomic_helper.c b/drivers/gpu/drm/drm_atomic_helper.c
+index 46c67b8..8b37cf1 100644
+--- a/drivers/gpu/drm/drm_atomic_helper.c
++++ b/drivers/gpu/drm/drm_atomic_helper.c
+@@ -49,9 +49,14 @@ void *drm_atomic_helper_begin(struct drm_device *dev, uint32_t flags)
+ 	state = ptr;
+ 	ptr = &state[1];
+ 
++	ww_acquire_init(&state->ww_ctx, &crtc_ww_class);
++	INIT_LIST_HEAD(&state->locked);
++
++	mutex_init(&state->mutex);
+ 	kref_init(&state->refcount);
+ 	state->dev = dev;
+ 	state->flags = flags;
++
+ 	return state;
+ }
+ EXPORT_SYMBOL(drm_atomic_helper_begin);
+@@ -91,6 +96,103 @@ int drm_atomic_helper_check(struct drm_device *dev, void *state)
+ }
+ EXPORT_SYMBOL(drm_atomic_helper_check);
+ 
++/* Note that we drop and re-acquire the locks w/ ww_mutex directly,
++ * since we keep the crtc in our list with in_atomic == true.
++ */
++
++static void drop_locks(struct drm_atomic_helper_state *a,
++		struct ww_acquire_ctx *ww_ctx)
++{
++	struct drm_modeset_lock *lock;
++
++	mutex_lock(&a->mutex);
++	list_for_each_entry(lock, &a->locked, head)
++		ww_mutex_unlock(&lock->mutex);
++	mutex_unlock(&a->mutex);
++
++	ww_acquire_fini(ww_ctx);
++}
++
++static void grab_locks(struct drm_atomic_helper_state *a,
++		struct ww_acquire_ctx *ww_ctx)
++{
++	struct drm_modeset_lock *lock, *slow_locked, *contended;
++	int ret;
++
++	lock = slow_locked = contended = NULL;
++
++
++	ww_acquire_init(ww_ctx, &crtc_ww_class);
++
++	/*
++	 * We need to do proper rain^Hww dance.. another context
++	 * could sneak in a grab the lock in order to check
++	 * crtc->in_atomic, and we get -EDEADLK.  But the winner
++	 * will realize the mistake when it sees crtc->in_atomic
++	 * already set, and then drop lock and return -EBUSY.
++	 * So we just need to keep dancing until we win.
++	 */
++retry:
++	ret = 0;
++	list_for_each_entry(lock, &a->locked, head) {
++		if (lock == slow_locked) {
++			slow_locked = NULL;
++			continue;
++		}
++		contended = lock;
++		ret = ww_mutex_lock(&lock->mutex, ww_ctx);
++		if (ret)
++			goto fail;
++	}
++
++fail:
++	if (ret == -EDEADLK) {
++		/* we lost out in a seqno race, backoff, lock and retry.. */
++
++		list_for_each_entry(lock, &a->locked, head) {
++			if (lock == contended)
++				break;
++			ww_mutex_unlock(&lock->mutex);
++		}
++
++		if (slow_locked)
++			ww_mutex_unlock(&slow_locked->mutex);
++
++		ww_mutex_lock_slow(&contended->mutex, ww_ctx);
++		slow_locked = contended;
++		goto retry;
++	}
++	WARN_ON(ret);   /* if we get EALREADY then something is fubar */
++}
++
++static void commit_locks(struct drm_atomic_helper_state *a,
++		struct ww_acquire_ctx *ww_ctx)
++{
++	/* and properly release them (clear in_atomic, remove from list): */
++	mutex_lock(&a->mutex);
++	while (!list_empty(&a->locked)) {
++		struct drm_modeset_lock *lock;
++
++		lock = list_first_entry(&a->locked,
++				struct drm_modeset_lock, head);
++
++		drm_modeset_unlock(lock);
++	}
++	mutex_unlock(&a->mutex);
++	ww_acquire_fini(ww_ctx);
++	a->committed = true;
++}
++
++static int atomic_commit(struct drm_atomic_helper_state *a,
++		struct ww_acquire_ctx *ww_ctx)
++{
++	int ret = 0;
++
++	commit_locks(a, ww_ctx);
++
++	return ret;
++}
++
+ /**
+  * drm_atomic_helper_commit - commit state
+  * @dev: DRM device
+@@ -104,11 +206,26 @@ EXPORT_SYMBOL(drm_atomic_helper_check);
+  */
+ int drm_atomic_helper_commit(struct drm_device *dev, void *state)
+ {
+-	return 0;  /* for now */
++	struct drm_atomic_helper_state *a = state;
++	return atomic_commit(a, &a->ww_ctx);
+ }
+ EXPORT_SYMBOL(drm_atomic_helper_commit);
+ 
+ /**
++ * drm_atomic_helper_commit_unlocked - like drm_atomic_helper_commit
++ * but can be called back by driver in other thread.  Manages the lock
++ * transfer from initiating thread.
++ */
++int drm_atomic_helper_commit_unlocked(struct drm_device *dev, void *state)
++{
++	struct drm_atomic_helper_state *a = state;
++	struct ww_acquire_ctx ww_ctx;
++	grab_locks(a, &ww_ctx);
++	return atomic_commit(a, &ww_ctx);
++}
++EXPORT_SYMBOL(drm_atomic_helper_commit_unlocked);
++
++/**
+  * drm_atomic_helper_end - conclude the atomic update
+  * @dev: DRM device
+  * @state: the driver private state object
+@@ -117,15 +234,32 @@ EXPORT_SYMBOL(drm_atomic_helper_commit);
+  */
+ void drm_atomic_helper_end(struct drm_device *dev, void *state)
+ {
++	struct drm_atomic_helper_state *a = state;
++
++	/* if commit is happening from another thread, it will
++	 * block grabbing locks until we drop (and not set
++	 * a->committed until after), so this is not a race:
++	 */
++	if (!a->committed)
++		drop_locks(a, &a->ww_ctx);
++
+ 	drm_atomic_helper_state_unreference(state);
+ }
+ EXPORT_SYMBOL(drm_atomic_helper_end);
+ 
+ void _drm_atomic_helper_state_free(struct kref *kref)
+ {
+-	struct drm_atomic_helper_state *state =
++	struct drm_atomic_helper_state *a =
+ 		container_of(kref, struct drm_atomic_helper_state, refcount);
+-	kfree(state);
++
++	/* in case we haven't already: */
++	if (!a->committed) {
++		grab_locks(a, &a->ww_ctx);
++		commit_locks(a, &a->ww_ctx);
++	}
++
++	mutex_destroy(&a->mutex);
++	kfree(a);
+ }
+ EXPORT_SYMBOL(_drm_atomic_helper_state_free);
+ 
+diff --git a/drivers/gpu/drm/drm_crtc.c b/drivers/gpu/drm/drm_crtc.c
+index b8f93f5..c7d1a5a 100644
+--- a/drivers/gpu/drm/drm_crtc.c
++++ b/drivers/gpu/drm/drm_crtc.c
+@@ -36,6 +36,89 @@
+ #include <drm/drm_crtc.h>
+ #include <drm/drm_edid.h>
+ #include <drm/drm_fourcc.h>
++#include <drm/drm_atomic_helper.h>
++
++static int modeset_lock_state(struct drm_modeset_lock *lock,
++		struct drm_atomic_helper_state *a)
++{
++	int ret;
++
++	if (a->flags & DRM_MODE_ATOMIC_NOLOCK)
++		return 0;
++
++retry:
++	ret = ww_mutex_lock(&lock->mutex, &a->ww_ctx);
++	if (!ret) {
++		if (lock->atomic_pending) {
++			/* some other pending update with dropped locks */
++			ww_mutex_unlock(&lock->mutex);
++			if (a->flags & DRM_MODE_ATOMIC_NONBLOCK)
++				return -EBUSY;
++			wait_event(lock->event, !lock->atomic_pending);
++			goto retry;
++		}
++		lock->atomic_pending = true;
++		WARN_ON(!list_empty(&lock->head));
++		list_add(&lock->head, &a->locked);
++	} else if (ret == -EALREADY) {
++		/* we already hold the lock.. this is fine */
++		ret = 0;
++	}
++
++	return ret;
++}
++
++/**
++ * drm_modeset_lock - take modeset lock
++ * @lock: lock to take
++ * @state: atomic state
++ *
++ * If state is not NULL, then then it's acquire context is used
++ * and the lock does not need to be explicitly unlocked, it
++ * will be automatically unlocked when the atomic update is
++ * complete
++ */
++int drm_modeset_lock(struct drm_modeset_lock *lock, void *state)
++{
++	if (state)
++		return modeset_lock_state(lock, state);
++
++	ww_mutex_lock(&lock->mutex, NULL);
++	return 0;
++}
++EXPORT_SYMBOL(drm_modeset_lock);
++
++/**
++ * drm_modeset_lock_all_crtcs - helper to drm_modeset_lock() all CRTCs
++ */
++int drm_modeset_lock_all_crtcs(struct drm_device *dev, void *state)
++{
++	struct drm_mode_config *config = &dev->mode_config;
++	struct drm_crtc *crtc;
++	int ret = 0;
++
++	list_for_each_entry(crtc, &config->crtc_list, head) {
++		ret = drm_modeset_lock(&crtc->mutex, state);
++		if (ret)
++			return ret;
++	}
++
++	return 0;
++}
++EXPORT_SYMBOL(drm_modeset_lock_all_crtcs);
++
++/**
++ * drm_modeset_unlock - drop modeset lock
++ * @lock: lock to release
++ */
++void drm_modeset_unlock(struct drm_modeset_lock *lock)
++{
++	list_del_init(&lock->head);
++	lock->atomic_pending = false;
++	ww_mutex_unlock(&lock->mutex);
++	wake_up_all(&lock->event);
++}
++EXPORT_SYMBOL(drm_modeset_unlock);
+ 
+ /**
+  * drm_modeset_lock_all - take all modeset locks
+@@ -51,7 +134,7 @@ void drm_modeset_lock_all(struct drm_device *dev)
+ 	mutex_lock(&dev->mode_config.mutex);
+ 
+ 	list_for_each_entry(crtc, &dev->mode_config.crtc_list, head)
+-		mutex_lock_nest_lock(&crtc->mutex, &dev->mode_config.mutex);
++		drm_modeset_lock(&crtc->mutex, NULL);
+ }
+ EXPORT_SYMBOL(drm_modeset_lock_all);
+ 
+@@ -64,7 +147,7 @@ void drm_modeset_unlock_all(struct drm_device *dev)
+ 	struct drm_crtc *crtc;
+ 
+ 	list_for_each_entry(crtc, &dev->mode_config.crtc_list, head)
+-		mutex_unlock(&crtc->mutex);
++		drm_modeset_unlock(&crtc->mutex);
+ 
+ 	mutex_unlock(&dev->mode_config.mutex);
+ }
+@@ -79,7 +162,7 @@ void drm_warn_on_modeset_not_all_locked(struct drm_device *dev)
+ 	struct drm_crtc *crtc;
+ 
+ 	list_for_each_entry(crtc, &dev->mode_config.crtc_list, head)
+-		WARN_ON(!mutex_is_locked(&crtc->mutex));
++		WARN_ON(!drm_modeset_is_locked(&crtc->mutex));
+ 
+ 	WARN_ON(!mutex_is_locked(&dev->mode_config.mutex));
+ }
+@@ -596,6 +679,8 @@ void drm_framebuffer_remove(struct drm_framebuffer *fb)
+ }
+ EXPORT_SYMBOL(drm_framebuffer_remove);
+ 
++DEFINE_WW_CLASS(crtc_ww_class);
++
+ /**
+  * drm_crtc_init - Initialise a new CRTC object
+  * @dev: DRM device
+@@ -617,8 +702,8 @@ int drm_crtc_init(struct drm_device *dev, struct drm_crtc *crtc,
+ 	crtc->invert_dimensions = false;
+ 
+ 	drm_modeset_lock_all(dev);
+-	mutex_init(&crtc->mutex);
+-	mutex_lock_nest_lock(&crtc->mutex, &dev->mode_config.mutex);
++	drm_modeset_lock_init(&crtc->mutex);
++	drm_modeset_lock(&crtc->mutex, NULL);  /* dropped by _unlock_all() */
+ 
+ 	ret = drm_mode_object_get(dev, &crtc->base, DRM_MODE_OBJECT_CRTC);
+ 	if (ret)
+@@ -650,6 +735,8 @@ void drm_crtc_cleanup(struct drm_crtc *crtc)
+ 	kfree(crtc->gamma_store);
+ 	crtc->gamma_store = NULL;
+ 
++	drm_modeset_lock_fini(&crtc->mutex);
++
+ 	drm_mode_object_put(dev, &crtc->base);
+ 	list_del(&crtc->head);
+ 	dev->mode_config.num_crtc--;
+@@ -2311,7 +2398,7 @@ int drm_mode_cursor_ioctl(struct drm_device *dev,
+ 	}
+ 	crtc = obj_to_crtc(obj);
+ 
+-	mutex_lock(&crtc->mutex);
++	drm_modeset_lock(&crtc->mutex, NULL);
+ 	if (req->flags & DRM_MODE_CURSOR_BO) {
+ 		if (!crtc->funcs->cursor_set) {
+ 			ret = -ENXIO;
+@@ -2331,7 +2418,7 @@ int drm_mode_cursor_ioctl(struct drm_device *dev,
+ 		}
+ 	}
+ out:
+-	mutex_unlock(&crtc->mutex);
++	drm_modeset_unlock(&crtc->mutex);
+ 
+ 	return ret;
+ }
+@@ -3856,7 +3943,7 @@ int drm_mode_page_flip_ioctl(struct drm_device *dev,
+ 		return -EINVAL;
+ 	crtc = obj_to_crtc(obj);
+ 
+-	mutex_lock(&crtc->mutex);
++	drm_modeset_lock(&crtc->mutex, NULL);
+ 	if (crtc->fb == NULL) {
+ 		/* The framebuffer is currently unbound, presumably
+ 		 * due to a hotplug event, that userspace has not
+@@ -3938,7 +4025,7 @@ out:
+ 		drm_framebuffer_unreference(fb);
+ 	if (old_fb)
+ 		drm_framebuffer_unreference(old_fb);
+-	mutex_unlock(&crtc->mutex);
++	drm_modeset_unlock(&crtc->mutex);
+ 
+ 	return ret;
+ }
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index 5f5fa615..73f6b06 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -6527,7 +6527,7 @@ bool intel_get_load_detect_pipe(struct drm_connector *connector,
+ 	if (encoder->crtc) {
+ 		crtc = encoder->crtc;
+ 
+-		mutex_lock(&crtc->mutex);
++		drm_modeset_lock(&crtc->mutex, NULL);
+ 
+ 		old->dpms_mode = connector->dpms;
+ 		old->load_detect_temp = false;
+@@ -6558,7 +6558,7 @@ bool intel_get_load_detect_pipe(struct drm_connector *connector,
+ 		return false;
+ 	}
+ 
+-	mutex_lock(&crtc->mutex);
++	drm_modeset_lock(&crtc->mutex, NULL);
+ 	intel_encoder->new_crtc = to_intel_crtc(crtc);
+ 	to_intel_connector(connector)->new_encoder = intel_encoder;
+ 
+@@ -6586,7 +6586,7 @@ bool intel_get_load_detect_pipe(struct drm_connector *connector,
+ 		DRM_DEBUG_KMS("reusing fbdev for load-detection framebuffer\n");
+ 	if (IS_ERR(fb)) {
+ 		DRM_DEBUG_KMS("failed to allocate framebuffer for load-detection\n");
+-		mutex_unlock(&crtc->mutex);
++		drm_modeset_unlock(&crtc->mutex);
+ 		return false;
+ 	}
+ 
+@@ -6594,7 +6594,7 @@ bool intel_get_load_detect_pipe(struct drm_connector *connector,
+ 		DRM_DEBUG_KMS("failed to set mode on load-detect pipe\n");
+ 		if (old->release_fb)
+ 			old->release_fb->funcs->destroy(old->release_fb);
+-		mutex_unlock(&crtc->mutex);
++		drm_modeset_unlock(&crtc->mutex);
+ 		return false;
+ 	}
+ 
+@@ -6625,6 +6625,7 @@ void intel_release_load_detect_pipe(struct drm_connector *connector,
+ 			drm_framebuffer_unreference(old->release_fb);
+ 		}
+ 
++		drm_modeset_unlock(&crtc->mutex);
+ 		return;
+ 	}
+ 
+@@ -6632,7 +6633,7 @@ void intel_release_load_detect_pipe(struct drm_connector *connector,
+ 	if (old->dpms_mode != DRM_MODE_DPMS_ON)
+ 		connector->funcs->dpms(connector, old->dpms_mode);
+ 
+-	mutex_unlock(&crtc->mutex);
++	drm_modeset_unlock(&crtc->mutex);
+ }
+ 
+ /* Returns the clock of the currently programmed mode of the given pipe. */
+diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c b/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c
+index 2f112af..384e8b5 100644
+--- a/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c
++++ b/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c
+@@ -187,7 +187,7 @@ int vmw_du_crtc_cursor_set(struct drm_crtc *crtc, struct drm_file *file_priv,
+ 	 * can do this since the caller in the drm core doesn't check anything
+ 	 * which is protected by any looks.
+ 	 */
+-	mutex_unlock(&crtc->mutex);
++	drm_modeset_unlock(&crtc->mutex);
+ 	drm_modeset_lock_all(dev_priv->dev);
+ 
+ 	/* A lot of the code assumes this */
+@@ -250,7 +250,7 @@ int vmw_du_crtc_cursor_set(struct drm_crtc *crtc, struct drm_file *file_priv,
+ 	ret = 0;
+ out:
+ 	drm_modeset_unlock_all(dev_priv->dev);
+-	mutex_lock(&crtc->mutex);
++	drm_modeset_lock(&crtc->mutex, NULL);
+ 
+ 	return ret;
+ }
+@@ -271,7 +271,7 @@ int vmw_du_crtc_cursor_move(struct drm_crtc *crtc, int x, int y)
+ 	 * can do this since the caller in the drm core doesn't check anything
+ 	 * which is protected by any looks.
+ 	 */
+-	mutex_unlock(&crtc->mutex);
++	drm_modeset_unlock(&crtc->mutex);
+ 	drm_modeset_lock_all(dev_priv->dev);
+ 
+ 	vmw_cursor_update_position(dev_priv, shown,
+@@ -279,7 +279,7 @@ int vmw_du_crtc_cursor_move(struct drm_crtc *crtc, int x, int y)
+ 				   du->cursor_y + du->hotspot_y);
+ 
+ 	drm_modeset_unlock_all(dev_priv->dev);
+-	mutex_lock(&crtc->mutex);
++	drm_modeset_lock(&crtc->mutex, NULL);
+ 
+ 	return 0;
+ }
+diff --git a/drivers/staging/omapdrm/omap_crtc.c b/drivers/staging/omapdrm/omap_crtc.c
+index ceae4e7..8199e18 100644
+--- a/drivers/staging/omapdrm/omap_crtc.c
++++ b/drivers/staging/omapdrm/omap_crtc.c
+@@ -278,13 +278,13 @@ static void page_flip_worker(struct work_struct *work)
+ 	struct drm_display_mode *mode = &crtc->mode;
+ 	struct drm_gem_object *bo;
+ 
+-	drm_modeset_lock_all(dev);
++	drm_modeset_lock(&crtc->mutex, NULL);
+ 	omap_plane_mode_set(omap_crtc->plane, crtc, crtc->fb,
+ 			0, 0, mode->hdisplay, mode->vdisplay,
+ 			crtc->x << 16, crtc->y << 16,
+ 			mode->hdisplay << 16, mode->vdisplay << 16,
+ 			vblank_cb, crtc);
+-	drm_modeset_unlock_all(dev);
++	drm_modeset_unlock(&crtc->mutex);
+ 
+ 	bo = omap_framebuffer_bo(crtc->fb, 0);
+ 	drm_gem_object_unreference_unlocked(bo);
+@@ -418,7 +418,7 @@ static void apply_worker(struct work_struct *work)
+ 	 * the callbacks and list modification all serialized
+ 	 * with respect to modesetting ioctls from userspace.
+ 	 */
+-	drm_modeset_lock_all(dev);
++	drm_modeset_lock(&crtc->mutex, NULL);
+ 	dispc_runtime_get();
+ 
+ 	/*
+@@ -463,7 +463,7 @@ static void apply_worker(struct work_struct *work)
+ 
+ out:
+ 	dispc_runtime_put();
+-	drm_modeset_unlock_all(dev);
++	drm_modeset_unlock(&crtc->mutex);
+ }
+ 
+ int omap_crtc_apply(struct drm_crtc *crtc,
+@@ -472,7 +472,7 @@ int omap_crtc_apply(struct drm_crtc *crtc,
+ 	struct omap_crtc *omap_crtc = to_omap_crtc(crtc);
+ 	struct drm_device *dev = crtc->dev;
+ 
+-	WARN_ON(!mutex_is_locked(&dev->mode_config.mutex));
++	WARN_ON(!drm_modeset_is_locked(&crtc->mutex));
+ 
+ 	/* no need to queue it again if it is already queued: */
+ 	if (apply->queued)
+diff --git a/include/drm/drmP.h b/include/drm/drmP.h
+index eda5d18..437c859 100644
+--- a/include/drm/drmP.h
++++ b/include/drm/drmP.h
+@@ -1364,11 +1364,6 @@ static inline int drm_device_is_unplugged(struct drm_device *dev)
+ 	return ret;
+ }
+ 
+-static inline bool drm_modeset_is_locked(struct drm_device *dev)
+-{
+-	return mutex_is_locked(&dev->mode_config.mutex);
+-}
+-
+ /******************************************************************/
+ /** \name Internal function definitions */
+ /*@{*/
+diff --git a/include/drm/drm_atomic_helper.h b/include/drm/drm_atomic_helper.h
+index e70cd7b..d77f00e 100644
+--- a/include/drm/drm_atomic_helper.h
++++ b/include/drm/drm_atomic_helper.h
+@@ -73,6 +73,7 @@ int drm_atomic_helper_set_event(struct drm_device *dev,
+ 		struct drm_pending_vblank_event *event);
+ int drm_atomic_helper_check(struct drm_device *dev, void *state);
+ int drm_atomic_helper_commit(struct drm_device *dev, void *state);
++int drm_atomic_helper_commit_unlocked(struct drm_device *dev, void *state);
+ void drm_atomic_helper_end(struct drm_device *dev, void *state);
+ 
+ /**
+@@ -82,6 +83,22 @@ struct drm_atomic_helper_state {
+ 	struct kref refcount;
+ 	struct drm_device *dev;
+ 	uint32_t flags;
++
++	bool committed;
++
++	struct ww_acquire_ctx ww_ctx;
++	/* list of 'struct drm_modeset_lock': */
++	struct list_head locked;
++
++	/* currently simply for protecting against 'locked' list manipulation
++	 * between original thread calling atomic->end() and driver thread
++	 * calling back drm_atomic_helper_commit_unlocked().
++	 *
++	 * Other spots are sufficiently synchronized by virtue of holding
++	 * the lock's ww_mutex.  But during the lock/resource hand-over to the
++	 * driver thread (drop_locks()/grab_locks()), we cannot rely on this.
++	 */
++	struct mutex mutex;
+ };
+ 
+ static inline void
+diff --git a/include/drm/drm_crtc.h b/include/drm/drm_crtc.h
+index 5fdb8b4..b2ccad1 100644
+--- a/include/drm/drm_crtc.h
++++ b/include/drm/drm_crtc.h
+@@ -27,6 +27,7 @@
+ 
+ #include <linux/i2c.h>
+ #include <linux/spinlock.h>
++#include <linux/ww_mutex.h>
+ #include <linux/types.h>
+ #include <linux/idr.h>
+ #include <linux/fb.h>
+@@ -300,6 +301,73 @@ struct drm_property {
+ 	struct list_head enum_blob_list;
+ };
+ 
++/**
++ * drm_modeset_lock - used for locking modeset resources.
++ * @mutex: resource locking
++ * @atomic_pending: is this resource part of a still-pending
++ *    atomic update
++ * @head: used to hold it's place on state->locked list when
++ *    part of an atomic update
++ *
++ * Used for locking CRTCs and other modeset resources.
++ */
++struct drm_modeset_lock {
++	/**
++	 * modeset lock
++	 */
++	struct ww_mutex mutex;
++
++	/**
++	 * Are we busy (pending asynchronous/NONBLOCK update)?  Any further
++	 * asynchronous update will return -EBUSY if it also needs to acquire
++	 * this lock.  While a synchronous update will block until the pending
++	 * async update completes.
++	 *
++	 * Drivers must ensure the update is completed before sending vblank
++	 * event to userspace.  Typically this just means don't send event
++	 * before drm_atomic_helper_commit_unlocked() returns.
++	 */
++	bool atomic_pending;
++
++	/**
++	 * Resources that are locked as part of an atomic update are added
++	 * to a list (so we know what to unlock at the end).
++	 */
++	struct list_head head;
++
++	/**
++	 * For waiting on atomic_pending locks, if not a NONBLOCK operation.
++	 */
++	wait_queue_head_t event;
++};
++
++extern struct ww_class crtc_ww_class;
++
++static inline void drm_modeset_lock_init(struct drm_modeset_lock *lock)
++{
++	ww_mutex_init(&lock->mutex, &crtc_ww_class);
++	INIT_LIST_HEAD(&lock->head);
++	init_waitqueue_head(&lock->event);
++}
++
++static inline void drm_modeset_lock_fini(struct drm_modeset_lock *lock)
++{
++	WARN_ON(!list_empty(&lock->head));
++}
++
++static inline bool drm_modeset_is_locked(struct drm_modeset_lock *lock)
++{
++	return ww_mutex_is_locked(&lock->mutex);
++}
++
++int drm_modeset_lock(struct drm_modeset_lock *lock, void *state);
++int drm_modeset_lock_all_crtcs(struct drm_device *dev, void *state);
++void drm_modeset_unlock(struct drm_modeset_lock *lock);
++
++void drm_modeset_lock_all(struct drm_device *dev);
++void drm_modeset_unlock_all(struct drm_device *dev);
++void drm_warn_on_modeset_not_all_locked(struct drm_device *dev);
++
+ struct drm_crtc;
+ struct drm_connector;
+ struct drm_encoder;
+@@ -373,6 +441,7 @@ struct drm_crtc_funcs {
+  * drm_crtc - central CRTC control structure
+  * @dev: parent DRM device
+  * @head: list management
++ * @mutex: per-CRTC locking
+  * @base: base KMS object for ID tracking etc.
+  * @enabled: is this CRTC enabled?
+  * @mode: current mode timings
+@@ -405,7 +474,7 @@ struct drm_crtc {
+ 	 * state, ...) and a write lock for everything which can be update
+ 	 * without a full modeset (fb, cursor data, ...)
+ 	 */
+-	struct mutex mutex;
++	struct drm_modeset_lock mutex;
+ 
+ 	struct drm_mode_object base;
+ 
+@@ -929,10 +998,6 @@ struct drm_prop_enum_list {
+ 	char *name;
+ };
+ 
+-extern void drm_modeset_lock_all(struct drm_device *dev);
+-extern void drm_modeset_unlock_all(struct drm_device *dev);
+-extern void drm_warn_on_modeset_not_all_locked(struct drm_device *dev);
+-
+ extern int drm_crtc_init(struct drm_device *dev,
+ 			 struct drm_crtc *crtc,
+ 			 const struct drm_crtc_funcs *funcs);
+diff --git a/include/uapi/drm/drm_mode.h b/include/uapi/drm/drm_mode.h
+index fbfd532..6fe6706 100644
+--- a/include/uapi/drm/drm_mode.h
++++ b/include/uapi/drm/drm_mode.h
+@@ -469,4 +469,7 @@ struct drm_mode_destroy_dumb {
+ 	uint32_t handle;
+ };
+ 
++#define DRM_MODE_ATOMIC_NONBLOCK  0x0200
++#define DRM_MODE_ATOMIC_NOLOCK    0x8000  /* only used internally */
++
+ #endif
+-- 
+1.8.3.2
+

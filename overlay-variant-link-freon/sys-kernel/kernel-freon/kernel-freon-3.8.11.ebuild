@@ -22,10 +22,9 @@ RDEPEND="${DEPEND}"
 
 src_prepare() {
 	cros-workon_src_prepare
-	#epatch "${FILESDIR}"/*.patch
+	epatch ${FILESDIR}/*.patch
 }
 
 src_configure() {
-	#CHROMEOS_KERNEL_CONFIG="${FILESDIR}/config"
 	cros-kernel2_src_configure
 }

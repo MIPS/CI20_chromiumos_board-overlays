@@ -1,0 +1,24 @@
+From 61eb01eb50c68b36cc6666a76cfd46c51fc68119 Mon Sep 17 00:00:00 2001
+From: Albert Chaulk <achaulk@chromium.org>
+Date: Tue, 6 May 2014 17:20:17 -0400
+Subject: [PATCH 15/15] Fix double-lock-release bug in the intel driver
+
+Change-Id: I89a29e1442a4ca97626b6bc2cb0ed7496b786923
+---
+ drivers/gpu/drm/i915/intel_fb.c | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/drivers/gpu/drm/i915/intel_fb.c b/drivers/gpu/drm/i915/intel_fb.c
+index 9e7f216..4502175 100644
+--- a/drivers/gpu/drm/i915/intel_fb.c
++++ b/drivers/gpu/drm/i915/intel_fb.c
+@@ -288,6 +288,4 @@ void intel_fb_restore_mode(struct drm_device *dev)
+ 	/* Be sure to shut off any planes that may be active */
+ 	list_for_each_entry(plane, &config->plane_list, head)
+ 		plane->funcs->disable_plane(plane);
+-
+-	drm_modeset_unlock_all(dev);
+ }
+-- 
+1.8.3.2
+
