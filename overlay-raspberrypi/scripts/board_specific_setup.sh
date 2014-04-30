@@ -47,3 +47,7 @@ board_setup() {
   install_raspberrypi_bootloader "$1"
   install_hybrid_mbr "$1"
 }
+
+skip_blacklist_check=1
+skip_test_build_root=1
+skip_test_image_content=1
