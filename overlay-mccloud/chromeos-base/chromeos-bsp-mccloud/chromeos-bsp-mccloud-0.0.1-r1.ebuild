@@ -1,0 +1,1 @@
+chromeos-bsp-mccloud-0.0.1.ebuild
