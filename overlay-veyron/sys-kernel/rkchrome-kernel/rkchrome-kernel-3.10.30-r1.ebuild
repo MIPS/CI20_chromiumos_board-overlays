@@ -1,0 +1,1 @@
+rkchrome-kernel-3.10.30.ebuild
