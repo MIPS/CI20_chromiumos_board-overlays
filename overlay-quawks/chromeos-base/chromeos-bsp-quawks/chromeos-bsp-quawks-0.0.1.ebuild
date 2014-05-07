@@ -10,11 +10,10 @@ DESCRIPTION="Quawks private bsp (meta package to pull in driver/tool deps)"
 LICENSE="BSD-Google"
 SLOT="0"
 KEYWORDS="-* amd64 x86"
-IUSE="-pcserial"
+IUSE=""
 
 RDEPEND="
 	chromeos-base/ec-utils
-	pcserial? ( chromeos-base/serial-tty )
 	sys-kernel/linux-firmware
 	media-gfx/ply-image
 "
