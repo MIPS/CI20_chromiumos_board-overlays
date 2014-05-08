@@ -1,4 +1,5 @@
 KERNEL=="knvmap", GROUP="video"
+KERNEL=="nvhdcp1", GROUP="video"
 KERNEL=="nvhost-as-gpu", GROUP="video"
 KERNEL=="nvhost-ctrl", GROUP="video"
 KERNEL=="nvhost-ctrl-gpu", GROUP="video"
