@@ -44,4 +44,8 @@ src_install() {
 	insinto "/usr/share/power_manager/board_specific"
 	doins "${FILESDIR}/min_visible_backlight_level"
 	doins "${FILESDIR}/wakeup_input_device_names"
+
+	# Install upstart script for setting CPU governors.
+	insinto "/etc/init"
+	doins "${FILESDIR}/tegra_governors.conf"
 }
