@@ -16,7 +16,7 @@ IUSE=""
 S=${WORKDIR}
 
 src_install() {
-	local sover='19.012'
+	local sover='19.013'
 
 	insinto /lib/firmware
 	doins lib/firmware/nvavp_os_0ff00000.bin
@@ -30,6 +30,7 @@ src_install() {
 	doins lib/firmware/tegra12x/gpccs.bin
 	doins lib/firmware/tegra12x/fecs.bin
 
+	dolib.so usr/lib/libhdcp_up.so
 	dolib.so usr/lib/libnvapputil.so
 	dolib.so usr/lib/libnvavp.so
 	dolib.so usr/lib/libnvdc.so
@@ -70,6 +71,7 @@ src_install() {
 	dolib.so usr/lib/libnvtvmr.so
 	dolib.so usr/lib/libnvwinsys.so
 	dolib.so usr/lib/libtegrav4l2.so
+	dolib.so usr/lib/libtsechdcp.so
 
 	udev_dorules "${FILESDIR}"/51-nvrm.rules
 }
