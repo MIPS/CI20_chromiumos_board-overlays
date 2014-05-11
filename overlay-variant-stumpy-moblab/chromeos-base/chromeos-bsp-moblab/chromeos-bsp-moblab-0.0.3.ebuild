@@ -20,6 +20,7 @@ RDEPEND="
 	chromeos-base/openssh-server-init
 	chromeos-base/jabra-vold
 	net-misc/dhcp
+	net-misc/rsync
 "
 
 # Chromium OS Autotest Server and Devserver Deps.
