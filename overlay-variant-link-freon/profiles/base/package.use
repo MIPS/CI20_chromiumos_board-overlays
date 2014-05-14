@@ -1,2 +1,21 @@
-media-libs/mesa shared-glapi gles2 egl gbm
+app-misc/utouch-evemu -X
+chromeos-base/ascender_to_license -X
 chromeos-base/chromeos-login -X
+chromeos-base/crosh -X
+chromeos-base/inputcontrol -X
+chromeos-base/ja-motoyafonts -X
+chromeos-base/userfeedback -X
+media-fonts/dejavu -X
+media-fonts/my-padauk -X
+media-fonts/sil-abyssinica -X
+media-fonts/tibt-jomolhari -X
+media-gfx/imagemagick -X
+media-libs/freetype -X
+media-libs/mesa shared-glapi gles2 egl gbm
+sys-power/powertop -X
+sys-process/psmisc -X
+virtual/target-chromium-os -X
+virtual/target-chromium-os-dev -X
+virtual/target-chromium-os-test -X
+x11-libs/cairo -X
+x11-libs/pango -X
