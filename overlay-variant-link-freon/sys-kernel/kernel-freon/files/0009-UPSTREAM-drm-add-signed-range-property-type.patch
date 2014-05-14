@@ -1,17 +1,23 @@
-From 355ee266b5e2086e60590d1caddcaae8ce42a2e3 Mon Sep 17 00:00:00 2001
+From b36ba44e9aa32e6881cef669a68d6e0441c5d524 Mon Sep 17 00:00:00 2001
 From: Rob Clark <robdclark@gmail.com>
-Date: Mon, 25 Nov 2013 09:47:28 -0500
-Subject: [PATCH 03/15] UPSTREAM: drm: add signed-range property type
+Date: Wed, 12 Sep 2012 22:22:31 -0500
+Subject: [PATCH 09/18] UPSTREAM: drm: add signed-range property type
 
 Like range, but values are signed.
 
 Signed-off-by: Rob Clark <robdclark@gmail.com>
 
 BUG=chromium:336809
-TEST=Tested on pit, no regressions noted
+TEST=Tested on snow & peppy
 
-Change-Id: I19d49dba5c9a55396648706e05769bd6a5bbbbb0
+(cherry picked from commit efd2d0787f9dc930b4d64805af98541d543df543)
 Signed-off-by: Sean Paul <seanpaul@chromium.org>
+
+Conflicts:
+	drivers/gpu/drm/drm_crtc.c
+	include/drm/drm_crtc.h
+
+Change-Id: I6ee0af62d601881e4840a85b8c85f028cb8b12a5
 ---
  drivers/gpu/drm/drm_crtc.c  | 29 +++++++++++++++++++++++++----
  include/drm/drm_crtc.h      | 12 ++++++++++++
@@ -19,10 +25,10 @@ Signed-off-by: Sean Paul <seanpaul@chromium.org>
  3 files changed, 38 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/gpu/drm/drm_crtc.c b/drivers/gpu/drm/drm_crtc.c
-index 38a1124..12fcfec 100644
+index c427d16..b286ea3 100644
 --- a/drivers/gpu/drm/drm_crtc.c
 +++ b/drivers/gpu/drm/drm_crtc.c
-@@ -3179,14 +3179,12 @@ struct drm_property *drm_property_create_bitmask(struct drm_device *dev,
+@@ -3225,14 +3225,12 @@ struct drm_property *drm_property_create_bitmask(struct drm_device *dev,
  }
  EXPORT_SYMBOL(drm_property_create_bitmask);
  
@@ -39,7 +45,7 @@ index 38a1124..12fcfec 100644
  	property = drm_property_create(dev, flags, name, 2);
  	if (!property)
  		return NULL;
-@@ -3196,8 +3194,25 @@ struct drm_property *drm_property_create_range(struct drm_device *dev, int flags
+@@ -3242,8 +3240,25 @@ struct drm_property *drm_property_create_range(struct drm_device *dev, int flags
  
  	return property;
  }
@@ -65,7 +71,7 @@ index 38a1124..12fcfec 100644
  struct drm_property *drm_property_create_object(struct drm_device *dev,
  					 int flags, const char *name, uint32_t type)
  {
-@@ -3539,6 +3554,12 @@ static bool drm_property_change_is_valid(struct drm_property *property,
+@@ -3585,6 +3600,12 @@ static bool drm_property_change_is_valid(struct drm_property *property,
  		if (value < property->values[0] || value > property->values[1])
  			return false;
  		return true;
@@ -79,11 +85,11 @@ index 38a1124..12fcfec 100644
  		int i;
  		uint64_t valid_mask = 0;
 diff --git a/include/drm/drm_crtc.h b/include/drm/drm_crtc.h
-index 73cc668..0309de6 100644
+index e3a7c32..18682e1 100644
 --- a/include/drm/drm_crtc.h
 +++ b/include/drm/drm_crtc.h
-@@ -64,6 +64,15 @@ struct drm_object_properties {
- 	uint64_t values[DRM_OBJECT_MAX_PROPERTY];
+@@ -114,6 +114,15 @@ enum drm_mode_status {
+     MODE_ERROR	= -1	/* error condition */
  };
  
 +static inline int64_t U642I64(uint64_t val)
@@ -95,10 +101,10 @@ index 73cc668..0309de6 100644
 +	return (uint64_t)*((uint64_t *)&val);
 +}
 +
- /*
-  * Note on terminology:  here, for brevity and convenience, we refer to connector
-  * control chips as 'CRTCs'.  They can control any type of connector, VGA, LVDS,
-@@ -1141,6 +1150,9 @@ struct drm_property *drm_property_create_bitmask(struct drm_device *dev,
+ #define DRM_MODE_TYPE_CLOCK_CRTC_C (DRM_MODE_TYPE_CLOCK_C | \
+ 				    DRM_MODE_TYPE_CRTC_C)
+ 
+@@ -1196,6 +1205,9 @@ struct drm_property *drm_property_create_bitmask(struct drm_device *dev,
  struct drm_property *drm_property_create_range(struct drm_device *dev, int flags,
  					 const char *name,
  					 uint64_t min, uint64_t max);

@@ -1,27 +1,33 @@
-From 95a5ca4d6254761781c32473a3e95f8214cced9c Mon Sep 17 00:00:00 2001
+From 979138317a00d656292fc6e8bfcaf0f3064280ce Mon Sep 17 00:00:00 2001
 From: Rob Clark <robdclark@gmail.com>
-Date: Mon, 25 Nov 2013 09:47:29 -0500
-Subject: [PATCH 04/15] UPSTREAM: drm: helpers to find mode objects
+Date: Sat, 5 Oct 2013 16:36:52 -0400
+Subject: [PATCH 10/18] UPSTREAM: drm: helpers to find mode objects
 
 Add a few more useful helpers to find mode objects.
 
 Signed-off-by: Rob Clark <robdclark@gmail.com>
 
 BUG=chromium:336809
-TEST=Tested on pit, no regressions noted
+TEST=Tested on snow & peppy
 
-Change-Id: I4e435db3ba7bdd132fae52ca734e8e8f979b57fd
+(cherry picked from commit a77d54322f86e5ae718ee7143a5bb9dfd8d121d5)
 Signed-off-by: Sean Paul <seanpaul@chromium.org>
+
+Conflicts:
+	drivers/gpu/drm/drm_crtc.c
+	include/drm/drm_crtc.h
+
+Change-Id: I3826e799ff88d4441ffc44851a181c234cf3c8a9
 ---
  drivers/gpu/drm/drm_crtc.c | 113 +++++++++++++++------------------------------
- include/drm/drm_crtc.h     |  50 ++++++++++++++++++++
- 2 files changed, 88 insertions(+), 75 deletions(-)
+ include/drm/drm_crtc.h     |  33 +++++++++++++
+ 2 files changed, 71 insertions(+), 75 deletions(-)
 
 diff --git a/drivers/gpu/drm/drm_crtc.c b/drivers/gpu/drm/drm_crtc.c
-index 12fcfec..7b87de5 100644
+index b286ea3..e5c784e 100644
 --- a/drivers/gpu/drm/drm_crtc.c
 +++ b/drivers/gpu/drm/drm_crtc.c
-@@ -1716,7 +1716,6 @@ int drm_mode_getcrtc(struct drm_device *dev,
+@@ -1709,7 +1709,6 @@ int drm_mode_getcrtc(struct drm_device *dev,
  {
  	struct drm_mode_crtc *crtc_resp = data;
  	struct drm_crtc *crtc;
@@ -29,7 +35,7 @@ index 12fcfec..7b87de5 100644
  	int ret = 0;
  
  	if (!drm_core_check_feature(dev, DRIVER_MODESET))
-@@ -1724,13 +1723,11 @@ int drm_mode_getcrtc(struct drm_device *dev,
+@@ -1717,13 +1716,11 @@ int drm_mode_getcrtc(struct drm_device *dev,
  
  	drm_modeset_lock_all(dev);
  
@@ -46,7 +52,7 @@ index 12fcfec..7b87de5 100644
  
  	crtc_resp->x = crtc->x;
  	crtc_resp->y = crtc->y;
-@@ -1771,7 +1768,6 @@ int drm_mode_getconnector(struct drm_device *dev, void *data,
+@@ -1764,7 +1761,6 @@ int drm_mode_getconnector(struct drm_device *dev, void *data,
  			  struct drm_file *file_priv)
  {
  	struct drm_mode_get_connector *out_resp = data;
@@ -54,7 +60,7 @@ index 12fcfec..7b87de5 100644
  	struct drm_connector *connector;
  	struct drm_display_mode *mode;
  	int mode_count = 0;
-@@ -1795,13 +1791,11 @@ int drm_mode_getconnector(struct drm_device *dev, void *data,
+@@ -1788,13 +1784,11 @@ int drm_mode_getconnector(struct drm_device *dev, void *data,
  
  	mutex_lock(&dev->mode_config.mutex);
  
@@ -71,7 +77,7 @@ index 12fcfec..7b87de5 100644
  
  	props_count = connector->properties.count;
  
-@@ -1899,7 +1893,6 @@ int drm_mode_getencoder(struct drm_device *dev, void *data,
+@@ -1892,7 +1886,6 @@ int drm_mode_getencoder(struct drm_device *dev, void *data,
  			struct drm_file *file_priv)
  {
  	struct drm_mode_get_encoder *enc_resp = data;
@@ -79,7 +85,7 @@ index 12fcfec..7b87de5 100644
  	struct drm_encoder *encoder;
  	int ret = 0;
  
-@@ -1907,13 +1900,11 @@ int drm_mode_getencoder(struct drm_device *dev, void *data,
+@@ -1900,13 +1893,11 @@ int drm_mode_getencoder(struct drm_device *dev, void *data,
  		return -EINVAL;
  
  	drm_modeset_lock_all(dev);
@@ -96,7 +102,7 @@ index 12fcfec..7b87de5 100644
  
  	if (encoder->crtc)
  		enc_resp->crtc_id = encoder->crtc->base.id;
-@@ -1988,7 +1979,6 @@ int drm_mode_getplane(struct drm_device *dev, void *data,
+@@ -1995,7 +1986,6 @@ int drm_mode_getplane(struct drm_device *dev, void *data,
  			struct drm_file *file_priv)
  {
  	struct drm_mode_get_plane *plane_resp = data;
@@ -104,7 +110,7 @@ index 12fcfec..7b87de5 100644
  	struct drm_plane *plane;
  	uint32_t __user *format_ptr;
  	int ret = 0;
-@@ -1997,13 +1987,11 @@ int drm_mode_getplane(struct drm_device *dev, void *data,
+@@ -2004,13 +1994,11 @@ int drm_mode_getplane(struct drm_device *dev, void *data,
  		return -EINVAL;
  
  	drm_modeset_lock_all(dev);
@@ -120,7 +126,7 @@ index 12fcfec..7b87de5 100644
  
  	if (plane->crtc)
  		plane_resp->crtc_id = plane->crtc->base.id;
-@@ -2053,7 +2041,6 @@ int drm_mode_setplane(struct drm_device *dev, void *data,
+@@ -2060,7 +2048,6 @@ int drm_mode_setplane(struct drm_device *dev, void *data,
  			struct drm_file *file_priv)
  {
  	struct drm_mode_set_plane *plane_req = data;
@@ -128,7 +134,7 @@ index 12fcfec..7b87de5 100644
  	struct drm_plane *plane;
  	struct drm_crtc *crtc;
  	struct drm_framebuffer *fb = NULL, *old_fb = NULL;
-@@ -2068,24 +2055,20 @@ int drm_mode_setplane(struct drm_device *dev, void *data,
+@@ -2075,24 +2062,20 @@ int drm_mode_setplane(struct drm_device *dev, void *data,
  	 * First, find the plane, crtc, and fb objects.  If not available,
  	 * we don't bother to call the driver.
  	 */
@@ -157,7 +163,7 @@ index 12fcfec..7b87de5 100644
  
  	/* No fb means shut it down */
  	if (!plane_req->fb_id) {
-@@ -2220,7 +2203,6 @@ int drm_mode_setcrtc(struct drm_device *dev, void *data,
+@@ -2279,7 +2262,6 @@ int drm_mode_setcrtc(struct drm_device *dev, void *data,
  {
  	struct drm_mode_config *config = &dev->mode_config;
  	struct drm_mode_crtc *crtc_req = data;
@@ -165,7 +171,7 @@ index 12fcfec..7b87de5 100644
  	struct drm_crtc *crtc;
  	struct drm_connector **connector_set = NULL, *connector;
  	struct drm_framebuffer *fb = NULL;
-@@ -2238,14 +2220,12 @@ int drm_mode_setcrtc(struct drm_device *dev, void *data,
+@@ -2297,14 +2279,12 @@ int drm_mode_setcrtc(struct drm_device *dev, void *data,
  		return -ERANGE;
  
  	drm_modeset_lock_all(dev);
@@ -182,7 +188,7 @@ index 12fcfec..7b87de5 100644
  	DRM_DEBUG_KMS("[CRTC:%d]\n", crtc->base.id);
  
  	if (crtc_req->mode_valid) {
-@@ -2341,15 +2321,13 @@ int drm_mode_setcrtc(struct drm_device *dev, void *data,
+@@ -2387,15 +2367,13 @@ int drm_mode_setcrtc(struct drm_device *dev, void *data,
  				goto out;
  			}
  
@@ -200,7 +206,7 @@ index 12fcfec..7b87de5 100644
  			DRM_DEBUG_KMS("[CONNECTOR:%d:%s]\n",
  					connector->base.id,
  					drm_get_connector_name(connector));
-@@ -2381,7 +2359,6 @@ int drm_mode_cursor_ioctl(struct drm_device *dev,
+@@ -2427,7 +2405,6 @@ int drm_mode_cursor_ioctl(struct drm_device *dev,
  			void *data, struct drm_file *file_priv)
  {
  	struct drm_mode_cursor *req = data;
@@ -208,7 +214,7 @@ index 12fcfec..7b87de5 100644
  	struct drm_crtc *crtc;
  	int ret = 0;
  
-@@ -2391,12 +2368,11 @@ int drm_mode_cursor_ioctl(struct drm_device *dev,
+@@ -2437,12 +2414,11 @@ int drm_mode_cursor_ioctl(struct drm_device *dev,
  	if (!req->flags || (~DRM_MODE_CURSOR_FLAGS & req->flags))
  		return -EINVAL;
  
@@ -223,7 +229,7 @@ index 12fcfec..7b87de5 100644
  
  	drm_modeset_lock(&crtc->mutex, NULL);
  	if (req->flags & DRM_MODE_CURSOR_BO) {
-@@ -3343,7 +3319,6 @@ EXPORT_SYMBOL(drm_object_property_get_value);
+@@ -3389,7 +3365,6 @@ EXPORT_SYMBOL(drm_object_property_get_value);
  int drm_mode_getproperty_ioctl(struct drm_device *dev,
  			       void *data, struct drm_file *file_priv)
  {
@@ -231,7 +237,7 @@ index 12fcfec..7b87de5 100644
  	struct drm_mode_get_property *out_resp = data;
  	struct drm_property *property;
  	int enum_count = 0;
-@@ -3362,12 +3337,11 @@ int drm_mode_getproperty_ioctl(struct drm_device *dev,
+@@ -3408,12 +3383,11 @@ int drm_mode_getproperty_ioctl(struct drm_device *dev,
  		return -EINVAL;
  
  	drm_modeset_lock_all(dev);
@@ -247,7 +253,7 @@ index 12fcfec..7b87de5 100644
  
  	if (drm_property_type_is(property, DRM_MODE_PROP_ENUM) ||
  			drm_property_type_is(property, DRM_MODE_PROP_BITMASK)) {
-@@ -3483,7 +3457,6 @@ static void drm_property_destroy_blob(struct drm_device *dev,
+@@ -3529,7 +3503,6 @@ static void drm_property_destroy_blob(struct drm_device *dev,
  int drm_mode_getblob_ioctl(struct drm_device *dev,
  			   void *data, struct drm_file *file_priv)
  {
@@ -255,7 +261,7 @@ index 12fcfec..7b87de5 100644
  	struct drm_mode_get_blob *out_resp = data;
  	struct drm_property_blob *blob;
  	int ret = 0;
-@@ -3493,12 +3466,11 @@ int drm_mode_getblob_ioctl(struct drm_device *dev,
+@@ -3539,12 +3512,11 @@ int drm_mode_getblob_ioctl(struct drm_device *dev,
  		return -EINVAL;
  
  	drm_modeset_lock_all(dev);
@@ -271,7 +277,7 @@ index 12fcfec..7b87de5 100644
  
  	if (out_resp->length == blob->length) {
  		blob_ptr = (void __user *)(unsigned long)out_resp->data;
-@@ -3700,7 +3672,6 @@ static int drm_mode_set_obj_prop_id(struct drm_device *dev, void *state,
+@@ -3744,7 +3716,6 @@ static int drm_mode_set_obj_prop_id(struct drm_device *dev, void *state,
  		uint32_t prop_id, uint64_t value, void *blob_data)
  {
  	struct drm_mode_object *arg_obj;
@@ -279,7 +285,7 @@ index 12fcfec..7b87de5 100644
  	struct drm_property *property;
  	int i;
  
-@@ -3717,11 +3688,9 @@ static int drm_mode_set_obj_prop_id(struct drm_device *dev, void *state,
+@@ -3761,11 +3732,9 @@ static int drm_mode_set_obj_prop_id(struct drm_device *dev, void *state,
  	if (i == arg_obj->properties->count)
  		return -EINVAL;
  
@@ -293,7 +299,7 @@ index 12fcfec..7b87de5 100644
  
  	return drm_mode_set_obj_prop(arg_obj, state, property, 
  			value, blob_data);
-@@ -3869,7 +3838,6 @@ int drm_mode_gamma_set_ioctl(struct drm_device *dev,
+@@ -3928,7 +3897,6 @@ int drm_mode_gamma_set_ioctl(struct drm_device *dev,
  			     void *data, struct drm_file *file_priv)
  {
  	struct drm_mode_crtc_lut *crtc_lut = data;
@@ -301,7 +307,7 @@ index 12fcfec..7b87de5 100644
  	struct drm_crtc *crtc;
  	void *r_base, *g_base, *b_base;
  	int size;
-@@ -3879,12 +3847,11 @@ int drm_mode_gamma_set_ioctl(struct drm_device *dev,
+@@ -3938,12 +3906,11 @@ int drm_mode_gamma_set_ioctl(struct drm_device *dev,
  		return -EINVAL;
  
  	drm_modeset_lock_all(dev);
@@ -317,7 +323,7 @@ index 12fcfec..7b87de5 100644
  
  	if (crtc->funcs->gamma_set == NULL) {
  		ret = -ENOSYS;
-@@ -3928,7 +3895,6 @@ int drm_mode_gamma_get_ioctl(struct drm_device *dev,
+@@ -3987,7 +3954,6 @@ int drm_mode_gamma_get_ioctl(struct drm_device *dev,
  			     void *data, struct drm_file *file_priv)
  {
  	struct drm_mode_crtc_lut *crtc_lut = data;
@@ -325,7 +331,7 @@ index 12fcfec..7b87de5 100644
  	struct drm_crtc *crtc;
  	void *r_base, *g_base, *b_base;
  	int size;
-@@ -3938,12 +3904,11 @@ int drm_mode_gamma_get_ioctl(struct drm_device *dev,
+@@ -3997,12 +3963,11 @@ int drm_mode_gamma_get_ioctl(struct drm_device *dev,
  		return -EINVAL;
  
  	drm_modeset_lock_all(dev);
@@ -341,7 +347,7 @@ index 12fcfec..7b87de5 100644
  
  	/* memcpy into gamma store */
  	if (crtc_lut->gamma_size != crtc->gamma_size) {
-@@ -3978,7 +3943,6 @@ int drm_mode_page_flip_ioctl(struct drm_device *dev,
+@@ -4037,7 +4002,6 @@ int drm_mode_page_flip_ioctl(struct drm_device *dev,
  			     void *data, struct drm_file *file_priv)
  {
  	struct drm_mode_crtc_page_flip *page_flip = data;
@@ -349,7 +355,7 @@ index 12fcfec..7b87de5 100644
  	struct drm_crtc *crtc;
  	struct drm_framebuffer *fb = NULL, *old_fb = NULL;
  	struct drm_pending_vblank_event *e = NULL;
-@@ -3993,10 +3957,9 @@ int drm_mode_page_flip_ioctl(struct drm_device *dev,
+@@ -4051,10 +4015,9 @@ int drm_mode_page_flip_ioctl(struct drm_device *dev,
  	if ((page_flip->flags & DRM_MODE_PAGE_FLIP_ASYNC) && !dev->mode_config.async_page_flip)
  		return -EINVAL;
  
@@ -362,16 +368,15 @@ index 12fcfec..7b87de5 100644
 +		return -ENOENT;
  
  	drm_modeset_lock(&crtc->mutex, NULL);
- 	if (crtc->fb == NULL) {
+ 	if (crtc->primary->fb == NULL) {
 diff --git a/include/drm/drm_crtc.h b/include/drm/drm_crtc.h
-index 0309de6..54c08db 100644
+index 18682e1..60d0f7e 100644
 --- a/include/drm/drm_crtc.h
 +++ b/include/drm/drm_crtc.h
-@@ -1281,4 +1281,54 @@ extern int drm_format_plane_cpp(uint32_t format, int plane);
- extern int drm_format_horz_chroma_subsampling(uint32_t format);
- extern int drm_format_vert_chroma_subsampling(uint32_t format);
+@@ -1342,6 +1342,15 @@ extern int drm_format_vert_chroma_subsampling(uint32_t format);
+ 		if (plane->type == DRM_PLANE_TYPE_OVERLAY)
  
-+/* Helpers */
+ /* Helpers */
 +
 +static inline struct drm_plane *drm_plane_find(struct drm_device *dev,
 +		uint32_t id)
@@ -381,22 +386,13 @@ index 0309de6..54c08db 100644
 +	return mo ? obj_to_plane(mo) : NULL;
 +}
 +
-+static inline struct drm_crtc *drm_crtc_find(struct drm_device *dev,
-+	uint32_t id)
-+{
-+	struct drm_mode_object *mo;
-+	mo = drm_mode_object_find(dev, id, DRM_MODE_OBJECT_CRTC);
-+	return mo ? obj_to_crtc(mo) : NULL;
-+}
-+
-+static inline struct drm_encoder *drm_encoder_find(struct drm_device *dev,
-+	uint32_t id)
-+{
-+	struct drm_mode_object *mo;
-+	mo = drm_mode_object_find(dev, id, DRM_MODE_OBJECT_ENCODER);
-+	return mo ? obj_to_encoder(mo) : NULL;
-+}
-+
+ static inline struct drm_crtc *drm_crtc_find(struct drm_device *dev,
+ 	uint32_t id)
+ {
+@@ -1358,4 +1367,28 @@ static inline struct drm_encoder *drm_encoder_find(struct drm_device *dev,
+ 	return mo ? obj_to_encoder(mo) : NULL;
+ }
+ 
 +static inline struct drm_connector *drm_connector_find(struct drm_device *dev,
 +		uint32_t id)
 +{

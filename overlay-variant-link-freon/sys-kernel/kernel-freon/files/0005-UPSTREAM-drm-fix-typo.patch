@@ -1,0 +1,34 @@
+From 292fe3fa59329df29e781e7d97a941b343bf150b Mon Sep 17 00:00:00 2001
+From: Rob Clark <robdclark@gmail.com>
+Date: Sat, 12 Oct 2013 10:38:44 -0400
+Subject: [PATCH 05/18] UPSTREAM: drm: fix typo
+
+Signed-off-by: Rob Clark <robdclark@gmail.com>
+
+BUG=chromium:336809
+TEST=Tested on snow & peppy
+
+(cherry picked from commit 6e8e797d41a34ee3680c39e60955e5ba05eb10bf)
+Signed-off-by: Sean Paul <seanpaul@chromium.org>
+
+Change-Id: I65da391a78d59eac2a7879a2b74276c47e45a18a
+---
+ drivers/gpu/drm/drm_crtc_helper.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/drm_crtc_helper.c b/drivers/gpu/drm/drm_crtc_helper.c
+index 34965cc..a7c3f0f 100644
+--- a/drivers/gpu/drm/drm_crtc_helper.c
++++ b/drivers/gpu/drm/drm_crtc_helper.c
+@@ -292,7 +292,7 @@ void drm_helper_disable_unused_functions(struct drm_device *dev)
+ 	list_for_each_entry(encoder, &dev->mode_config.encoder_list, head) {
+ 		if (!drm_helper_encoder_in_use(encoder)) {
+ 			drm_encoder_disable(encoder);
+-			/* disconnector encoder from any connector */
++			/* disconnect encoder from any connector */
+ 			encoder->crtc = NULL;
+ 		}
+ 	}
+-- 
+1.8.3.2
+

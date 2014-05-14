@@ -1,7 +1,7 @@
-From 1d7399691546906e1f0f6ac55433afb0359e4adb Mon Sep 17 00:00:00 2001
+From 591b5da5e716b492ddf69334e287695049c61aee Mon Sep 17 00:00:00 2001
 From: Rob Clark <robdclark@gmail.com>
-Date: Mon, 25 Nov 2013 09:47:30 -0500
-Subject: [PATCH 05/15] UPSTREAM: drm: split propvals out and blob property
+Date: Wed, 12 Sep 2012 16:59:13 -0500
+Subject: [PATCH 11/18] UPSTREAM: drm: split propvals out and blob property
  support
 
 Split property values out into a different struct, so we can later
@@ -15,18 +15,25 @@ blob properties, which will also be needed for atomic modeset.
 Signed-off-by: Rob Clark <robdclark@gmail.com>
 
 BUG=chromium:336809
-TEST=Tested on pit, no regressions noted
+TEST=Tested on snow & peppy
 
-[seanpaul updated encoder prop set & updated anx & exynos drivers]
+(cherry picked from commit 8f4e128a7604be46e8643ee30cef7721aee9a85e)
 Signed-off-by: Sean Paul <seanpaul@chromium.org>
 
-Change-Id: Ib75fac50abffea091bd749b4eab934dbd582a24b
+Conflicts:
+	drivers/gpu/drm/nouveau/dispnv04/tvnv17.c
+	drivers/gpu/drm/omapdrm/omap_drv.c
+	drivers/gpu/drm/rcar-du/rcar_du_lvdscon.c
+	drivers/gpu/drm/rcar-du/rcar_du_vgacon.c
+	include/drm/drm_crtc.h
+
+Change-Id: Ibba82d8c03900214b90d0671a35fd1a577a77834
 ---
- drivers/gpu/drm/bridge/anx7808.c            |  4 +-
+ drivers/gpu/drm/bridge/anx7808.c            |  8 +--
  drivers/gpu/drm/drm_crtc.c                  | 83 +++++++++++++++++++++--------
  drivers/gpu/drm/drm_fb_helper.c             |  3 +-
- drivers/gpu/drm/exynos/exynos_drm_encoder.c |  2 +-
- drivers/gpu/drm/exynos/exynos_hdmi.c        |  5 +-
+ drivers/gpu/drm/exynos/exynos_drm_encoder.c |  3 +-
+ drivers/gpu/drm/exynos/exynos_hdmi.c        |  6 ++-
  drivers/gpu/drm/gma500/cdv_intel_dp.c       |  3 +-
  drivers/gpu/drm/gma500/cdv_intel_hdmi.c     |  3 +-
  drivers/gpu/drm/gma500/cdv_intel_lvds.c     |  6 ++-
@@ -40,32 +47,41 @@ Change-Id: Ib75fac50abffea091bd749b4eab934dbd582a24b
  drivers/gpu/drm/i915/intel_sdvo.c           | 19 +++++--
  drivers/gpu/drm/i915/intel_tv.c             |  6 ++-
  drivers/gpu/drm/nouveau/nouveau_connector.c |  4 +-
- drivers/gpu/drm/nouveau/nv17_tv.c           |  3 +-
  drivers/gpu/drm/shmobile/shmob_drm_crtc.c   |  4 +-
- drivers/staging/omapdrm/omap_drv.c          |  6 ++-
- include/drm/drm_crtc.h                      | 15 +++++-
- 22 files changed, 151 insertions(+), 61 deletions(-)
+ include/drm/drm_crtc.h                      | 12 ++++-
+ 20 files changed, 147 insertions(+), 59 deletions(-)
 
 diff --git a/drivers/gpu/drm/bridge/anx7808.c b/drivers/gpu/drm/bridge/anx7808.c
-index ab404a9..fc87d97 100644
+index 49c207b..e25dbe4 100644
 --- a/drivers/gpu/drm/bridge/anx7808.c
 +++ b/drivers/gpu/drm/bridge/anx7808.c
-@@ -794,7 +794,9 @@ static void anx7808_update_hdcp_property(struct anx7808_data *anx7808,
+@@ -811,7 +811,8 @@ static int anx7808_get_ds_video_status(struct anx7808_data *anx7808)
+ static void anx7808_update_hdcp_property(struct anx7808_data *anx7808,
+ 		bool enabled)
+ {
+-	struct drm_device *dev = anx7808->connector.dev;
++	struct drm_connector *connector = &anx7808->connector;
++	struct drm_device *dev = connector->dev;
+ 	uint64_t val = DRM_MODE_CONTENT_PROTECTION_OFF;
+ 
+ 	if (enabled)
+@@ -819,8 +820,9 @@ static void anx7808_update_hdcp_property(struct anx7808_data *anx7808,
+ 	else if (anx7808->hdcp_desired)
  		val = DRM_MODE_CONTENT_PROTECTION_DESIRED;
  
- 	drm_object_property_set_value(&anx7808->connector.base,
+-	drm_object_property_set_value(&anx7808->connector.base,
 -			dev->mode_config.content_protection_property, val);
-+			&anx7808->connector.propvals,
++	drm_object_property_set_value(&connector->base, &connector->propvals,
 +			dev->mode_config.content_protection_property, val,
 +			NULL);
  }
  
  static int anx7808_power_on_hdcp(struct anx7808_data *anx7808)
 diff --git a/drivers/gpu/drm/drm_crtc.c b/drivers/gpu/drm/drm_crtc.c
-index 7b87de5..c0fc71f 100644
+index e5c784e..b147787 100644
 --- a/drivers/gpu/drm/drm_crtc.c
 +++ b/drivers/gpu/drm/drm_crtc.c
-@@ -168,6 +168,14 @@ void drm_warn_on_modeset_not_all_locked(struct drm_device *dev)
+@@ -170,6 +170,14 @@ void drm_warn_on_modeset_not_all_locked(struct drm_device *dev)
  }
  EXPORT_SYMBOL(drm_warn_on_modeset_not_all_locked);
  
@@ -80,7 +96,7 @@ index 7b87de5..c0fc71f 100644
  /* Avoid boilerplate.  I'm tired of typing. */
  #define DRM_ENUM_NAME_FN(fnname, list)				\
  	char *fnname(int val)					\
-@@ -710,6 +718,7 @@ int drm_crtc_init(struct drm_device *dev, struct drm_crtc *crtc,
+@@ -724,6 +732,7 @@ int drm_crtc_init_with_planes(struct drm_device *dev, struct drm_crtc *crtc,
  		goto out;
  
  	crtc->base.properties = &crtc->properties;
@@ -88,7 +104,7 @@ index 7b87de5..c0fc71f 100644
  
  	list_add_tail(&crtc->head, &dev->mode_config.crtc_list);
  	dev->mode_config.num_crtc++;
-@@ -799,6 +808,7 @@ int drm_connector_init(struct drm_device *dev,
+@@ -840,6 +849,7 @@ int drm_connector_init(struct drm_device *dev,
  		goto out;
  
  	connector->base.properties = &connector->properties;
@@ -96,7 +112,7 @@ index 7b87de5..c0fc71f 100644
  	connector->dev = dev;
  	connector->funcs = funcs;
  	connector->connector_type = connector_type;
-@@ -914,6 +924,7 @@ int drm_encoder_init(struct drm_device *dev,
+@@ -955,6 +965,7 @@ int drm_encoder_init(struct drm_device *dev,
  		goto out;
  
  	encoder->base.properties = &encoder->properties;
@@ -104,7 +120,7 @@ index 7b87de5..c0fc71f 100644
  	encoder->dev = dev;
  	encoder->encoder_type = encoder_type;
  	encoder->funcs = funcs;
-@@ -954,6 +965,7 @@ int drm_plane_init(struct drm_device *dev, struct drm_plane *plane,
+@@ -1010,6 +1021,7 @@ int drm_universal_plane_init(struct drm_device *dev, struct drm_plane *plane,
  		goto out;
  
  	plane->base.properties = &plane->properties;
@@ -112,7 +128,7 @@ index 7b87de5..c0fc71f 100644
  	plane->dev = dev;
  	plane->funcs = funcs;
  	plane->format_types = kmalloc(sizeof(uint32_t) * format_count,
-@@ -1857,7 +1869,7 @@ int drm_mode_getconnector(struct drm_device *dev, void *data,
+@@ -1850,7 +1862,7 @@ int drm_mode_getconnector(struct drm_device *dev, void *data,
  				goto out;
  			}
  
@@ -121,7 +137,7 @@ index 7b87de5..c0fc71f 100644
  				     prop_values + copied)) {
  				ret = -EFAULT;
  				goto out;
-@@ -3279,19 +3291,33 @@ void drm_object_attach_property(struct drm_mode_object *obj,
+@@ -3325,19 +3337,33 @@ void drm_object_attach_property(struct drm_mode_object *obj,
  	}
  
  	obj->properties->ids[count] = property->base.id;
@@ -158,7 +174,7 @@ index 7b87de5..c0fc71f 100644
  			return 0;
  		}
  	}
-@@ -3307,7 +3333,7 @@ int drm_object_property_get_value(struct drm_mode_object *obj,
+@@ -3353,7 +3379,7 @@ int drm_object_property_get_value(struct drm_mode_object *obj,
  
  	for (i = 0; i < obj->properties->count; i++) {
  		if (obj->properties->ids[i] == property->base.id) {
@@ -167,7 +183,7 @@ index 7b87de5..c0fc71f 100644
  			return 0;
  		}
  	}
-@@ -3490,27 +3516,35 @@ int drm_mode_connector_update_edid_property(struct drm_connector *connector,
+@@ -3536,27 +3562,35 @@ int drm_mode_connector_update_edid_property(struct drm_connector *connector,
  					    struct edid *edid)
  {
  	struct drm_device *dev = connector->dev;
@@ -215,7 +231,7 @@ index 7b87de5..c0fc71f 100644
  
  	return ret;
  }
-@@ -3588,7 +3622,9 @@ static int drm_mode_connector_set_obj_prop(struct drm_connector *connector,
+@@ -3634,7 +3668,9 @@ static int drm_mode_connector_set_obj_prop(struct drm_connector *connector,
  
  	/* store the property value if successful */
  	if (!ret)
@@ -226,7 +242,7 @@ index 7b87de5..c0fc71f 100644
  	return ret;
  }
  
-@@ -3602,7 +3638,8 @@ static int drm_mode_crtc_set_obj_prop(struct drm_crtc *crtc,
+@@ -3648,7 +3684,8 @@ static int drm_mode_crtc_set_obj_prop(struct drm_crtc *crtc,
  		ret = crtc->funcs->set_property(crtc, state, property,
  				value, blob_data);
  	if (!ret)
@@ -236,17 +252,7 @@ index 7b87de5..c0fc71f 100644
  
  	return ret;
  }
-@@ -3618,7 +3655,8 @@ static int drm_mode_encoder_set_obj_prop(struct drm_encoder *encoder,
- 		ret = encoder->funcs->set_property(encoder, state, property,
- 				value, blob_data);
- 	if (!ret)
--		drm_object_property_set_value(&encoder->base, property, value);
-+		drm_object_property_set_value(&encoder->base,
-+				&encoder->propvals, property, value, NULL);
- 
- 	return ret;
- }
-@@ -3633,7 +3671,8 @@ static int drm_mode_plane_set_obj_prop(struct drm_plane *plane,
+@@ -3663,7 +3700,8 @@ static int drm_mode_plane_set_obj_prop(struct drm_plane *plane,
  		ret = plane->funcs->set_property(plane, state, property,
  				value, blob_data);
  	if (!ret)
@@ -256,7 +262,17 @@ index 7b87de5..c0fc71f 100644
  
  	return ret;
  }
-@@ -3738,7 +3777,7 @@ int drm_mode_obj_get_properties_ioctl(struct drm_device *dev, void *data,
+@@ -3678,7 +3716,8 @@ static int drm_mode_encoder_set_obj_prop(struct drm_encoder *encoder,
+ 		ret = encoder->funcs->set_property(encoder, state, property,
+ 				value, blob_data);
+ 	if (!ret)
+-		drm_object_property_set_value(&encoder->base, property, value);
++		drm_object_property_set_value(&encoder->base,
++				&encoder->propvals, property, value, NULL);
+ 
+ 	return ret;
+ }
+@@ -3797,7 +3836,7 @@ int drm_mode_obj_get_properties_ioctl(struct drm_device *dev, void *data,
  				ret = -EFAULT;
  				goto out;
  			}
@@ -266,10 +282,10 @@ index 7b87de5..c0fc71f 100644
  				ret = -EFAULT;
  				goto out;
 diff --git a/drivers/gpu/drm/drm_fb_helper.c b/drivers/gpu/drm/drm_fb_helper.c
-index 473d33a..3bcf9f9 100644
+index 32b10b7..348474f 100644
 --- a/drivers/gpu/drm/drm_fb_helper.c
 +++ b/drivers/gpu/drm/drm_fb_helper.c
-@@ -397,7 +397,8 @@ static void drm_fb_helper_dpms(struct fb_info *info, int dpms_mode)
+@@ -398,7 +398,8 @@ static void drm_fb_helper_dpms(struct fb_info *info, int dpms_mode)
  			connector = fb_helper->connector_info[j]->connector;
  			connector->funcs->dpms(connector, dpms_mode);
  			drm_object_property_set_value(&connector->base,
@@ -280,23 +296,24 @@ index 473d33a..3bcf9f9 100644
  	}
  	drm_modeset_unlock_all(dev);
 diff --git a/drivers/gpu/drm/exynos/exynos_drm_encoder.c b/drivers/gpu/drm/exynos/exynos_drm_encoder.c
-index 5b3f59d..1ac7dbc 100644
+index 8748968..6888107 100644
 --- a/drivers/gpu/drm/exynos/exynos_drm_encoder.c
 +++ b/drivers/gpu/drm/exynos/exynos_drm_encoder.c
-@@ -172,7 +172,7 @@ static int exynos_drm_encoder_set_property(struct drm_encoder *encoder,
+@@ -172,7 +172,8 @@ static int exynos_drm_encoder_set_property(struct drm_encoder *encoder,
  			return ret;
  	}
  
 -	return drm_object_property_set_value(&encoder->base, property, val);
-+	return 0;
++	return drm_object_property_set_value(&encoder->base, &encoder->propvals,
++			property, val, blob_data);
  }
  
  static void exynos_drm_encoder_destroy(struct drm_encoder *encoder)
 diff --git a/drivers/gpu/drm/exynos/exynos_hdmi.c b/drivers/gpu/drm/exynos/exynos_hdmi.c
-index b0b0a34..b17420f 100644
+index 684f0e0e..351cd35 100644
 --- a/drivers/gpu/drm/exynos/exynos_hdmi.c
 +++ b/drivers/gpu/drm/exynos/exynos_hdmi.c
-@@ -1413,8 +1413,9 @@ static int hdcp_update_drm_property(struct hdmi_context *hdata, int value)
+@@ -1395,8 +1395,9 @@ static int hdcp_update_drm_property(struct hdmi_context *hdata, int value)
  	list_for_each_entry(connector, &mode_config->connector_list, head) {
  		if (connector->connector_type == DRM_MODE_CONNECTOR_HDMIA)
  			return drm_object_property_set_value(&connector->base,
@@ -307,17 +324,18 @@ index b0b0a34..b17420f 100644
  	}
  	return -ENODEV;
  }
-@@ -1656,7 +1657,7 @@ static int hdmi_connector_set_property(struct drm_connector *connector,
+@@ -1638,7 +1639,8 @@ static int hdmi_connector_set_property(struct drm_connector *connector,
  	if (ret)
  		return ret;
  
 -	return drm_object_property_set_value(&connector->base, property, val);
-+	return 0;
++	return drm_object_property_set_value(&connector->base,
++			&connector->propvals, property, val, blob_data);
  }
  
  static struct drm_connector_funcs hdmi_connector_funcs = {
 diff --git a/drivers/gpu/drm/gma500/cdv_intel_dp.c b/drivers/gpu/drm/gma500/cdv_intel_dp.c
-index 3c26d05..2f187bc 100644
+index 9165693..110fd77 100644
 --- a/drivers/gpu/drm/gma500/cdv_intel_dp.c
 +++ b/drivers/gpu/drm/gma500/cdv_intel_dp.c
 @@ -1652,7 +1652,8 @@ cdv_intel_dp_set_property(struct drm_connector *connector,
@@ -331,7 +349,7 @@ index 3c26d05..2f187bc 100644
  		return ret;
  
 diff --git a/drivers/gpu/drm/gma500/cdv_intel_hdmi.c b/drivers/gpu/drm/gma500/cdv_intel_hdmi.c
-index bb73592..d7b58f2 100644
+index 1ab7770..5bf9964 100644
 --- a/drivers/gpu/drm/gma500/cdv_intel_hdmi.c
 +++ b/drivers/gpu/drm/gma500/cdv_intel_hdmi.c
 @@ -195,7 +195,8 @@ static int cdv_hdmi_set_property(struct drm_connector *connector,
@@ -423,7 +441,7 @@ index 51fc2a4..46a512f 100644
  		else
                          gma_backlight_set(encoder->dev, value);
 diff --git a/drivers/gpu/drm/gma500/psb_intel_sdvo.c b/drivers/gpu/drm/gma500/psb_intel_sdvo.c
-index 10061f6..ce8a9c3 100644
+index f440416..d56e07f 100644
 --- a/drivers/gpu/drm/gma500/psb_intel_sdvo.c
 +++ b/drivers/gpu/drm/gma500/psb_intel_sdvo.c
 @@ -1696,7 +1696,8 @@ psb_intel_sdvo_set_property(struct drm_connector *connector,
@@ -497,7 +515,7 @@ index 51fa323..a89c205 100644
  	return priv->subconnector ? connector_status_connected :
  					connector_status_disconnected;
 diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index 73f6b06..2aaf4b9 100644
+index 074eccd..5ca3347 100644
 --- a/drivers/gpu/drm/i915/intel_display.c
 +++ b/drivers/gpu/drm/i915/intel_display.c
 @@ -7793,8 +7793,9 @@ intel_modeset_update_state(struct drm_device *dev, unsigned prepare_pipes)
@@ -512,10 +530,10 @@ index 73f6b06..2aaf4b9 100644
  			intel_encoder = to_intel_encoder(connector->encoder);
  			intel_encoder->connectors_active = true;
 diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_dp.c
-index ca7ce26..18e68d8 100644
+index a6c8121..6dbbf6c 100644
 --- a/drivers/gpu/drm/i915/intel_dp.c
 +++ b/drivers/gpu/drm/i915/intel_dp.c
-@@ -2355,7 +2355,8 @@ intel_dp_set_property(struct drm_connector *connector,
+@@ -2353,7 +2353,8 @@ intel_dp_set_property(struct drm_connector *connector,
  	struct intel_dp *intel_dp = enc_to_intel_dp(&intel_encoder->base);
  	int ret;
  
@@ -526,10 +544,10 @@ index ca7ce26..18e68d8 100644
  		return ret;
  
 diff --git a/drivers/gpu/drm/i915/intel_hdmi.c b/drivers/gpu/drm/i915/intel_hdmi.c
-index 54187dd..4a7a90d 100644
+index 2c9c922..16b939e 100644
 --- a/drivers/gpu/drm/i915/intel_hdmi.c
 +++ b/drivers/gpu/drm/i915/intel_hdmi.c
-@@ -949,7 +949,8 @@ intel_hdmi_set_property(struct drm_connector *connector,
+@@ -953,7 +953,8 @@ intel_hdmi_set_property(struct drm_connector *connector,
  	struct drm_i915_private *dev_priv = connector->dev->dev_private;
  	int ret;
  
@@ -639,23 +657,8 @@ index b35b7bd..ea03f27 100644
  	}
  }
  
-diff --git a/drivers/gpu/drm/nouveau/nv17_tv.c b/drivers/gpu/drm/nouveau/nv17_tv.c
-index 977e42b..7b5ffe9 100644
---- a/drivers/gpu/drm/nouveau/nv17_tv.c
-+++ b/drivers/gpu/drm/nouveau/nv17_tv.c
-@@ -196,8 +196,9 @@ nv17_tv_detect(struct drm_encoder *encoder, struct drm_connector *connector)
- 	}
- 
- 	drm_object_property_set_value(&connector->base,
-+					 &connector->propvals,
- 					 conf->tv_subconnector_property,
--					 tv_enc->subconnector);
-+					 tv_enc->subconnector, NULL);
- 
- 	if (!reliable) {
- 		return connector_status_unknown;
 diff --git a/drivers/gpu/drm/shmobile/shmob_drm_crtc.c b/drivers/gpu/drm/shmobile/shmob_drm_crtc.c
-index 93e6dd3..ef29853 100644
+index c22a50c..a7b0207 100644
 --- a/drivers/gpu/drm/shmobile/shmob_drm_crtc.c
 +++ b/drivers/gpu/drm/shmobile/shmob_drm_crtc.c
 @@ -749,8 +749,8 @@ int shmob_drm_connector_create(struct shmob_drm_device *sdev,
@@ -669,43 +672,19 @@ index 93e6dd3..ef29853 100644
  
  	return 0;
  
-diff --git a/drivers/staging/omapdrm/omap_drv.c b/drivers/staging/omapdrm/omap_drv.c
-index 400bbea..3c40e03 100644
---- a/drivers/staging/omapdrm/omap_drv.c
-+++ b/drivers/staging/omapdrm/omap_drv.c
-@@ -440,12 +440,14 @@ static void dev_lastclose(struct drm_device *dev)
- 		 */
- 		for (i = 0; i < priv->num_crtcs; i++) {
- 			drm_object_property_set_value(&priv->crtcs[i]->base,
--					priv->rotation_prop, 0);
-+					&priv->crtcs[i]->propvals,
-+					priv->rotation_prop, 0, NULL);
- 		}
- 
- 		for (i = 0; i < priv->num_planes; i++) {
- 			drm_object_property_set_value(&priv->planes[i]->base,
--					priv->rotation_prop, 0);
-+					&priv->planes[i]->propvals,
-+					priv->rotation_prop, 0, NULL);
- 		}
- 	}
- 
 diff --git a/include/drm/drm_crtc.h b/include/drm/drm_crtc.h
-index 54c08db..7b6a5ab 100644
+index 60d0f7e..ee40c87 100644
 --- a/include/drm/drm_crtc.h
 +++ b/include/drm/drm_crtc.h
-@@ -39,7 +39,9 @@ struct drm_device;
- struct drm_mode_set;
- struct drm_framebuffer;
+@@ -41,6 +41,7 @@ struct drm_framebuffer;
  struct drm_object_properties;
--
-+struct drm_file;
-+struct drm_clip_rect;
+ struct drm_file;
+ struct drm_clip_rect;
 +struct drm_object_property_values;
  
  #define DRM_MODE_OBJECT_CRTC 0xcccccccc
  #define DRM_MODE_OBJECT_CONNECTOR 0xc0c0c0c0
-@@ -55,12 +57,16 @@ struct drm_mode_object {
+@@ -56,12 +57,16 @@ struct drm_mode_object {
  	uint32_t id;
  	uint32_t type;
  	struct drm_object_properties *properties;
@@ -722,7 +701,7 @@ index 54c08db..7b6a5ab 100644
  	uint64_t values[DRM_OBJECT_MAX_PROPERTY];
  };
  
-@@ -517,6 +523,7 @@ struct drm_crtc {
+@@ -525,6 +530,7 @@ struct drm_crtc {
  	void *helper_private;
  
  	struct drm_object_properties properties;
@@ -730,7 +709,7 @@ index 54c08db..7b6a5ab 100644
  };
  
  
-@@ -607,6 +614,7 @@ struct drm_encoder {
+@@ -615,6 +621,7 @@ struct drm_encoder {
  	struct drm_bridge *bridge;
  	const struct drm_encoder_funcs *funcs;
  	struct drm_object_properties properties;
@@ -738,7 +717,7 @@ index 54c08db..7b6a5ab 100644
  	void *helper_private;
  };
  
-@@ -691,6 +699,7 @@ struct drm_connector {
+@@ -699,6 +706,7 @@ struct drm_connector {
  	struct list_head user_modes;
  	struct drm_property_blob *edid_blob_ptr;
  	struct drm_object_properties properties;
@@ -746,15 +725,15 @@ index 54c08db..7b6a5ab 100644
  
  	uint8_t polled; /* DRM_CONNECTOR_POLL_* */
  
-@@ -777,6 +786,7 @@ struct drm_plane {
+@@ -792,6 +800,7 @@ struct drm_plane {
  	void *helper_private;
  
  	struct drm_object_properties properties;
 +	struct drm_object_property_values propvals;
- };
  
- /**
-@@ -1111,8 +1121,9 @@ static inline bool drm_property_type_valid(struct drm_property *property)
+ 	enum drm_plane_type type;
+ };
+@@ -1166,8 +1175,9 @@ static inline bool drm_property_type_valid(struct drm_property *property)
  }
  
  extern int drm_object_property_set_value(struct drm_mode_object *obj,

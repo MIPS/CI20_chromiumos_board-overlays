@@ -1,0 +1,1500 @@
+From 5dbf884c4dad1ba9c1f9d2ab4ea2c49f61fb1588 Mon Sep 17 00:00:00 2001
+From: Sean Paul <seanpaul@chromium.org>
+Date: Thu, 8 May 2014 11:45:52 -0400
+Subject: [PATCH 03/18] Revert "UPSTREAM: drm: add atomic fxns"
+
+This reverts commit f00d233ca55617368ff908e545777b72365a2bb3.
+
+There's a new version, it'll be better to roll this back and add
+the new one.
+
+BUG=chromium:336809
+TEST=Tested on snow & peppy
+
+Signed-off-by: Sean Paul <seanpaul@chromium.org>
+
+Conflicts:
+	drivers/gpu/drm/Makefile
+	drivers/gpu/drm/cirrus/cirrus_drv.c
+	drivers/gpu/drm/exynos/exynos_drm_connector.c
+	drivers/gpu/drm/exynos/exynos_drm_drv.c
+	drivers/gpu/drm/exynos/exynos_drm_plane.c
+	drivers/gpu/drm/i915/i915_drv.c
+	drivers/gpu/drm/mgag200/mgag200_drv.c
+	drivers/gpu/drm/radeon/radeon_drv.c
+	drivers/gpu/drm/shmobile/shmob_drm_drv.c
+
+Change-Id: I631a1feb87025a7af8e8c39f413cd3852c83c61c
+---
+ drivers/gpu/drm/Makefile                    |   2 +-
+ drivers/gpu/drm/ast/ast_drv.c               |   6 -
+ drivers/gpu/drm/ast/ast_drv.h               |   1 -
+ drivers/gpu/drm/bridge/anx7808.c            |   8 +-
+ drivers/gpu/drm/cirrus/cirrus_drv.c         |   6 -
+ drivers/gpu/drm/cirrus/cirrus_drv.h         |   1 -
+ drivers/gpu/drm/drm_atomic_helper.c         | 135 -----------------------
+ drivers/gpu/drm/drm_crtc.c                  | 165 +++++++++++-----------------
+ drivers/gpu/drm/exynos/exynos_drm_crtc.c    |   4 +-
+ drivers/gpu/drm/exynos/exynos_drm_drv.c     |   7 --
+ drivers/gpu/drm/exynos/exynos_drm_encoder.c |   3 +-
+ drivers/gpu/drm/exynos/exynos_hdmi.c        |   3 +-
+ drivers/gpu/drm/gma500/cdv_intel_crt.c      |   4 +-
+ drivers/gpu/drm/gma500/cdv_intel_dp.c       |   4 +-
+ drivers/gpu/drm/gma500/cdv_intel_hdmi.c     |   4 +-
+ drivers/gpu/drm/gma500/cdv_intel_lvds.c     |   4 +-
+ drivers/gpu/drm/gma500/mdfld_dsi_output.c   |   4 +-
+ drivers/gpu/drm/gma500/psb_drv.c            |   7 --
+ drivers/gpu/drm/gma500/psb_drv.h            |   1 -
+ drivers/gpu/drm/gma500/psb_intel_drv.h      |   4 +-
+ drivers/gpu/drm/gma500/psb_intel_lvds.c     |   4 +-
+ drivers/gpu/drm/gma500/psb_intel_sdvo.c     |   4 +-
+ drivers/gpu/drm/i915/i915_drv.c             |   8 --
+ drivers/gpu/drm/i915/intel_crt.c            |   4 +-
+ drivers/gpu/drm/i915/intel_dp.c             |   4 +-
+ drivers/gpu/drm/i915/intel_drv.h            |   1 -
+ drivers/gpu/drm/i915/intel_hdmi.c           |   4 +-
+ drivers/gpu/drm/i915/intel_lvds.c           |   4 +-
+ drivers/gpu/drm/i915/intel_sdvo.c           |   4 +-
+ drivers/gpu/drm/i915/intel_tv.c             |   5 +-
+ drivers/gpu/drm/mgag200/mgag200_drv.c       |   7 --
+ drivers/gpu/drm/mgag200/mgag200_drv.h       |   1 -
+ drivers/gpu/drm/nouveau/nouveau_connector.c |   3 +-
+ drivers/gpu/drm/nouveau/nouveau_drm.c       |   7 --
+ drivers/gpu/drm/nouveau/nouveau_drm.h       |   1 -
+ drivers/gpu/drm/radeon/radeon_connectors.c  |   9 +-
+ drivers/gpu/drm/radeon/radeon_drv.c         |   9 --
+ drivers/gpu/drm/shmobile/shmob_drm_drv.c    |   7 --
+ drivers/gpu/drm/udl/udl_connector.c         |   6 +-
+ drivers/gpu/drm/udl/udl_drv.c               |   8 --
+ drivers/gpu/drm/vmwgfx/vmwgfx_drv.c         |   7 --
+ drivers/gpu/drm/vmwgfx/vmwgfx_drv.h         |   1 -
+ drivers/gpu/drm/vmwgfx/vmwgfx_kms.c         |   4 +-
+ drivers/gpu/drm/vmwgfx/vmwgfx_kms.h         |   4 +-
+ drivers/staging/omapdrm/omap_crtc.c         |   7 +-
+ drivers/staging/omapdrm/omap_drv.c          |   6 -
+ drivers/staging/omapdrm/omap_drv.h          |   6 +-
+ drivers/staging/omapdrm/omap_plane.c        |   4 +-
+ include/drm/drmP.h                          |  77 -------------
+ include/drm/drm_atomic_helper.h             | 100 -----------------
+ include/drm/drm_crtc.h                      |  19 ++--
+ 51 files changed, 110 insertions(+), 598 deletions(-)
+ delete mode 100644 drivers/gpu/drm/drm_atomic_helper.c
+ delete mode 100644 include/drm/drm_atomic_helper.h
+
+diff --git a/drivers/gpu/drm/Makefile b/drivers/gpu/drm/Makefile
+index 528b029..96ad4d0 100644
+--- a/drivers/gpu/drm/Makefile
++++ b/drivers/gpu/drm/Makefile
+@@ -13,7 +13,7 @@ drm-y       :=	drm_auth.o drm_buffer.o drm_bufs.o drm_cache.o \
+ 		drm_crtc.o drm_modes.o drm_edid.o \
+ 		drm_info.o drm_debugfs.o drm_encoder_slave.o \
+ 		drm_trace_points.o drm_global.o drm_prime.o \
+-		drm_atomic_helper.o drm_rect.o drm_plane_helper.o
++		drm_rect.o drm_plane_helper.o
+ 
+ drm-$(CONFIG_COMPAT) += drm_ioc32.o
+ drm-$(CONFIG_DRM_GEM_CMA_HELPER) += drm_gem_cma_helper.o
+diff --git a/drivers/gpu/drm/ast/ast_drv.c b/drivers/gpu/drm/ast/ast_drv.c
+index f7fe215..a144fb0 100644
+--- a/drivers/gpu/drm/ast/ast_drv.c
++++ b/drivers/gpu/drm/ast/ast_drv.c
+@@ -218,12 +218,6 @@ static struct drm_driver driver = {
+ 	.dumb_map_offset = ast_dumb_mmap_offset,
+ 	.dumb_destroy = drm_gem_dumb_destroy,
+ 
+-	.atomic_begin     = drm_atomic_helper_begin,
+-	.atomic_set_event = drm_atomic_helper_set_event,
+-	.atomic_check     = drm_atomic_helper_check,
+-	.atomic_commit    = drm_atomic_helper_commit,
+-	.atomic_end       = drm_atomic_helper_end,
+-	.atomic_helpers   = &drm_atomic_helper_funcs,
+ };
+ 
+ static int __init ast_init(void)
+diff --git a/drivers/gpu/drm/ast/ast_drv.h b/drivers/gpu/drm/ast/ast_drv.h
+index f0ace64..b0f4448 100644
+--- a/drivers/gpu/drm/ast/ast_drv.h
++++ b/drivers/gpu/drm/ast/ast_drv.h
+@@ -29,7 +29,6 @@
+ #define __AST_DRV_H__
+ 
+ #include <drm/drm_fb_helper.h>
+-#include <drm/drm_atomic_helper.h>
+ 
+ #include <drm/ttm/ttm_bo_api.h>
+ #include <drm/ttm/ttm_bo_driver.h>
+diff --git a/drivers/gpu/drm/bridge/anx7808.c b/drivers/gpu/drm/bridge/anx7808.c
+index 49c207b..76e983f 100644
+--- a/drivers/gpu/drm/bridge/anx7808.c
++++ b/drivers/gpu/drm/bridge/anx7808.c
+@@ -1859,8 +1859,8 @@ out:
+ 	return status;
+ }
+ 
+-int anx7808_set_property(struct drm_connector *connector, void *state,
+-		struct drm_property *property, uint64_t val, void *blob_data)
++int anx7808_set_property(struct drm_connector *connector,
++		struct drm_property *property, uint64_t val)
+ {
+ 	struct anx7808_data *anx7808;
+ 	struct drm_mode_config *mode_config = &connector->dev->mode_config;
+@@ -1875,8 +1875,8 @@ int anx7808_set_property(struct drm_connector *connector, void *state,
+ 
+ 	anx7808->hdcp_desired = val;
+ 
+-	ret |= anx7808->encoder->funcs->set_property(anx7808->encoder, state,
+-			property, val, blob_data);
++	ret |= anx7808->encoder->funcs->set_property(anx7808->encoder,
++			property, val);
+ 
+ 	/*
+ 	 * During HDCP enable:
+diff --git a/drivers/gpu/drm/cirrus/cirrus_drv.c b/drivers/gpu/drm/cirrus/cirrus_drv.c
+index b16dfc7..d35d99c 100644
+--- a/drivers/gpu/drm/cirrus/cirrus_drv.c
++++ b/drivers/gpu/drm/cirrus/cirrus_drv.c
+@@ -103,12 +103,6 @@ static struct drm_driver driver = {
+ 	.dumb_create = cirrus_dumb_create,
+ 	.dumb_map_offset = cirrus_dumb_mmap_offset,
+ 	.dumb_destroy = drm_gem_dumb_destroy,
+-	.atomic_begin     = drm_atomic_helper_begin,
+-	.atomic_set_event = drm_atomic_helper_set_event,
+-	.atomic_check     = drm_atomic_helper_check,
+-	.atomic_commit    = drm_atomic_helper_commit,
+-	.atomic_end       = drm_atomic_helper_end,
+-	.atomic_helpers   = &drm_atomic_helper_funcs,
+ };
+ 
+ static struct pci_driver cirrus_pci_driver = {
+diff --git a/drivers/gpu/drm/cirrus/cirrus_drv.h b/drivers/gpu/drm/cirrus/cirrus_drv.h
+index 7ce8258..532dc06 100644
+--- a/drivers/gpu/drm/cirrus/cirrus_drv.h
++++ b/drivers/gpu/drm/cirrus/cirrus_drv.h
+@@ -14,7 +14,6 @@
+ #include <video/vga.h>
+ 
+ #include <drm/drm_fb_helper.h>
+-#include <drm/drm_atomic_helper.h>
+ 
+ #include <drm/ttm/ttm_bo_api.h>
+ #include <drm/ttm/ttm_bo_driver.h>
+diff --git a/drivers/gpu/drm/drm_atomic_helper.c b/drivers/gpu/drm/drm_atomic_helper.c
+deleted file mode 100644
+index 46c67b8..0000000
+--- a/drivers/gpu/drm/drm_atomic_helper.c
++++ /dev/null
+@@ -1,135 +0,0 @@
+-/*
+- * Copyright (C) 2013 Red Hat
+- * Author: Rob Clark <robdclark@gmail.com>
+- *
+- * This program is free software; you can redistribute it and/or modify it
+- * under the terms of the GNU General Public License version 2 as published by
+- * the Free Software Foundation.
+- *
+- * This program is distributed in the hope that it will be useful, but WITHOUT
+- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+- * more details.
+- *
+- * You should have received a copy of the GNU General Public License along with
+- * this program.  If not, see <http://www.gnu.org/licenses/>.
+- */
+-
+-
+-#include <drm/drmP.h>
+-#include <drm/drm_atomic_helper.h>
+-
+-/**
+- * drm_atomic_helper_begin - start a sequence of atomic updates
+- * @dev: DRM device
+- * @flags: the modifier flags that userspace has requested
+- *
+- * Begin a sequence of atomic property sets.  Returns a driver
+- * private state object that is passed back into the various
+- * object's set_property() fxns, and into the remainder of the
+- * atomic funcs.  The state object should accumulate the changes
+- * from one o more set_property()'s.  At the end, the state can
+- * be checked, and optionally committed.
+- *
+- * RETURNS
+- *   a driver private state object, which is passed back in to
+- *   the various other atomic fxns, or error (such as -EBUSY if
+- *   there is still a pending async update)
+- */
+-void *drm_atomic_helper_begin(struct drm_device *dev, uint32_t flags)
+-{
+-	struct drm_atomic_helper_state *state;
+-	int sz;
+-	void *ptr;
+-
+-	sz = sizeof(*state);
+-
+-	ptr = kzalloc(sz, GFP_KERNEL);
+-
+-	state = ptr;
+-	ptr = &state[1];
+-
+-	kref_init(&state->refcount);
+-	state->dev = dev;
+-	state->flags = flags;
+-	return state;
+-}
+-EXPORT_SYMBOL(drm_atomic_helper_begin);
+-
+-/**
+- * drm_atomic_helper_set_event - set a pending event on mode object
+- * @dev: DRM device
+- * @state: the driver private state object
+- * @obj: the object to set the event on
+- * @event: the event to send back
+- *
+- * Set pending event for an update on the specified object.  The
+- * event is to be sent back to userspace after the update completes.
+- */
+-int drm_atomic_helper_set_event(struct drm_device *dev,
+-		void *state, struct drm_mode_object *obj,
+-		struct drm_pending_vblank_event *event)
+-{
+-	return -EINVAL;  /* for now */
+-}
+-EXPORT_SYMBOL(drm_atomic_helper_set_event);
+-
+-/**
+- * drm_atomic_helper_check - validate state object
+- * @dev: DRM device
+- * @state: the driver private state object
+- *
+- * Check the state object to see if the requested state is
+- * physically possible.
+- *
+- * RETURNS
+- * Zero for success or -errno
+- */
+-int drm_atomic_helper_check(struct drm_device *dev, void *state)
+-{
+-	return 0;  /* for now */
+-}
+-EXPORT_SYMBOL(drm_atomic_helper_check);
+-
+-/**
+- * drm_atomic_helper_commit - commit state
+- * @dev: DRM device
+- * @state: the driver private state object
+- *
+- * Commit the state.  This will only be called if atomic_check()
+- * succeeds.
+- *
+- * RETURNS
+- * Zero for success or -errno
+- */
+-int drm_atomic_helper_commit(struct drm_device *dev, void *state)
+-{
+-	return 0;  /* for now */
+-}
+-EXPORT_SYMBOL(drm_atomic_helper_commit);
+-
+-/**
+- * drm_atomic_helper_end - conclude the atomic update
+- * @dev: DRM device
+- * @state: the driver private state object
+- *
+- * Release resources associated with the state object.
+- */
+-void drm_atomic_helper_end(struct drm_device *dev, void *state)
+-{
+-	drm_atomic_helper_state_unreference(state);
+-}
+-EXPORT_SYMBOL(drm_atomic_helper_end);
+-
+-void _drm_atomic_helper_state_free(struct kref *kref)
+-{
+-	struct drm_atomic_helper_state *state =
+-		container_of(kref, struct drm_atomic_helper_state, refcount);
+-	kfree(state);
+-}
+-EXPORT_SYMBOL(_drm_atomic_helper_state_free);
+-
+-
+-const struct drm_atomic_helper_funcs drm_atomic_helper_funcs = {
+-};
+-EXPORT_SYMBOL(drm_atomic_helper_funcs);
+diff --git a/drivers/gpu/drm/drm_crtc.c b/drivers/gpu/drm/drm_crtc.c
+index c20d783..6bd8da3 100644
+--- a/drivers/gpu/drm/drm_crtc.c
++++ b/drivers/gpu/drm/drm_crtc.c
+@@ -3502,21 +3502,20 @@ int drm_mode_connector_property_set_ioctl(struct drm_device *dev,
+ 	return drm_mode_obj_set_property_ioctl(dev, &obj_set_prop, file_priv);
+ }
+ 
+-static int drm_mode_connector_set_obj_prop(struct drm_connector *connector,
+-					   void *state, struct drm_property *property,
+-					   uint64_t value, void *blob_data)
++static int drm_mode_connector_set_obj_prop(struct drm_mode_object *obj,
++					   struct drm_property *property,
++					   uint64_t value)
+ {
+ 	int ret = -EINVAL;
++	struct drm_connector *connector = obj_to_connector(obj);
+ 
+ 	/* Do DPMS ourselves */
+ 	if (property == connector->dev->mode_config.dpms_property) {
+ 		if (connector->funcs->dpms)
+ 			(*connector->funcs->dpms)(connector, (int)value);
+ 		ret = 0;
+-	} else if (connector->funcs->set_property) {
+-		ret = connector->funcs->set_property(connector, state,
+-				property, value, blob_data);
+-	}
++	} else if (connector->funcs->set_property)
++		ret = connector->funcs->set_property(connector, property, value);
+ 
+ 	/* store the property value if successful */
+ 	if (!ret)
+@@ -3524,111 +3523,51 @@ static int drm_mode_connector_set_obj_prop(struct drm_connector *connector,
+ 	return ret;
+ }
+ 
+-static int drm_mode_crtc_set_obj_prop(struct drm_crtc *crtc,
+-				      void *state, struct drm_property *property,
+-				      uint64_t value, void *blob_data)
++static int drm_mode_crtc_set_obj_prop(struct drm_mode_object *obj,
++				      struct drm_property *property,
++				      uint64_t value)
+ {
+ 	int ret = -EINVAL;
++	struct drm_crtc *crtc = obj_to_crtc(obj);
+ 
+ 	if (crtc->funcs->set_property)
+-		ret = crtc->funcs->set_property(crtc, state, property,
+-				value, blob_data);
++		ret = crtc->funcs->set_property(crtc, property, value);
+ 	if (!ret)
+-		drm_object_property_set_value(&crtc->base, property, value);
++		drm_object_property_set_value(obj, property, value);
+ 
+ 	return ret;
+ }
+ 
+-static int drm_mode_encoder_set_obj_prop(struct drm_encoder *encoder,
+-					 void *state,
+-					 struct drm_property *property,
+-					 uint64_t value, void *blob_data)
++static int drm_mode_plane_set_obj_prop(struct drm_mode_object *obj,
++				      struct drm_property *property,
++				      uint64_t value)
+ {
+ 	int ret = -EINVAL;
++	struct drm_plane *plane = obj_to_plane(obj);
+ 
+-	if (encoder->funcs->set_property)
+-		ret = encoder->funcs->set_property(encoder, state, property,
+-				value, blob_data);
++	if (plane->funcs->set_property)
++		ret = plane->funcs->set_property(plane, property, value);
+ 	if (!ret)
+-		drm_object_property_set_value(&encoder->base, property, value);
++		drm_object_property_set_value(obj, property, value);
+ 
+ 	return ret;
+ }
+ 
+-static int drm_mode_plane_set_obj_prop(struct drm_plane *plane,
+-				      void *state, struct drm_property *property,
+-				      uint64_t value, void *blob_data)
++static int drm_mode_encoder_set_obj_prop(struct drm_mode_object *obj,
++					 struct drm_property *property,
++					 uint64_t value)
+ {
+ 	int ret = -EINVAL;
++	struct drm_encoder *encoder = obj_to_encoder(obj);
+ 
+-	if (plane->funcs->set_property)
+-		ret = plane->funcs->set_property(plane, state, property,
+-				value, blob_data);
++	if (encoder->funcs->set_property)
++		ret = encoder->funcs->set_property(encoder, property, value);
+ 	if (!ret)
+-		drm_object_property_set_value(&plane->base, property, value);
++		drm_object_property_set_value(obj, property, value);
+ 
+ 	return ret;
+ }
+ 
+-static int drm_mode_set_obj_prop(struct drm_device *dev,
+-		struct drm_mode_object *obj, void *state,
+-		struct drm_property *property, uint64_t value, void *blob_data)
+-{
+-	if (drm_property_change_is_valid(property, value)) {
+-		switch (obj->type) {
+-		case DRM_MODE_OBJECT_CONNECTOR:
+-			return drm_mode_connector_set_obj_prop(obj_to_connector(obj),
+-					state, property, value, blob_data);
+-		case DRM_MODE_OBJECT_CRTC:
+-			return drm_mode_crtc_set_obj_prop(obj_to_crtc(obj),
+-					state, property, value, blob_data);
+-		case DRM_MODE_OBJECT_ENCODER:
+-			return drm_mode_encoder_set_obj_prop(
+-					obj_to_encoder(obj), state, property,
+-					value, blob_data);
+-			break;
+-		case DRM_MODE_OBJECT_PLANE:
+-			return drm_mode_plane_set_obj_prop(obj_to_plane(obj),
+-					state, property, value, blob_data);
+-		}
+-	}
+-
+-	return -EINVAL;
+-}
+-
+-/* call with mode_config mutex held */
+-static int drm_mode_set_obj_prop_id(struct drm_device *dev, void *state,
+-		uint32_t obj_id, uint32_t obj_type,
+-		uint32_t prop_id, uint64_t value, void *blob_data)
+-{
+-	struct drm_mode_object *arg_obj;
+-	struct drm_mode_object *prop_obj;
+-	struct drm_property *property;
+-	int i;
+-
+-	arg_obj = drm_mode_object_find(dev, obj_id, obj_type);
+-	if (!arg_obj)
+-		return -ENOENT;
+-	if (!arg_obj->properties)
+-		return -EINVAL;
+-
+-	for (i = 0; i < arg_obj->properties->count; i++)
+-		if (arg_obj->properties->ids[i] == prop_id)
+-			break;
+-
+-	if (i == arg_obj->properties->count)
+-		return -EINVAL;
+-
+-	prop_obj = drm_mode_object_find(dev, prop_id,
+-					DRM_MODE_OBJECT_PROPERTY);
+-	if (!prop_obj)
+-		return -ENOENT;
+-	property = obj_to_property(prop_obj);
+-
+-	return drm_mode_set_obj_prop(dev, arg_obj, state, property,
+-			value, blob_data);
+-}
+-
+ int drm_mode_obj_get_properties_ioctl(struct drm_device *dev, void *data,
+ 				      struct drm_file *file_priv)
+ {
+@@ -3689,35 +3628,57 @@ int drm_mode_obj_set_property_ioctl(struct drm_device *dev, void *data,
+ 				    struct drm_file *file_priv)
+ {
+ 	struct drm_mode_obj_set_property *arg = data;
+-	void *state;
++	struct drm_mode_object *arg_obj;
++	struct drm_mode_object *prop_obj;
++	struct drm_property *property;
+ 	int ret = -EINVAL;
++	int i;
+ 
+ 	if (!drm_core_check_feature(dev, DRIVER_MODESET))
+ 		return -EINVAL;
+ 
+ 	drm_modeset_lock_all(dev);
+ 
+-	state = dev->driver->atomic_begin(dev, 0);
+-	if (IS_ERR(state)) {
+-		ret = PTR_ERR(state);
+-		goto out_unlock;
+-	}
++	arg_obj = drm_mode_object_find(dev, arg->obj_id, arg->obj_type);
++	if (!arg_obj)
++		goto out;
++	if (!arg_obj->properties)
++		goto out;
+ 
+-	ret = drm_mode_set_obj_prop_id(dev, state,
+-			arg->obj_id, arg->obj_type,
+-			arg->prop_id, arg->value, NULL);
+-	if (ret)
++	for (i = 0; i < arg_obj->properties->count; i++)
++		if (arg_obj->properties->ids[i] == arg->prop_id)
++			break;
++
++	if (i == arg_obj->properties->count)
+ 		goto out;
+ 
+-	ret = dev->driver->atomic_check(dev, state);
+-	if (ret)
++	prop_obj = drm_mode_object_find(dev, arg->prop_id,
++					DRM_MODE_OBJECT_PROPERTY);
++	if (!prop_obj)
++		goto out;
++	property = obj_to_property(prop_obj);
++
++	if (!drm_property_change_is_valid(property, arg->value))
+ 		goto out;
+ 
+-	ret = dev->driver->atomic_commit(dev, state);
++	switch (arg_obj->type) {
++	case DRM_MODE_OBJECT_CONNECTOR:
++		ret = drm_mode_connector_set_obj_prop(arg_obj, property,
++						      arg->value);
++		break;
++	case DRM_MODE_OBJECT_CRTC:
++		ret = drm_mode_crtc_set_obj_prop(arg_obj, property, arg->value);
++		break;
++	case DRM_MODE_OBJECT_PLANE:
++		ret = drm_mode_plane_set_obj_prop(arg_obj, property, arg->value);
++		break;
++	case DRM_MODE_OBJECT_ENCODER:
++		ret = drm_mode_encoder_set_obj_prop(arg_obj, property,
++				arg->value);
++		break;
++	}
+ 
+ out:
+-	dev->driver->atomic_end(dev, state);
+-out_unlock:
+ 	drm_modeset_unlock_all(dev);
+ 	return ret;
+ }
+diff --git a/drivers/gpu/drm/exynos/exynos_drm_crtc.c b/drivers/gpu/drm/exynos/exynos_drm_crtc.c
+index 802f7aa..7901706 100644
+--- a/drivers/gpu/drm/exynos/exynos_drm_crtc.c
++++ b/drivers/gpu/drm/exynos/exynos_drm_crtc.c
+@@ -576,10 +576,8 @@ static void exynos_drm_crtc_destroy(struct drm_crtc *crtc)
+ }
+ 
+ static int exynos_drm_crtc_set_property(struct drm_crtc *crtc,
+-					void *state,
+ 					struct drm_property *property,
+-					uint64_t val,
+-					void *blob_data)
++					uint64_t val)
+ {
+ 	struct drm_device *dev = crtc->dev;
+ 	struct exynos_drm_private *dev_priv = dev->dev_private;
+diff --git a/drivers/gpu/drm/exynos/exynos_drm_drv.c b/drivers/gpu/drm/exynos/exynos_drm_drv.c
+index db8cde1..d183257 100644
+--- a/drivers/gpu/drm/exynos/exynos_drm_drv.c
++++ b/drivers/gpu/drm/exynos/exynos_drm_drv.c
+@@ -13,7 +13,6 @@
+ 
+ #include <drm/drmP.h>
+ #include <drm/drm_crtc_helper.h>
+-#include <drm/drm_atomic_helper.h>
+ 
+ #include <drm/exynos_drm.h>
+ 
+@@ -405,12 +404,6 @@ static struct drm_driver exynos_drm_driver = {
+ 	.dumb_create		= exynos_drm_gem_dumb_create,
+ 	.dumb_map_offset	= exynos_drm_gem_dumb_map_offset,
+ 	.dumb_destroy		= drm_gem_dumb_destroy,
+-	.atomic_begin		= drm_atomic_helper_begin,
+-	.atomic_set_event	= drm_atomic_helper_set_event,
+-	.atomic_check		= drm_atomic_helper_check,
+-	.atomic_commit		= drm_atomic_helper_commit,
+-	.atomic_end		= drm_atomic_helper_end,
+-	.atomic_helpers		= &drm_atomic_helper_funcs,
+ 	.prime_handle_to_fd	= drm_gem_prime_handle_to_fd,
+ 	.prime_fd_to_handle	= drm_gem_prime_fd_to_handle,
+ 	.gem_prime_export	= exynos_dmabuf_prime_export,
+diff --git a/drivers/gpu/drm/exynos/exynos_drm_encoder.c b/drivers/gpu/drm/exynos/exynos_drm_encoder.c
+index 8748968..632571f 100644
+--- a/drivers/gpu/drm/exynos/exynos_drm_encoder.c
++++ b/drivers/gpu/drm/exynos/exynos_drm_encoder.c
+@@ -159,8 +159,7 @@ static const struct drm_encoder_helper_funcs exynos_encoder_helper_funcs = {
+ };
+ 
+ static int exynos_drm_encoder_set_property(struct drm_encoder *encoder,
+-		void *state, struct drm_property *property, uint64_t val,
+-		void *blob_data)
++		struct drm_property *property, uint64_t val)
+ {
+ 	struct exynos_drm_encoder *exynos_encoder = to_exynos_encoder(encoder);
+ 	struct exynos_drm_display *display = exynos_encoder->display;
+diff --git a/drivers/gpu/drm/exynos/exynos_hdmi.c b/drivers/gpu/drm/exynos/exynos_hdmi.c
+index 684f0e0e..2b1eb36 100644
+--- a/drivers/gpu/drm/exynos/exynos_hdmi.c
++++ b/drivers/gpu/drm/exynos/exynos_hdmi.c
+@@ -1628,8 +1628,7 @@ static int set_property(struct hdmi_context *hdata,
+ }
+ 
+ static int hdmi_connector_set_property(struct drm_connector *connector,
+-		void *state, struct drm_property *property, uint64_t val,
+-		void *blob_data)
++		struct drm_property *property, uint64_t val)
+ {
+ 	struct hdmi_context *hdata = ctx_from_connector(connector);
+ 	int ret;
+diff --git a/drivers/gpu/drm/gma500/cdv_intel_crt.c b/drivers/gpu/drm/gma500/cdv_intel_crt.c
+index 80908c5..8c17534 100644
+--- a/drivers/gpu/drm/gma500/cdv_intel_crt.c
++++ b/drivers/gpu/drm/gma500/cdv_intel_crt.c
+@@ -214,10 +214,8 @@ static int cdv_intel_crt_get_modes(struct drm_connector *connector)
+ }
+ 
+ static int cdv_intel_crt_set_property(struct drm_connector *connector,
+-				  void *state,
+ 				  struct drm_property *property,
+-				  uint64_t value,
+-				  void *blob_data)
++				  uint64_t value)
+ {
+ 	return 0;
+ }
+diff --git a/drivers/gpu/drm/gma500/cdv_intel_dp.c b/drivers/gpu/drm/gma500/cdv_intel_dp.c
+index 9165693..f925195 100644
+--- a/drivers/gpu/drm/gma500/cdv_intel_dp.c
++++ b/drivers/gpu/drm/gma500/cdv_intel_dp.c
+@@ -1642,10 +1642,8 @@ cdv_intel_dp_detect_audio(struct drm_connector *connector)
+ 
+ static int
+ cdv_intel_dp_set_property(struct drm_connector *connector,
+-		      void *state,
+ 		      struct drm_property *property,
+-		      uint64_t val,
+-		      void *blob_data)
++		      uint64_t val)
+ {
+ 	struct drm_psb_private *dev_priv = connector->dev->dev_private;
+ 	struct psb_intel_encoder *encoder = psb_intel_attached_encoder(connector);
+diff --git a/drivers/gpu/drm/gma500/cdv_intel_hdmi.c b/drivers/gpu/drm/gma500/cdv_intel_hdmi.c
+index 1ab7770..1db7da6 100644
+--- a/drivers/gpu/drm/gma500/cdv_intel_hdmi.c
++++ b/drivers/gpu/drm/gma500/cdv_intel_hdmi.c
+@@ -161,10 +161,8 @@ static enum drm_connector_status cdv_hdmi_detect(
+ }
+ 
+ static int cdv_hdmi_set_property(struct drm_connector *connector,
+-				       void *state,
+ 				       struct drm_property *property,
+-				       uint64_t value,
+-				       void *blob_data)
++				       uint64_t value)
+ {
+ 	struct drm_encoder *encoder = connector->encoder;
+ 
+diff --git a/drivers/gpu/drm/gma500/cdv_intel_lvds.c b/drivers/gpu/drm/gma500/cdv_intel_lvds.c
+index e763630..d81dbc3 100644
+--- a/drivers/gpu/drm/gma500/cdv_intel_lvds.c
++++ b/drivers/gpu/drm/gma500/cdv_intel_lvds.c
+@@ -455,10 +455,8 @@ static void cdv_intel_lvds_destroy(struct drm_connector *connector)
+ }
+ 
+ static int cdv_intel_lvds_set_property(struct drm_connector *connector,
+-				       void *state,
+ 				       struct drm_property *property,
+-				       uint64_t value,
+-				       void *blob_data)
++				       uint64_t value)
+ {
+ 	struct drm_encoder *encoder = connector->encoder;
+ 
+diff --git a/drivers/gpu/drm/gma500/mdfld_dsi_output.c b/drivers/gpu/drm/gma500/mdfld_dsi_output.c
+index 9cf9155..2d4ab48 100644
+--- a/drivers/gpu/drm/gma500/mdfld_dsi_output.c
++++ b/drivers/gpu/drm/gma500/mdfld_dsi_output.c
+@@ -240,10 +240,8 @@ mdfld_dsi_connector_detect(struct drm_connector *connector, bool force)
+ }
+ 
+ static int mdfld_dsi_connector_set_property(struct drm_connector *connector,
+-				void *state,
+ 				struct drm_property *property,
+-				uint64_t value,
+-				void *blob_data)
++				uint64_t value)
+ {
+ 	struct drm_encoder *encoder = connector->encoder;
+ 
+diff --git a/drivers/gpu/drm/gma500/psb_drv.c b/drivers/gpu/drm/gma500/psb_drv.c
+index 4f3a87a..ec6e782 100644
+--- a/drivers/gpu/drm/gma500/psb_drv.c
++++ b/drivers/gpu/drm/gma500/psb_drv.c
+@@ -644,13 +644,6 @@ static struct drm_driver driver = {
+ 	.preclose = psb_driver_preclose,
+ 	.postclose = psb_driver_close,
+ 
+-	.atomic_begin     = drm_atomic_helper_begin,
+-	.atomic_set_event = drm_atomic_helper_set_event,
+-	.atomic_check     = drm_atomic_helper_check,
+-	.atomic_commit    = drm_atomic_helper_commit,
+-	.atomic_end       = drm_atomic_helper_end,
+-	.atomic_helpers   = &drm_atomic_helper_funcs,
+-
+ 	.gem_init_object = psb_gem_init_object,
+ 	.gem_free_object = psb_gem_free_object,
+ 	.gem_vm_ops = &psb_gem_vm_ops,
+diff --git a/drivers/gpu/drm/gma500/psb_drv.h b/drivers/gpu/drm/gma500/psb_drv.h
+index ead7fb0..66eeb96 100644
+--- a/drivers/gpu/drm/gma500/psb_drv.h
++++ b/drivers/gpu/drm/gma500/psb_drv.h
+@@ -25,7 +25,6 @@
+ #include <drm/drmP.h>
+ #include <drm/drm_global.h>
+ #include <drm/gma_drm.h>
+-#include <drm/drm_atomic_helper.h>
+ #include "psb_reg.h"
+ #include "psb_intel_drv.h"
+ #include "intel_bios.h"
+diff --git a/drivers/gpu/drm/gma500/psb_intel_drv.h b/drivers/gpu/drm/gma500/psb_intel_drv.h
+index 9ccb7b5..90f2d11 100644
+--- a/drivers/gpu/drm/gma500/psb_intel_drv.h
++++ b/drivers/gpu/drm/gma500/psb_intel_drv.h
+@@ -275,10 +275,8 @@ extern bool psb_intel_lvds_mode_fixup(struct drm_encoder *encoder,
+ extern int psb_intel_lvds_mode_valid(struct drm_connector *connector,
+ 				     struct drm_display_mode *mode);
+ extern int psb_intel_lvds_set_property(struct drm_connector *connector,
+-					void *state,
+ 					struct drm_property *property,
+-					uint64_t value,
+-					void *blob_data);
++					uint64_t value);
+ extern void psb_intel_lvds_destroy(struct drm_connector *connector);
+ extern const struct drm_encoder_funcs psb_intel_lvds_enc_funcs;
+ 
+diff --git a/drivers/gpu/drm/gma500/psb_intel_lvds.c b/drivers/gpu/drm/gma500/psb_intel_lvds.c
+index 51fc2a4..9fa5fa2 100644
+--- a/drivers/gpu/drm/gma500/psb_intel_lvds.c
++++ b/drivers/gpu/drm/gma500/psb_intel_lvds.c
+@@ -576,10 +576,8 @@ void psb_intel_lvds_destroy(struct drm_connector *connector)
+ }
+ 
+ int psb_intel_lvds_set_property(struct drm_connector *connector,
+-				       void *state,
+ 				       struct drm_property *property,
+-				       uint64_t value,
+-				       void *blob_data)
++				       uint64_t value)
+ {
+ 	struct drm_encoder *encoder = connector->encoder;
+ 
+diff --git a/drivers/gpu/drm/gma500/psb_intel_sdvo.c b/drivers/gpu/drm/gma500/psb_intel_sdvo.c
+index f440416..8a558d9 100644
+--- a/drivers/gpu/drm/gma500/psb_intel_sdvo.c
++++ b/drivers/gpu/drm/gma500/psb_intel_sdvo.c
+@@ -1684,10 +1684,8 @@ static bool psb_intel_sdvo_detect_hdmi_audio(struct drm_connector *connector)
+ 
+ static int
+ psb_intel_sdvo_set_property(struct drm_connector *connector,
+-			void *state,
+ 			struct drm_property *property,
+-			uint64_t val,
+-			void *blob_data)
++			uint64_t val)
+ {
+ 	struct psb_intel_sdvo *psb_intel_sdvo = intel_attached_sdvo(connector);
+ 	struct psb_intel_sdvo_connector *psb_intel_sdvo_connector = to_psb_intel_sdvo_connector(connector);
+diff --git a/drivers/gpu/drm/i915/i915_drv.c b/drivers/gpu/drm/i915/i915_drv.c
+index e5d4e86..179f150 100644
+--- a/drivers/gpu/drm/i915/i915_drv.c
++++ b/drivers/gpu/drm/i915/i915_drv.c
+@@ -1124,14 +1124,6 @@ static struct drm_driver driver = {
+ 	.dumb_create = i915_gem_dumb_create,
+ 	.dumb_map_offset = i915_gem_mmap_gtt,
+ 	.dumb_destroy = drm_gem_dumb_destroy,
+-
+-	.atomic_begin     = drm_atomic_helper_begin,
+-	.atomic_set_event = drm_atomic_helper_set_event,
+-	.atomic_check     = drm_atomic_helper_check,
+-	.atomic_commit    = drm_atomic_helper_commit,
+-	.atomic_end       = drm_atomic_helper_end,
+-	.atomic_helpers   = &drm_atomic_helper_funcs,
+-
+ 	.ioctls = i915_ioctls,
+ 	.fops = &i915_driver_fops,
+ 	.name = DRIVER_NAME,
+diff --git a/drivers/gpu/drm/i915/intel_crt.c b/drivers/gpu/drm/i915/intel_crt.c
+index fe1c81a..f9cc354 100644
+--- a/drivers/gpu/drm/i915/intel_crt.c
++++ b/drivers/gpu/drm/i915/intel_crt.c
+@@ -647,10 +647,8 @@ static int intel_crt_get_modes(struct drm_connector *connector)
+ }
+ 
+ static int intel_crt_set_property(struct drm_connector *connector,
+-				  void *state,
+ 				  struct drm_property *property,
+-				  uint64_t value,
+-				  void *blob_data)
++				  uint64_t value)
+ {
+ 	return 0;
+ }
+diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_dp.c
+index a6c8121..5e29718 100644
+--- a/drivers/gpu/drm/i915/intel_dp.c
++++ b/drivers/gpu/drm/i915/intel_dp.c
+@@ -2342,10 +2342,8 @@ intel_dp_detect_audio(struct drm_connector *connector)
+ 
+ static int
+ intel_dp_set_property(struct drm_connector *connector,
+-		      void *state,
+ 		      struct drm_property *property,
+-		      uint64_t val,
+-		      void *blob_data)
++		      uint64_t val)
+ {
+ 	struct drm_i915_private *dev_priv = connector->dev->dev_private;
+ 	struct intel_connector *intel_connector = to_intel_connector(connector);
+diff --git a/drivers/gpu/drm/i915/intel_drv.h b/drivers/gpu/drm/i915/intel_drv.h
+index 96476da..320186f 100644
+--- a/drivers/gpu/drm/i915/intel_drv.h
++++ b/drivers/gpu/drm/i915/intel_drv.h
+@@ -30,7 +30,6 @@
+ #include "i915_drv.h"
+ #include <drm/drm_crtc.h>
+ #include <drm/drm_crtc_helper.h>
+-#include <drm/drm_atomic_helper.h>
+ #include <drm/drm_fb_helper.h>
+ #include <drm/drm_dp_helper.h>
+ 
+diff --git a/drivers/gpu/drm/i915/intel_hdmi.c b/drivers/gpu/drm/i915/intel_hdmi.c
+index 2c9c922..3227c67 100644
+--- a/drivers/gpu/drm/i915/intel_hdmi.c
++++ b/drivers/gpu/drm/i915/intel_hdmi.c
+@@ -942,10 +942,8 @@ intel_hdmi_detect_audio(struct drm_connector *connector)
+ 
+ static int
+ intel_hdmi_set_property(struct drm_connector *connector,
+-			void *state,
+ 			struct drm_property *property,
+-			uint64_t val,
+-			void *blob_data)
++			uint64_t val)
+ {
+ 	struct intel_hdmi *intel_hdmi = intel_attached_hdmi(connector);
+ 	struct intel_digital_port *intel_dig_port =
+diff --git a/drivers/gpu/drm/i915/intel_lvds.c b/drivers/gpu/drm/i915/intel_lvds.c
+index 50d3400..175969c 100644
+--- a/drivers/gpu/drm/i915/intel_lvds.c
++++ b/drivers/gpu/drm/i915/intel_lvds.c
+@@ -448,10 +448,8 @@ static void intel_lvds_destroy(struct drm_connector *connector)
+ }
+ 
+ static int intel_lvds_set_property(struct drm_connector *connector,
+-				   void *state,
+ 				   struct drm_property *property,
+-				   uint64_t value,
+-				   void *blob_data)
++				   uint64_t value)
+ {
+ 	struct intel_connector *intel_connector = to_intel_connector(connector);
+ 	struct drm_device *dev = connector->dev;
+diff --git a/drivers/gpu/drm/i915/intel_sdvo.c b/drivers/gpu/drm/i915/intel_sdvo.c
+index c557019..a1aa8e9 100644
+--- a/drivers/gpu/drm/i915/intel_sdvo.c
++++ b/drivers/gpu/drm/i915/intel_sdvo.c
+@@ -1881,10 +1881,8 @@ static bool intel_sdvo_detect_hdmi_audio(struct drm_connector *connector)
+ 
+ static int
+ intel_sdvo_set_property(struct drm_connector *connector,
+-			void *state,
+ 			struct drm_property *property,
+-			uint64_t val,
+-			void *blob_data)
++			uint64_t val)
+ {
+ 	struct intel_sdvo *intel_sdvo = intel_attached_sdvo(connector);
+ 	struct intel_sdvo_connector *intel_sdvo_connector = to_intel_sdvo_connector(connector);
+diff --git a/drivers/gpu/drm/i915/intel_tv.c b/drivers/gpu/drm/i915/intel_tv.c
+index 79ed72d..984a113 100644
+--- a/drivers/gpu/drm/i915/intel_tv.c
++++ b/drivers/gpu/drm/i915/intel_tv.c
+@@ -1434,9 +1434,8 @@ intel_tv_destroy(struct drm_connector *connector)
+ 
+ 
+ static int
+-intel_tv_set_property(struct drm_connector *connector, void *state,
+-		      struct drm_property *property,
+-		      uint64_t val, void *blob_data)
++intel_tv_set_property(struct drm_connector *connector, struct drm_property *property,
++		      uint64_t val)
+ {
+ 	struct drm_device *dev = connector->dev;
+ 	struct intel_tv *intel_tv = intel_attached_tv(connector);
+diff --git a/drivers/gpu/drm/mgag200/mgag200_drv.c b/drivers/gpu/drm/mgag200/mgag200_drv.c
+index 604f02d..bd91964 100644
+--- a/drivers/gpu/drm/mgag200/mgag200_drv.c
++++ b/drivers/gpu/drm/mgag200/mgag200_drv.c
+@@ -105,13 +105,6 @@ static struct drm_driver driver = {
+ 	.dumb_create = mgag200_dumb_create,
+ 	.dumb_map_offset = mgag200_dumb_mmap_offset,
+ 	.dumb_destroy = drm_gem_dumb_destroy,
+-
+-	.atomic_begin     = drm_atomic_helper_begin,
+-	.atomic_set_event = drm_atomic_helper_set_event,
+-	.atomic_check     = drm_atomic_helper_check,
+-	.atomic_commit    = drm_atomic_helper_commit,
+-	.atomic_end       = drm_atomic_helper_end,
+-	.atomic_helpers   = &drm_atomic_helper_funcs,
+ };
+ 
+ static struct pci_driver mgag200_pci_driver = {
+diff --git a/drivers/gpu/drm/mgag200/mgag200_drv.h b/drivers/gpu/drm/mgag200/mgag200_drv.h
+index ca0d017..c01b057 100644
+--- a/drivers/gpu/drm/mgag200/mgag200_drv.h
++++ b/drivers/gpu/drm/mgag200/mgag200_drv.h
+@@ -16,7 +16,6 @@
+ #include <video/vga.h>
+ 
+ #include <drm/drm_fb_helper.h>
+-#include <drm/drm_atomic_helper.h>
+ #include <drm/ttm/ttm_bo_api.h>
+ #include <drm/ttm/ttm_bo_driver.h>
+ #include <drm/ttm/ttm_placement.h>
+diff --git a/drivers/gpu/drm/nouveau/nouveau_connector.c b/drivers/gpu/drm/nouveau/nouveau_connector.c
+index b35b7bd..e620ba8 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_connector.c
++++ b/drivers/gpu/drm/nouveau/nouveau_connector.c
+@@ -447,8 +447,7 @@ nouveau_connector_force(struct drm_connector *connector)
+ 
+ static int
+ nouveau_connector_set_property(struct drm_connector *connector,
+-		void *state, struct drm_property *property,
+-		uint64_t value, void *blob_data)
++			       struct drm_property *property, uint64_t value)
+ {
+ 	struct nouveau_display *disp = nouveau_display(connector->dev);
+ 	struct nouveau_connector *nv_connector = nouveau_connector(connector);
+diff --git a/drivers/gpu/drm/nouveau/nouveau_drm.c b/drivers/gpu/drm/nouveau/nouveau_drm.c
+index cae4266..a40b6cd 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_drm.c
++++ b/drivers/gpu/drm/nouveau/nouveau_drm.c
+@@ -671,13 +671,6 @@ driver = {
+ 	.dumb_map_offset = nouveau_display_dumb_map_offset,
+ 	.dumb_destroy = drm_gem_dumb_destroy,
+ 
+-	.atomic_begin     = drm_atomic_helper_begin,
+-	.atomic_set_event = drm_atomic_helper_set_event,
+-	.atomic_check     = drm_atomic_helper_check,
+-	.atomic_commit    = drm_atomic_helper_commit,
+-	.atomic_end       = drm_atomic_helper_end,
+-	.atomic_helpers   = &drm_atomic_helper_funcs,
+-
+ 	.name = DRIVER_NAME,
+ 	.desc = DRIVER_DESC,
+ #ifdef GIT_REVISION
+diff --git a/drivers/gpu/drm/nouveau/nouveau_drm.h b/drivers/gpu/drm/nouveau/nouveau_drm.h
+index 2f8b6f2..aa89eb9 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_drm.h
++++ b/drivers/gpu/drm/nouveau/nouveau_drm.h
+@@ -17,7 +17,6 @@
+ #include <subdev/vm.h>
+ 
+ #include <drmP.h>
+-#include <drm/drm_atomic_helper.h>
+ #include <drm/nouveau_drm.h>
+ 
+ #include <drm/ttm/ttm_bo_api.h>
+diff --git a/drivers/gpu/drm/radeon/radeon_connectors.c b/drivers/gpu/drm/radeon/radeon_connectors.c
+index 97e69c9..c6a4100 100644
+--- a/drivers/gpu/drm/radeon/radeon_connectors.c
++++ b/drivers/gpu/drm/radeon/radeon_connectors.c
+@@ -366,9 +366,8 @@ static void radeon_add_common_modes(struct drm_encoder *encoder, struct drm_conn
+ 	}
+ }
+ 
+-static int radeon_connector_set_property(struct drm_connector *connector,
+-		void *state, struct drm_property *property,
+-		uint64_t val, void *blob_data)
++static int radeon_connector_set_property(struct drm_connector *connector, struct drm_property *property,
++				  uint64_t val)
+ {
+ 	struct drm_device *dev = connector->dev;
+ 	struct radeon_device *rdev = dev->dev_private;
+@@ -653,10 +652,8 @@ static void radeon_connector_destroy(struct drm_connector *connector)
+ }
+ 
+ static int radeon_lvds_set_property(struct drm_connector *connector,
+-				    void *state,
+ 				    struct drm_property *property,
+-				    uint64_t value,
+-				    void *blob_data)
++				    uint64_t value)
+ {
+ 	struct drm_device *dev = connector->dev;
+ 	struct radeon_encoder *radeon_encoder;
+diff --git a/drivers/gpu/drm/radeon/radeon_drv.c b/drivers/gpu/drm/radeon/radeon_drv.c
+index ad66195..08fe023 100644
+--- a/drivers/gpu/drm/radeon/radeon_drv.c
++++ b/drivers/gpu/drm/radeon/radeon_drv.c
+@@ -34,7 +34,6 @@
+ #include "radeon_drv.h"
+ 
+ #include <drm/drm_pciids.h>
+-#include <drm/drm_atomic_helper.h>
+ #include <linux/console.h>
+ #include <linux/module.h>
+ 
+@@ -399,14 +398,6 @@ static struct drm_driver kms_driver = {
+ 	.dumb_create = radeon_mode_dumb_create,
+ 	.dumb_map_offset = radeon_mode_dumb_mmap,
+ 	.dumb_destroy = drm_gem_dumb_destroy,
+-
+-	.atomic_begin     = drm_atomic_helper_begin,
+-	.atomic_set_event = drm_atomic_helper_set_event,
+-	.atomic_check     = drm_atomic_helper_check,
+-	.atomic_commit    = drm_atomic_helper_commit,
+-	.atomic_end       = drm_atomic_helper_end,
+-	.atomic_helpers   = &drm_atomic_helper_funcs,
+-
+ 	.fops = &radeon_driver_kms_fops,
+ 
+ 	.prime_handle_to_fd = drm_gem_prime_handle_to_fd,
+diff --git a/drivers/gpu/drm/shmobile/shmob_drm_drv.c b/drivers/gpu/drm/shmobile/shmob_drm_drv.c
+index 16e52e9..946bd28 100644
+--- a/drivers/gpu/drm/shmobile/shmob_drm_drv.c
++++ b/drivers/gpu/drm/shmobile/shmob_drm_drv.c
+@@ -21,7 +21,6 @@
+ 
+ #include <drm/drmP.h>
+ #include <drm/drm_crtc_helper.h>
+-#include <drm/drm_atomic_helper.h>
+ #include <drm/drm_gem_cma_helper.h>
+ 
+ #include "shmob_drm_crtc.h"
+@@ -287,12 +286,6 @@ static struct drm_driver shmob_drm_driver = {
+ 	.dumb_create		= drm_gem_cma_dumb_create,
+ 	.dumb_map_offset	= drm_gem_cma_dumb_map_offset,
+ 	.dumb_destroy		= drm_gem_dumb_destroy,
+-	.atomic_begin		= drm_atomic_helper_begin,
+-	.atomic_set_event	= drm_atomic_helper_set_event,
+-	.atomic_check		= drm_atomic_helper_check,
+-	.atomic_commit		= drm_atomic_helper_commit,
+-	.atomic_end		= drm_atomic_helper_end,
+-	.atomic_helpers		= &drm_atomic_helper_funcs,
+ 	.fops			= &shmob_drm_fops,
+ 	.name			= "shmob-drm",
+ 	.desc			= "Renesas SH Mobile DRM",
+diff --git a/drivers/gpu/drm/udl/udl_connector.c b/drivers/gpu/drm/udl/udl_connector.c
+index cd0c01a..b44d548 100644
+--- a/drivers/gpu/drm/udl/udl_connector.c
++++ b/drivers/gpu/drm/udl/udl_connector.c
+@@ -115,9 +115,9 @@ udl_best_single_encoder(struct drm_connector *connector)
+ 	return encoder;
+ }
+ 
+-static int udl_connector_set_property(struct drm_connector *connector, 
+-			       void *state, struct drm_property *property,
+-			       uint64_t val, void *blob_data)
++static int udl_connector_set_property(struct drm_connector *connector,
++				      struct drm_property *property,
++				      uint64_t val)
+ {
+ 	return 0;
+ }
+diff --git a/drivers/gpu/drm/udl/udl_drv.c b/drivers/gpu/drm/udl/udl_drv.c
+index eb96f36..bb0af58 100644
+--- a/drivers/gpu/drm/udl/udl_drv.c
++++ b/drivers/gpu/drm/udl/udl_drv.c
+@@ -9,7 +9,6 @@
+ #include <linux/module.h>
+ #include <drm/drm_usb.h>
+ #include <drm/drm_crtc_helper.h>
+-#include <drm/drm_atomic_helper.h>
+ #include "udl_drv.h"
+ 
+ static struct drm_driver driver;
+@@ -91,13 +90,6 @@ static struct drm_driver driver = {
+ 	.prime_fd_to_handle = drm_gem_prime_fd_to_handle,
+ 	.gem_prime_import = udl_gem_prime_import,
+ 
+-	.atomic_begin     = drm_atomic_helper_begin,
+-	.atomic_set_event = drm_atomic_helper_set_event,
+-	.atomic_check     = drm_atomic_helper_check,
+-	.atomic_commit    = drm_atomic_helper_commit,
+-	.atomic_end       = drm_atomic_helper_end,
+-	.atomic_helpers   = &drm_atomic_helper_funcs,
+-
+ 	.name = DRIVER_NAME,
+ 	.desc = DRIVER_DESC,
+ 	.date = DRIVER_DATE,
+diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c b/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
+index b083329..07dfd82 100644
+--- a/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
++++ b/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
+@@ -1158,13 +1158,6 @@ static struct drm_driver driver = {
+ 	.dumb_map_offset = vmw_dumb_map_offset,
+ 	.dumb_destroy = vmw_dumb_destroy,
+ 
+-	.atomic_begin     = drm_atomic_helper_begin,
+-	.atomic_set_event = drm_atomic_helper_set_event,
+-	.atomic_check     = drm_atomic_helper_check,
+-	.atomic_commit    = drm_atomic_helper_commit,
+-	.atomic_end       = drm_atomic_helper_end,
+-	.atomic_helpers   = &drm_atomic_helper_funcs,
+-
+ 	.fops = &vmwgfx_driver_fops,
+ 	.name = VMWGFX_DRIVER_NAME,
+ 	.desc = VMWGFX_DRIVER_DESC,
+diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_drv.h b/drivers/gpu/drm/vmwgfx/vmwgfx_drv.h
+index 51170b3..13aeda7 100644
+--- a/drivers/gpu/drm/vmwgfx/vmwgfx_drv.h
++++ b/drivers/gpu/drm/vmwgfx/vmwgfx_drv.h
+@@ -30,7 +30,6 @@
+ 
+ #include "vmwgfx_reg.h"
+ #include <drm/drmP.h>
+-#include <drm/drm_atomic_helper.h>
+ #include <drm/vmwgfx_drm.h>
+ #include <drm/drm_hashtab.h>
+ #include <linux/suspend.h>
+diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c b/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c
+index 190e082..637f340 100644
+--- a/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c
++++ b/drivers/gpu/drm/vmwgfx/vmwgfx_kms.c
+@@ -1993,10 +1993,8 @@ int vmw_du_connector_fill_modes(struct drm_connector *connector,
+ }
+ 
+ int vmw_du_connector_set_property(struct drm_connector *connector,
+-				  void *state,
+ 				  struct drm_property *property,
+-				  uint64_t val,
+-				  void *blob_data)
++				  uint64_t val)
+ {
+ 	return 0;
+ }
+diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_kms.h b/drivers/gpu/drm/vmwgfx/vmwgfx_kms.h
+index e259d6c..8d038c3 100644
+--- a/drivers/gpu/drm/vmwgfx/vmwgfx_kms.h
++++ b/drivers/gpu/drm/vmwgfx/vmwgfx_kms.h
+@@ -141,10 +141,8 @@ vmw_du_connector_detect(struct drm_connector *connector, bool force);
+ int vmw_du_connector_fill_modes(struct drm_connector *connector,
+ 				uint32_t max_width, uint32_t max_height);
+ int vmw_du_connector_set_property(struct drm_connector *connector,
+-				  void *state,
+ 				  struct drm_property *property,
+-				  uint64_t val,
+-				  void *blob_data);
++				  uint64_t val);
+ 
+ 
+ /*
+diff --git a/drivers/staging/omapdrm/omap_crtc.c b/drivers/staging/omapdrm/omap_crtc.c
+index ccd1666..88ca96a 100644
+--- a/drivers/staging/omapdrm/omap_crtc.c
++++ b/drivers/staging/omapdrm/omap_crtc.c
+@@ -332,8 +332,8 @@ static int omap_crtc_page_flip_locked(struct drm_crtc *crtc,
+ 	return 0;
+ }
+ 
+-static int omap_crtc_set_property(struct drm_crtc *crtc, void *state,
+-		struct drm_property *property, uint64_t val, void *blob_data)
++static int omap_crtc_set_property(struct drm_crtc *crtc,
++		struct drm_property *property, uint64_t val)
+ {
+ 	struct omap_crtc *omap_crtc = to_omap_crtc(crtc);
+ 	struct omap_drm_private *priv = crtc->dev->dev_private;
+@@ -343,8 +343,7 @@ static int omap_crtc_set_property(struct drm_crtc *crtc, void *state,
+ 				!!(val & ((1LL << DRM_ROTATE_90) | (1LL << DRM_ROTATE_270)));
+ 	}
+ 
+-	return omap_plane_set_property(omap_crtc->plane, state,
+-			property, val, blob_data);
++	return omap_plane_set_property(omap_crtc->plane, property, val);
+ }
+ 
+ static const struct drm_crtc_funcs omap_crtc_funcs = {
+diff --git a/drivers/staging/omapdrm/omap_drv.c b/drivers/staging/omapdrm/omap_drv.c
+index 400bbea..dfdb4ba 100644
+--- a/drivers/staging/omapdrm/omap_drv.c
++++ b/drivers/staging/omapdrm/omap_drv.c
+@@ -515,12 +515,6 @@ static struct drm_driver omap_drm_driver = {
+ 		.dumb_create = omap_gem_dumb_create,
+ 		.dumb_map_offset = omap_gem_dumb_map_offset,
+ 		.dumb_destroy = omap_gem_dumb_destroy,
+-		.atomic_begin     = drm_atomic_helper_begin,
+-		.atomic_set_event = drm_atomic_helper_set_event,
+-		.atomic_check     = drm_atomic_helper_check,
+-		.atomic_commit    = drm_atomic_helper_commit,
+-		.atomic_end       = drm_atomic_helper_end,
+-		.atomic_helpers   = &drm_atomic_helper_funcs,
+ 		.ioctls = ioctls,
+ 		.num_ioctls = DRM_OMAP_NUM_IOCTLS,
+ 		.fops = &omapdriver_fops,
+diff --git a/drivers/staging/omapdrm/omap_drv.h b/drivers/staging/omapdrm/omap_drv.h
+index 8e65a81..cd1f22b 100644
+--- a/drivers/staging/omapdrm/omap_drv.h
++++ b/drivers/staging/omapdrm/omap_drv.h
+@@ -25,8 +25,6 @@
+ #include <linux/types.h>
+ #include <drm/drmP.h>
+ #include <drm/drm_crtc_helper.h>
+-#include <drm/drm_atomic_helper.h>
+-#include <drm/omap_drm.h>
+ #include <linux/platform_data/omap_drm.h>
+ #include "omap_drm.h"
+ 
+@@ -170,8 +168,8 @@ int omap_plane_mode_set(struct drm_plane *plane,
+ 		void (*fxn)(void *), void *arg);
+ void omap_plane_install_properties(struct drm_plane *plane,
+ 		struct drm_mode_object *obj);
+-int omap_plane_set_property(struct drm_plane *plane, void *state,
+-		struct drm_property *property, uint64_t val, void *blob_data);
++int omap_plane_set_property(struct drm_plane *plane,
++		struct drm_property *property, uint64_t val);
+ 
+ struct drm_encoder *omap_encoder_init(struct drm_device *dev,
+ 		struct omap_dss_device *dssdev);
+diff --git a/drivers/staging/omapdrm/omap_plane.c b/drivers/staging/omapdrm/omap_plane.c
+index 6ab49df..bb989d7 100644
+--- a/drivers/staging/omapdrm/omap_plane.c
++++ b/drivers/staging/omapdrm/omap_plane.c
+@@ -329,8 +329,8 @@ void omap_plane_install_properties(struct drm_plane *plane,
+ 	drm_object_attach_property(obj, prop, 0);
+ }
+ 
+-int omap_plane_set_property(struct drm_plane *plane, void *state,
+-		struct drm_property *property, uint64_t val, void *blob_data)
++int omap_plane_set_property(struct drm_plane *plane,
++		struct drm_property *property, uint64_t val)
+ {
+ 	struct omap_plane *omap_plane = to_omap_plane(plane);
+ 	struct omap_drm_private *priv = plane->dev->dev_private;
+diff --git a/include/drm/drmP.h b/include/drm/drmP.h
+index ff155b2..572c53c 100644
+--- a/include/drm/drmP.h
++++ b/include/drm/drmP.h
+@@ -984,83 +984,6 @@ struct drm_driver {
+ 			    struct drm_device *dev,
+ 			    uint32_t handle);
+ 
+-	/*
+-	 * Atomic functions:
+-	 */
+-
+-	/**
+-	 * atomic_begin - start a sequence of atomic updates
+-	 * @dev: DRM device
+-	 * @flags: the modifier flags that userspace has requested
+-	 *
+-	 * Begin a sequence of atomic property sets.  Returns a driver
+-	 * private state object that is passed back into the various
+-	 * object's set_property() fxns, and into the remainder of the
+-	 * atomic funcs.  The state object should accumulate the changes
+-	 * from one o more set_property()'s.  At the end, the state can
+-	 * be checked, and optionally committed.
+-	 *
+-	 * RETURNS
+-	 *   a driver private state object, which is passed back in to
+-	 *   the various other atomic fxns, or error (such as -EBUSY if
+-	 *   there is still a pending async update)
+-	 */
+-	void *(*atomic_begin)(struct drm_device *dev, uint32_t flags);
+-
+-	/**
+-	 * atomic_set_event - set a pending event on mode object
+-	 * @dev: DRM device
+-	 * @state: the driver private state object
+-	 * @obj: the object to set the event on
+-	 * @event: the event to send back
+-	 *
+-	 * Set pending event for an update on the specified object.  The
+-	 * event is to be sent back to userspace after the update completes.
+-	 */
+-	int (*atomic_set_event)(struct drm_device *dev,
+-			void *state, struct drm_mode_object *obj,
+-			struct drm_pending_vblank_event *event);
+-
+-	/**
+-	 * atomic_check - validate state object
+-	 * @dev: DRM device
+-	 * @state: the driver private state object
+-	 *
+-	 * Check the state object to see if the requested state is
+-	 * physically possible.
+-	 *
+-	 * RETURNS
+-	 * Zero for success or -errno
+-	 */
+-	int (*atomic_check)(struct drm_device *dev, void *state);
+-
+-	/**
+-	 * atomic_commit - commit state
+-	 * @dev: DRM device
+-	 * @state: the driver private state object
+-	 *
+-	 * Commit the state.  This will only be called if atomic_check()
+-	 * succeeds.
+-	 *
+-	 * RETURNS
+-	 * Zero for success or -errno
+-	 */
+-	int (*atomic_commit)(struct drm_device *dev, void *state);
+-
+-	/**
+-	 * atomic_end - conclude the atomic update
+-	 * @dev: DRM device
+-	 * @state: the driver private state object
+-
+-	 * Release resources associated with the state object.
+-	 */
+-	void (*atomic_end)(struct drm_device *dev, void *state);
+-
+-	/**
+-	 * Helpers used by drm-atomic-helpers
+-	 */
+-	const void *atomic_helpers;
+-
+ 	/* Driver private ops for this object */
+ 	const struct vm_operations_struct *gem_vm_ops;
+ 
+diff --git a/include/drm/drm_atomic_helper.h b/include/drm/drm_atomic_helper.h
+deleted file mode 100644
+index e70cd7b..0000000
+--- a/include/drm/drm_atomic_helper.h
++++ /dev/null
+@@ -1,100 +0,0 @@
+-/*
+- * Copyright (C) 2013 Red Hat
+- * Author: Rob Clark <robdclark@gmail.com>
+- *
+- * This program is free software; you can redistribute it and/or modify it
+- * under the terms of the GNU General Public License version 2 as published by
+- * the Free Software Foundation.
+- *
+- * This program is distributed in the hope that it will be useful, but WITHOUT
+- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+- * more details.
+- *
+- * You should have received a copy of the GNU General Public License along with
+- * this program.  If not, see <http://www.gnu.org/licenses/>.
+- */
+-
+-#ifndef DRM_ATOMIC_HELPER_H_
+-#define DRM_ATOMIC_HELPER_H_
+-
+-/**
+- * DOC: atomic state helpers
+- *
+- * Base helper atomic state and functions.  Drivers are free to either
+- * use these as-is, extend them, or completely replace them, in order
+- * to implement the atomic KMS API.
+- *
+- * A naive driver, with no special constraints or hw support for atomic
+- * updates may simply add the following to their driver struct:
+- *
+- *     .atomic_begin     = drm_atomic_helper_begin,
+- *     .atomic_set_event = drm_atomic_helper_set_event,
+- *     .atomic_check     = drm_atomic_helper_check,
+- *     .atomic_commit    = drm_atomic_helper_commit,
+- *     .atomic_end       = drm_atomic_helper_end,
+- *     .atomic_helpers   = &drm_atomic_helper_funcs,
+- *
+- * In addition, if you're plane/crtc doesn't already have it's own custom
+- * properties, then add to your plane/crtc_funcs:
+- *
+- *     .set_property     = drm_atomic_helper_{plane,crtc}_set_property,
+- *
+- * Unlike the crtc helpers, it is intended that the atomic helpers can be
+- * used piecemeal by the drivers, either using all or overriding parts as
+- * needed.
+- *
+- * A driver which can have (for example) conflicting modes across multiple
+- * crtcs (for example, bandwidth limitations or clock/pll configuration
+- * restrictions), can simply wrap drm_atomic_helper_check() with their own
+- * driver specific .atomic_check() function.
+- *
+- * A driver which can support true atomic updates can wrap
+- * drm_atomic_helper_commit().
+- *
+- * A driver with custom properties should override the appropriate get_state(),
+- * check_state(), and commit_state() functions in .atomic_helpers if it uses
+- * the drm-atomic-helpers.  Otherwise it is free to use &drm_atomic_helper_funcs
+- * as-is.
+- */
+-
+-/**
+- * struct drm_atomic_helper_funcs - helper funcs used by the atomic helpers
+- */
+-struct drm_atomic_helper_funcs {
+-	int dummy; /* for now */
+-};
+-
+-const extern struct drm_atomic_helper_funcs drm_atomic_helper_funcs;
+-
+-void *drm_atomic_helper_begin(struct drm_device *dev, uint32_t flags);
+-int drm_atomic_helper_set_event(struct drm_device *dev,
+-		void *state, struct drm_mode_object *obj,
+-		struct drm_pending_vblank_event *event);
+-int drm_atomic_helper_check(struct drm_device *dev, void *state);
+-int drm_atomic_helper_commit(struct drm_device *dev, void *state);
+-void drm_atomic_helper_end(struct drm_device *dev, void *state);
+-
+-/**
+- * struct drm_atomic_helper_state - the state object used by atomic helpers
+- */
+-struct drm_atomic_helper_state {
+-	struct kref refcount;
+-	struct drm_device *dev;
+-	uint32_t flags;
+-};
+-
+-static inline void
+-drm_atomic_helper_state_reference(struct drm_atomic_helper_state *state)
+-{
+-	kref_get(&state->refcount);
+-}
+-
+-static inline void
+-drm_atomic_helper_state_unreference(struct drm_atomic_helper_state *state)
+-{
+-	void _drm_atomic_helper_state_free(struct kref *kref);
+-	kref_put(&state->refcount, _drm_atomic_helper_state_free);
+-}
+-
+-#endif /* DRM_ATOMIC_HELPER_H_ */
+diff --git a/include/drm/drm_crtc.h b/include/drm/drm_crtc.h
+index 741b867..f04697a 100644
+--- a/include/drm/drm_crtc.h
++++ b/include/drm/drm_crtc.h
+@@ -365,9 +365,8 @@ struct drm_crtc_funcs {
+ 			 struct drm_pending_vblank_event *event,
+ 			 uint32_t flags);
+ 
+-	int (*set_property)(struct drm_crtc *crtc, void *state,
+-			    struct drm_property *property, uint64_t val,
+-			    void *blob_data);
++	int (*set_property)(struct drm_crtc *crtc,
++			    struct drm_property *property, uint64_t val);
+ };
+ 
+ /**
+@@ -480,8 +479,8 @@ struct drm_connector_funcs {
+ 	enum drm_connector_status (*detect)(struct drm_connector *connector,
+ 					    bool force);
+ 	int (*fill_modes)(struct drm_connector *connector, uint32_t max_width, uint32_t max_height);
+-	int (*set_property)(struct drm_connector *connector, void *state,
+-			struct drm_property *property, uint64_t val, void *blob_data);
++	int (*set_property)(struct drm_connector *connector, struct drm_property *property,
++			     uint64_t val);
+ 	void (*destroy)(struct drm_connector *connector);
+ 	void (*force)(struct drm_connector *connector);
+ };
+@@ -496,9 +495,8 @@ struct drm_connector_funcs {
+  */
+ struct drm_encoder_funcs {
+ 	void (*reset)(struct drm_encoder *encoder);
+-	int (*set_property)(struct drm_encoder *encoder, void *state,
+-			    struct drm_property *property, uint64_t val,
+-			    void *blob_data);
++	int (*set_property)(struct drm_encoder *encoder,
++			    struct drm_property *property, uint64_t val);
+ 	void (*destroy)(struct drm_encoder *encoder);
+ };
+ 
+@@ -661,9 +659,8 @@ struct drm_plane_funcs {
+ 	int (*disable_plane)(struct drm_plane *plane);
+ 	void (*destroy)(struct drm_plane *plane);
+ 
+-	int (*set_property)(struct drm_plane *plane, void *state,
+-			    struct drm_property *property, uint64_t val,
+-			    void *blob_data);
++	int (*set_property)(struct drm_plane *plane,
++			    struct drm_property *property, uint64_t val);
+ };
+ 
+ enum drm_plane_type {
+-- 
+1.8.3.2
+

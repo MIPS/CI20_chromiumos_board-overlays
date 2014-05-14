@@ -1,7 +1,7 @@
-From a23a6beffb45e36e8c3b18b9a69db6080e69d232 Mon Sep 17 00:00:00 2001
+From 0fb622798ab7c9f1295afac8e2647c71733d4e19 Mon Sep 17 00:00:00 2001
 From: Rob Clark <robdclark@gmail.com>
-Date: Mon, 25 Nov 2013 09:47:27 -0500
-Subject: [PATCH 02/15] UPSTREAM: drm: add object property type
+Date: Wed, 12 Sep 2012 15:49:06 -0500
+Subject: [PATCH 08/18] UPSTREAM: drm: add object property type
 
 An object property is an id (idr) for a drm mode object.  This
 will allow a property to be used set/get a framebuffer, CRTC, etc.
@@ -9,10 +9,15 @@ will allow a property to be used set/get a framebuffer, CRTC, etc.
 Signed-off-by: Rob Clark <robdclark@gmail.com>
 
 BUG=chromium:336809
-TEST=Tested on pit, no regressions noted
+TEST=Tested on snow & peppy
 
-Change-Id: Icdb05127b2cb4101a314c02d177e02f777e8cf9e
+(cherry picked from commit 32a9e40c002a041f3400e103a8564011f04f0b67)
 Signed-off-by: Sean Paul <seanpaul@chromium.org>
+
+Conflicts:
+	drivers/gpu/drm/drm_crtc.c
+
+Change-Id: I574fcb9ed2331f3bfc6881c685d8d14a179fb3a0
 ---
  drivers/gpu/drm/drm_crtc.c  | 60 +++++++++++++++++++++++++++++++++++----------
  include/drm/drm_crtc.h      | 27 ++++++++++++++++++++
@@ -20,10 +25,10 @@ Signed-off-by: Sean Paul <seanpaul@chromium.org>
  3 files changed, 88 insertions(+), 13 deletions(-)
 
 diff --git a/drivers/gpu/drm/drm_crtc.c b/drivers/gpu/drm/drm_crtc.c
-index c7d1a5a..38a1124 100644
+index f3f44ee..c427d16 100644
 --- a/drivers/gpu/drm/drm_crtc.c
 +++ b/drivers/gpu/drm/drm_crtc.c
-@@ -3090,6 +3090,8 @@ struct drm_property *drm_property_create(struct drm_device *dev, int flags,
+@@ -3136,6 +3136,8 @@ struct drm_property *drm_property_create(struct drm_device *dev, int flags,
  	if (!property)
  		return NULL;
  
@@ -32,7 +37,7 @@ index c7d1a5a..38a1124 100644
  	if (num_values) {
  		property->values = kzalloc(sizeof(uint64_t)*num_values, GFP_KERNEL);
  		if (!property->values)
-@@ -3110,6 +3112,9 @@ struct drm_property *drm_property_create(struct drm_device *dev, int flags,
+@@ -3156,6 +3158,9 @@ struct drm_property *drm_property_create(struct drm_device *dev, int flags,
  	}
  
  	list_add_tail(&property->head, &dev->mode_config.property_list);
@@ -42,7 +47,7 @@ index c7d1a5a..38a1124 100644
  	return property;
  fail:
  	kfree(property->values);
-@@ -3193,19 +3198,38 @@ struct drm_property *drm_property_create_range(struct drm_device *dev, int flags
+@@ -3239,19 +3244,38 @@ struct drm_property *drm_property_create_range(struct drm_device *dev, int flags
  }
  EXPORT_SYMBOL(drm_property_create_range);
  
@@ -83,7 +88,7 @@ index c7d1a5a..38a1124 100644
  		return -EINVAL;
  
  	if (!list_empty(&property->enum_blob_list)) {
-@@ -3330,10 +3354,11 @@ int drm_mode_getproperty_ioctl(struct drm_device *dev,
+@@ -3376,10 +3400,11 @@ int drm_mode_getproperty_ioctl(struct drm_device *dev,
  	}
  	property = obj_to_property(obj);
  
@@ -97,7 +102,7 @@ index c7d1a5a..38a1124 100644
  		list_for_each_entry(prop_blob, &property->enum_blob_list, head)
  			blob_count++;
  	}
-@@ -3355,7 +3380,8 @@ int drm_mode_getproperty_ioctl(struct drm_device *dev,
+@@ -3401,7 +3426,8 @@ int drm_mode_getproperty_ioctl(struct drm_device *dev,
  	}
  	out_resp->count_values = value_count;
  
@@ -107,7 +112,7 @@ index c7d1a5a..38a1124 100644
  		if ((out_resp->count_enum_blobs >= enum_count) && enum_count) {
  			copied = 0;
  			enum_ptr = (struct drm_mode_property_enum __user *)(unsigned long)out_resp->enum_blob_ptr;
-@@ -3377,7 +3403,7 @@ int drm_mode_getproperty_ioctl(struct drm_device *dev,
+@@ -3423,7 +3449,7 @@ int drm_mode_getproperty_ioctl(struct drm_device *dev,
  		out_resp->count_enum_blobs = enum_count;
  	}
  
@@ -116,7 +121,7 @@ index c7d1a5a..38a1124 100644
  		if ((out_resp->count_enum_blobs >= blob_count) && blob_count) {
  			copied = 0;
  			blob_id_ptr = (uint32_t __user *)(unsigned long)out_resp->enum_blob_ptr;
-@@ -3508,19 +3534,25 @@ static bool drm_property_change_is_valid(struct drm_property *property,
+@@ -3554,19 +3580,25 @@ static bool drm_property_change_is_valid(struct drm_property *property,
  {
  	if (property->flags & DRM_MODE_PROP_IMMUTABLE)
  		return false;
@@ -145,7 +150,7 @@ index c7d1a5a..38a1124 100644
  	} else {
  		int i;
  		for (i = 0; i < property->num_values; i++)
-@@ -3613,9 +3645,9 @@ static int drm_mode_plane_set_obj_prop(struct drm_plane *plane,
+@@ -3658,9 +3690,9 @@ static int drm_mode_encoder_set_obj_prop(struct drm_encoder *encoder,
  	return ret;
  }
  
@@ -158,7 +163,7 @@ index c7d1a5a..38a1124 100644
  {
  	if (drm_property_change_is_valid(property, value)) {
  		switch (obj->type) {
-@@ -3634,6 +3666,8 @@ static int drm_mode_set_obj_prop(struct drm_device *dev,
+@@ -3678,6 +3710,8 @@ static int drm_mode_set_obj_prop(struct drm_device *dev,
  			return drm_mode_plane_set_obj_prop(obj_to_plane(obj),
  					state, property, value, blob_data);
  		}
@@ -167,7 +172,7 @@ index c7d1a5a..38a1124 100644
  	}
  
  	return -EINVAL;
-@@ -3668,7 +3702,7 @@ static int drm_mode_set_obj_prop_id(struct drm_device *dev, void *state,
+@@ -3712,7 +3746,7 @@ static int drm_mode_set_obj_prop_id(struct drm_device *dev, void *state,
  		return -ENOENT;
  	property = obj_to_property(prop_obj);
  
@@ -177,10 +182,10 @@ index c7d1a5a..38a1124 100644
  }
  
 diff --git a/include/drm/drm_crtc.h b/include/drm/drm_crtc.h
-index b2ccad1..73cc668 100644
+index ff95b0c..e3a7c32 100644
 --- a/include/drm/drm_crtc.h
 +++ b/include/drm/drm_crtc.h
-@@ -297,6 +297,7 @@ struct drm_property {
+@@ -298,6 +298,7 @@ struct drm_property {
  	char name[DRM_PROP_NAME_LEN];
  	uint32_t num_values;
  	uint64_t *values;
@@ -188,7 +193,7 @@ index b2ccad1..73cc668 100644
  
  	struct list_head enum_blob_list;
  };
-@@ -1083,6 +1084,23 @@ extern void drm_mode_set_crtcinfo(struct drm_display_mode *p,
+@@ -1138,6 +1139,23 @@ extern void drm_mode_set_crtcinfo(struct drm_display_mode *p,
  extern void drm_mode_connector_list_update(struct drm_connector *connector);
  extern int drm_mode_connector_update_edid_property(struct drm_connector *connector,
  						struct edid *edid);
@@ -212,7 +217,7 @@ index b2ccad1..73cc668 100644
  extern int drm_object_property_set_value(struct drm_mode_object *obj,
  					 struct drm_property *property,
  					 uint64_t val);
-@@ -1123,6 +1141,8 @@ struct drm_property *drm_property_create_bitmask(struct drm_device *dev,
+@@ -1178,6 +1196,8 @@ struct drm_property *drm_property_create_bitmask(struct drm_device *dev,
  struct drm_property *drm_property_create_range(struct drm_device *dev, int flags,
  					 const char *name,
  					 uint64_t min, uint64_t max);
@@ -221,7 +226,7 @@ index b2ccad1..73cc668 100644
  extern void drm_property_destroy(struct drm_device *dev, struct drm_property *property);
  extern int drm_property_add_enum(struct drm_property *property, int index,
  				 uint64_t value, const char *name);
-@@ -1142,6 +1162,13 @@ extern int drm_mode_crtc_set_gamma_size(struct drm_crtc *crtc,
+@@ -1197,6 +1217,13 @@ extern int drm_mode_crtc_set_gamma_size(struct drm_crtc *crtc,
  					 int gamma_size);
  extern struct drm_mode_object *drm_mode_object_find(struct drm_device *dev,
  		uint32_t id, uint32_t type);
