@@ -62,4 +62,11 @@ src_install() {
 	# stateful when booting off USB as a base image.
 	dodir "/mnt/stateful_partition"
 	touch "${D}/mnt/stateful_partition/.developer_mode"
+
+	# Give moblab sudo access to servod, reboot and upstart controls.
+	insinto /etc/sudoers.d
+	echo "moblab ALL = NOPASSWD: /usr/bin/servod" > moblab-servod
+	echo "moblab ALL = NOPASSWD: /sbin/reboot" > moblab-reboot
+	insopts -m600
+	doins moblab-servod moblab-reboot
 }
