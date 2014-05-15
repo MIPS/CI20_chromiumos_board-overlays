@@ -11,7 +11,7 @@ SRC_URI="http://commondatastorage.googleapis.com/chromeos-localmirror/distfiles/
 
 LICENSE="Google-TOS"
 SLOT="0"
-KEYWORDS="arm"
+KEYWORDS="-* arm"
 
 DEPEND=""
 
