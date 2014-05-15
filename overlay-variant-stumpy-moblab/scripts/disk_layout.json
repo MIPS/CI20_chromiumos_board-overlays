@@ -19,26 +19,6 @@
         "num": 5,
         "size":"2048 MiB"
       }
-    ],
-    "base":[
-      {
-        "num": 1,
-        "label":"STATE",
-        "type":"data",
-        "fs_format":"ext4",
-        "size":"1024 MiB",
-        "features":["expand"],
-        "uuid": "random"
-      },
-      {
-        "num": 3,
-        "label":"ROOT-A",
-        "type":"rootfs",
-        "fs_format":"ext2",
-        "size":"2048 MiB",
-        "fs_size":"1024 MiB",
-        "uuid": "clear"
-      }
     ]
   }
 }

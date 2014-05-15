@@ -5,7 +5,7 @@
   },
   "parent": "legacy_disk_layout.json",
   "layouts":{
-    "base":[
+    "common":[
       {
         "num": 8,
         "label":"OEM",
