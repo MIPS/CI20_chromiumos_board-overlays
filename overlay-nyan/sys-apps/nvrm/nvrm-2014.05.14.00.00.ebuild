@@ -16,7 +16,7 @@ IUSE=""
 S=${WORKDIR}
 
 src_install() {
-	local sover='19.013'
+	local sover='19.014'
 
 	insinto /lib/firmware
 	doins lib/firmware/nvavp_os_0ff00000.bin
