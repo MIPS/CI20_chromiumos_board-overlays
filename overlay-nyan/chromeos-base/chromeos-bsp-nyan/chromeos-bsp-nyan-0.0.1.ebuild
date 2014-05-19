@@ -1,4 +1,4 @@
-# Copyright (c) 2013 The Chromium OS Authors. All rights reserved.
+# Copyright (c) 2014 The Chromium OS Authors. All rights reserved.
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=4
@@ -44,6 +44,7 @@ src_install() {
 	insinto "/usr/share/power_manager/board_specific"
 	doins "${FILESDIR}/min_visible_backlight_level"
 	doins "${FILESDIR}/wakeup_input_device_names"
+	doins "${FILESDIR}/low_battery_shutdown_percent"
 
 	# Install upstart script for setting CPU governors.
 	insinto "/etc/init"
