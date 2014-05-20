@@ -5,7 +5,19 @@
   },
   "parent": "legacy_disk_layout.json",
   "layouts":{
-    "common":[
+    "base":[
+      {
+        "num": 5,
+        "size":"400 MiB",
+        "fs_size":"350 MiB"
+      },
+      {
+        "num": 3,
+        "size":"400 MiB",
+        "fs_size":"350 MiB"
+      }
+    ],
+    "usb":[
       {
         "num": 5,
         "size":"400 MiB",
