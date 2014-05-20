@@ -19,7 +19,7 @@ DEPEND="${RDEPEND}"
 S=${WORKDIR}
 
 src_install() {
-	local sover='19.014'
+	local sover='19.015'
 
 	insinto /lib/firmware
 	doins lib/firmware/nvavp_os_0ff00000.bin
