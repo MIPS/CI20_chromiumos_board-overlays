@@ -10,8 +10,11 @@ SRC_URI="http://commondatastorage.googleapis.com/chromeos-localmirror/distfiles/
 
 LICENSE="NVIDIA-r2"
 SLOT="0"
-KEYWORDS="arm"
+KEYWORDS="-* arm"
 IUSE=""
+
+RDEPEND="x11-libs/libXext"
+DEPEND="${RDEPEND}"
 
 S=${WORKDIR}
 
