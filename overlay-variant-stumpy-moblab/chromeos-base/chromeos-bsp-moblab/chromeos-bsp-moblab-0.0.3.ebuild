@@ -19,6 +19,7 @@ RDEPEND="
 	chromeos-base/chromeos-test-testauthkeys
 	chromeos-base/openssh-server-init
 	chromeos-base/jabra-vold
+	net-ftp/tftp-hpa
 	net-misc/dhcp
 	net-misc/rsync
 "
