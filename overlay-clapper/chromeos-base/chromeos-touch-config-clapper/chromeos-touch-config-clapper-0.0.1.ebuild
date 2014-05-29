@@ -14,13 +14,19 @@ RDEPEND="${DEPEND}
 	 chromeos-base/touch_updater"
 
 TOUCH_CONFIG_PATH="/opt/google/touch/config"
-TS_CONFIG_FILE="1664t.raw"
-TS_CONFIG_LINK="/lib/firmware/maxtouch-ts.cfg"
+TS_CONFIG_MAPPING_FILE="ts_config_mapping"
+TS_CONFIG_FILE_OFILM="1664t-ofilm.raw"
+TS_CONFIG_LINK_OFILM="/lib/firmware/maxtouch-ts-ofilm.cfg"
+TS_CONFIG_FILE_MUTTO="1664t-mutto.raw"
+TS_CONFIG_LINK_MUTTO="/lib/firmware/maxtouch-ts-mutto.cfg"
 
 S=${WORKDIR}
 
 src_install() {
 	insinto "${TOUCH_CONFIG_PATH}"
-	doins "${FILESDIR}/${TS_CONFIG_FILE}"
-	dosym "${TOUCH_CONFIG_PATH}/${TS_CONFIG_FILE}" "${TS_CONFIG_LINK}"
+        doins "${FILESDIR}/${TS_CONFIG_MAPPING_FILE}"
+	doins "${FILESDIR}/${TS_CONFIG_FILE_OFILM}"
+	doins "${FILESDIR}/${TS_CONFIG_FILE_MUTTO}"
+	dosym "${TOUCH_CONFIG_PATH}/${TS_CONFIG_FILE_OFILM}" "${TS_CONFIG_LINK_OFILM}"
+	dosym "${TOUCH_CONFIG_PATH}/${TS_CONFIG_FILE_MUTTO}" "${TS_CONFIG_LINK_MUTTO}"
 }
