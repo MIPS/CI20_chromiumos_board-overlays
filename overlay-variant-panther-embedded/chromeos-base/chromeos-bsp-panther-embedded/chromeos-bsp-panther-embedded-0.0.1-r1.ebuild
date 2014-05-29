@@ -1,0 +1,1 @@
+chromeos-bsp-panther-embedded-0.0.1.ebuild
