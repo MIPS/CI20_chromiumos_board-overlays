@@ -19,23 +19,22 @@ DEPEND=""
 #       sshd at boot time.
 #     chromeos-base/chromeos-test-testauthkeys - install Chromium OS
 #       test key to /root/.ssh/authorized_keys.
-#     chromeos-base/u-boot-scripts - Chrome OS bootstrap support for
-#       partition selection during autoupdate.
+#     chromeos-base/chromeos-ec - Install flash_ec tool for firmware update.
+#     chromeos-base/vboot_reference - Install gbb_utility used in
+#                                     firmware_programmer.
+#     dev-embedded/openocd - Used for EC programming on x86 device.
 #     dev-util/hdctools - servod support.
 #     net-misc/openssh - ssh client, sshd server, and related tools.
-#     sys-boot/u-boot - Beaglebone bootstrap code.
-#
-# TODO(jrbarnette):  The sys-boot/u-boot package is meant to have a
-# short lifetime; we'd rather depend on the Chrome OS U-Boot
-# infrastructure.  http://crbug.com/302022
 RDEPEND="
+	chromeos-base/chromeos-ec
 	chromeos-base/chromeos-test-testauthkeys
+	chromeos-base/ec-utils
 	chromeos-base/openssh-server-init
-	chromeos-base/u-boot-scripts
+	chromeos-base/vboot_reference
+	dev-embedded/openocd
 	dev-util/hdctools
 	net-misc/openssh
 	sys-apps/flashrom
-	sys-boot/u-boot
 "
 
 # These packages are meant to provide a basic environment for
