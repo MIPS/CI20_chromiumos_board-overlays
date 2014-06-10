@@ -9,7 +9,6 @@ HOMEPAGE="http://src.chromium.org"
 LICENSE="GPL-2"
 SLOT="0"
 KEYWORDS="-* arm"
-
 IUSE="-kernel_sources"
 
 RDEPEND="
