@@ -11,4 +11,4 @@ KEYWORDS="-* arm"
 IUSE=""
 
 # Add dependencies on other ebuilds from within this board overlay
-RDEPEND=""
+RDEPEND="chromeos-base/AP6335-wifi-bin"
