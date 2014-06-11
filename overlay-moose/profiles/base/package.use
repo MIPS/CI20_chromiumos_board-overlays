@@ -1,0 +1,3 @@
+chromeos-base/chromeos-login egl
+chromeos-base/xorg-conf egl
+media-libs/waffle egl
