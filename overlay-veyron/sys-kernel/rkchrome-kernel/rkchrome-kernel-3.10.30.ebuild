@@ -4,7 +4,7 @@
 EAPI=4
 EGIT_BRANCH="master"
 EGIT_REPO_URI="https://github.com/rkchrome/kernel.git"
-EGIT_COMMIT="715ec793226f21fa90cd4273a74842f21d5e7b8f"
+EGIT_COMMIT="aaff09088a1f55af82c4b2470966f34c333c8ceb"
 CROS_WORKON_BLACKLIST="1"
 
 # This must be inherited *after* EGIT/CROS_WORKON variables defined
