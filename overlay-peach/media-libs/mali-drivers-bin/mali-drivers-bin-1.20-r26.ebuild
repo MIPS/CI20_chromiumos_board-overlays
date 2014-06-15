@@ -13,7 +13,9 @@ LICENSE="Google-TOS"
 SLOT="0"
 KEYWORDS="-* arm"
 
-DEPEND=""
+DEPEND="
+	x11-drivers/opengles-headers
+"
 
 RDEPEND="!media-libs/mali-drivers
 	x11-base/xorg-server
