@@ -1,1 +1,1 @@
-chromeos-base/chromeos-login egl
+chromeos-base/libchromeos-use-flags egl

@@ -1,4 +1,4 @@
-chromeos-base/chromeos-login egl
+chromeos-base/libchromeos-use-flags egl
 x11-base/xorg-server dga xinerama
 media-libs/waffle egl
 media-libs/piglit waffle
