@@ -5,9 +5,9 @@ EAPI=4
 
 DESCRIPTION="Rules for setting up multimedia /dev/ nodes"
 
-LICENSE="BSD"
+LICENSE="BSD-Google"
 SLOT="0"
-KEYWORDS="arm"
+KEYWORDS="-* arm"
 IUSE=""
 
 DEPEND="sys-fs/udev"
