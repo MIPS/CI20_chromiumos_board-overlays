@@ -1,3 +1,2 @@
 chromeos-base/libchromeos-use-flags egl
-chromeos-base/xorg-conf egl
 media-libs/waffle egl
