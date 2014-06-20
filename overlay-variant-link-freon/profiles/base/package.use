@@ -4,6 +4,7 @@ chromeos-base/chromeos-login -X
 chromeos-base/crosh -X
 chromeos-base/inputcontrol -X
 chromeos-base/ja-motoyafonts -X
+chromeos-base/libchromeos-use-flags -X
 chromeos-base/userfeedback -X
 media-fonts/dejavu -X
 media-fonts/my-padauk -X
