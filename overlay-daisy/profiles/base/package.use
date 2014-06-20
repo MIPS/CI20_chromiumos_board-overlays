@@ -1,4 +1,3 @@
 sys-apps/flashrom use_os_timer
-chromeos-base/libchromeos-use-flags egl
 media-libs/waffle egl
 media-libs/piglit waffle
