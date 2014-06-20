@@ -1,0 +1,3 @@
+U_BOOT_CONFIG_USE="peach"
+U_BOOT_FDT_USE="exynos5420-peach-pit"
+
