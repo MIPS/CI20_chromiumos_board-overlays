@@ -34,11 +34,14 @@ src_install() {
 	dosbin "${FILESDIR}/board_factory_wipe.sh"
 	dosbin "${FILESDIR}/board_factory_reset.sh"
 	dosbin "${FILESDIR}/board_charge_battery.sh"
+	dosbin "${FILESDIR}/board_discharge_battery.sh"
 
 	insinto "/usr/share/factory/images"
 	doins "${FILESDIR}/remove_ac.png"
 	doins "${FILESDIR}/cutting_off.png"
 	doins "${FILESDIR}/cutoff_failed.png"
 	doins "${FILESDIR}/charging.png"
+	doins "${FILESDIR}/discharging.png"
 	doins "${FILESDIR}/connect_ac.png"
+	doins "${FILESDIR}/connect_ac_batterycutoff.png"
 }
