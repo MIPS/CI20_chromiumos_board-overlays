@@ -21,4 +21,8 @@ RDEPEND="
 
 src_install() {
 	doappid "{3C46DD14-D42A-9F77-E2CB-7D83422F5B73}"
+
+	# Install Bluetooth ID override.
+	insinto "/etc/bluetooth"
+	doins "${FILESDIR}/main.conf"
 }
