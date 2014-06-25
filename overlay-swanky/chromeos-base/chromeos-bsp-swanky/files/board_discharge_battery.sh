@@ -17,6 +17,7 @@ get_percentage() {
    | awk '/percentage/ && !/display/ {print int($2)}'
 }
 
+# Needed by 'power_supply_info'.
 mkdir -p /var/lib/power_manager
 
 if [[ $(get_percentage) -gt $MAX_LEVEL ]]; then
@@ -48,7 +49,7 @@ if [[ $(get_percentage) -gt $MAX_LEVEL ]]; then
     echo "" >"$TTY"
   fi
 
-  # Wait for battery to discharge to MAX_LEVEL
+  # Wait for battery to discharge to MAX_LEVEL.
   while [[ $(get_percentage) -gt $MAX_LEVEL ]]; do
     printf "\033[0;0H\033[K" >"$TTY"
     echo -n "Current Battery Level: $(get_percentage)%" >"$TTY"

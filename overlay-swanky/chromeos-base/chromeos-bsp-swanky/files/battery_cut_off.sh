@@ -35,9 +35,12 @@ else
   echo "==== Cutting off battery. Wait 10 seconds. ====" >"$TTY"
   echo "===============================================" >"$TTY"
 fi
-ectool batterycutoff
-shutdown -h now
-sleep 15
+
+if ectool batterycutoff; then
+  sleep 2
+  shutdown -h now
+  sleep 15
+fi
 
 # Couldn't have reached here
 if [ -e "${IMG_PATH}/cutoff_failed.png" ]; then
