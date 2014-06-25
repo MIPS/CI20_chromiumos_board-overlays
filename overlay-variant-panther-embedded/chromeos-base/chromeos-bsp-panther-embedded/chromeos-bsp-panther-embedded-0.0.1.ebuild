@@ -12,3 +12,10 @@ IUSE=""
 
 DEPEND=""
 RDEPEND=""
+
+S=${WORKDIR}
+
+src_install() {
+	insinto /etc/init
+	doins "${FILESDIR}"/load-network-drivers.conf
+}
