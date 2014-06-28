@@ -1,0 +1,31 @@
+From 0b2e0f049a72148f4858f82798d6ba76a3a176d2 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?St=C3=A9phane=20Marchesin?= <marcheu@chromium.org>
+Date: Mon, 16 Jun 2014 14:52:46 -0700
+Subject: [PATCH 06/15] Revert "CHROMIUM: iommu/tegra: don't identity-map
+ unused IOVAs"
+
+This reverts commit c4b3bb2b438bc535f7c5906b0a08cfe43a0be0d5.
+---
+ drivers/iommu/tegra-smmu.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/iommu/tegra-smmu.c b/drivers/iommu/tegra-smmu.c
+index 6e57981..7b87122 100644
+--- a/drivers/iommu/tegra-smmu.c
++++ b/drivers/iommu/tegra-smmu.c
+@@ -193,10 +193,10 @@ enum {
+ 
+ #define _PDE_ATTR	(_READABLE | _WRITABLE | _NONSECURE)
+ #define _PDE_ATTR_N	(_PDE_ATTR | _PDE_NEXT)
+-#define _PDE_VACANT(pdn)	(0)
++#define _PDE_VACANT(pdn)	(((pdn) << 10) | _PDE_ATTR)
+ 
+ #define _PTE_ATTR	(_READABLE | _WRITABLE | _NONSECURE)
+-#define _PTE_VACANT(addr)	(0)
++#define _PTE_VACANT(addr)	(((addr) >> SMMU_PAGE_SHIFT) | _PTE_ATTR)
+ 
+ #define SMMU_MK_PDIR(page, attr)	\
+ 		((page_to_phys(page) >> SMMU_PDIR_SHIFT) | (attr))
+-- 
+2.0.0.526.g5318336
+

@@ -1,0 +1,102 @@
+From e34e97a1589c0c10ab4fb4647f82ffe84c02ad2e Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?St=C3=A9phane=20Marchesin?= <marcheu@chromium.org>
+Date: Fri, 11 Apr 2014 16:30:27 -0700
+Subject: [PATCH 02/15] CHROMIUM: CONFIG: Enable tegra drm
+
+This enables the config options to turn on tegra drm and turn off
+the nvidia driver.
+
+BUG=chromium:378998
+TEST=boot on nyan_big, see the splash screen and the console
+
+Change-Id: If7ac3b73607be5f8b3adb7670c456defd724cceb
+---
+ .../armel/chromiumos-tegra124.flavour.config       | 43 +++++++++++++++-------
+ chromeos/config/armel/common.config                |  2 +-
+ 2 files changed, 31 insertions(+), 14 deletions(-)
+
+diff --git a/chromeos/config/armel/chromiumos-tegra124.flavour.config b/chromeos/config/armel/chromiumos-tegra124.flavour.config
+index 927cc58..ed31823 100644
+--- a/chromeos/config/armel/chromiumos-tegra124.flavour.config
++++ b/chromeos/config/armel/chromiumos-tegra124.flavour.config
+@@ -54,6 +54,23 @@ CONFIG_DMA_ENGINE=y
+ CONFIG_DMA_OF=y
+ # CONFIG_DW_DMAC is not set
+ # CONFIG_DW_WATCHDOG is not set
++CONFIG_RESET_CONTROLLER=y
++CONFIG_PCI=y
++CONFIG_TEGRA_PCI=y
++CONFIG_DRM=y
++CONFIG_DRM_KMS_HELPER=y
++CONFIG_AGP=y
++CONFIG_DRM_NOUVEAU=y
++CONFIG_CMA=y
++CONFIG_GEM_CMA_HELPER=y
++CONFIG_KMS_CMA_HELPER=y
++CONFIG_DRM_PANEL=y
++CONFIG_DRM_PANEL_SIMPLE=y
++CONFIG_DRM_TEGRA=y
++CONFIG_DRM_TEGRA_FBDEV=y
++CONFIG_DRM_TTM=y
++CONFIG_DRM_KMS_FB_HELPER=y
++CONFIG_DRM_KMS_HELPER=y
+ CONFIG_EDP_MANAGEMENT=y
+ CONFIG_FB_CFB_COPYAREA=y
+ CONFIG_FB_CFB_FILLRECT=y
+@@ -198,15 +215,15 @@ CONFIG_TEGRA_124_DFLL_COOLING=y
+ CONFIG_TEGRA_124_DVFS=y
+ CONFIG_TEGRA_CPUQUIET=y
+ CONFIG_TEGRA_CPU_EDP_LIMITS=y
+-CONFIG_TEGRA_DC=y
+-CONFIG_TEGRA_DC_BLENDER_DEPTH=y
+-CONFIG_TEGRA_DC_BLENDER_GEN2=y
+-CONFIG_TEGRA_DC_BLOCK_LINEAR=y
+-CONFIG_TEGRA_DC_CLOCK_GEN2=y
+-CONFIG_TEGRA_DC_EXTENSIONS=y
+-CONFIG_TEGRA_DC_INTERLACE=y
+-CONFIG_TEGRA_DC_LOW_LATENCY_CURSOR=y
+-CONFIG_TEGRA_DC_TEMPORAL_DITHER=y
++CONFIG_TEGRA_DC=n
++CONFIG_TEGRA_DC_BLENDER_DEPTH=n
++CONFIG_TEGRA_DC_BLENDER_GEN2=n
++CONFIG_TEGRA_DC_BLOCK_LINEAR=n
++CONFIG_TEGRA_DC_CLOCK_GEN2=n
++CONFIG_TEGRA_DC_EXTENSIONS=n
++CONFIG_TEGRA_DC_INTERLACE=n
++CONFIG_TEGRA_DC_LOW_LATENCY_CURSOR=n
++CONFIG_TEGRA_DC_TEMPORAL_DITHER=n
+ # CONFIG_TEGRA_DEBUG_UARTB is not set
+ CONFIG_TEGRA_DEBUG_UART_AUTO_ODMDATA=y
+ CONFIG_TEGRA_DVFS=y
+@@ -221,11 +238,11 @@ CONFIG_TEGRA_GRHOST_DEFAULT_TIMEOUT=10000
+ CONFIG_TEGRA_GRHOST_USE_NVMAP=y
+ CONFIG_TEGRA_IOMMU_GART=y
+ CONFIG_TEGRA_IOMMU_SMMU=y
+-CONFIG_TEGRA_NVAVP=y
+-CONFIG_TEGRA_NVHDCP=y
+-CONFIG_TEGRA_NVMAP=y
++CONFIG_TEGRA_NVAVP=n
++CONFIG_TEGRA_NVHDCP=n
++CONFIG_TEGRA_NVMAP=n
+ CONFIG_TEGRA_SOCTHERM=y
+-CONFIG_TEGRA_THERMAL_THROTTLE=y
++CONFIG_TEGRA_THERMAL_THROTTLE=n
+ CONFIG_TEGRA_THERM_EST=y
+ CONFIG_TEGRA_THROUGHPUT=y
+ CONFIG_TEGRA_WATCHDOG=y
+diff --git a/chromeos/config/armel/common.config b/chromeos/config/armel/common.config
+index f74fc8c..a02cdc4 100644
+--- a/chromeos/config/armel/common.config
++++ b/chromeos/config/armel/common.config
+@@ -443,7 +443,7 @@ CONFIG_TEGRA_DP=y
+ # CONFIG_TEGRA_GRHOST_FORCE_NVMAP is not set
+ # CONFIG_TEGRA_GRHOST_GK20A_PHYS_PAGE_TABLES is not set
+ CONFIG_TEGRA_GRHOST_USE_DMABUF=y
+-# CONFIG_TEGRA_HOST1X is not set
++CONFIG_TEGRA_HOST1X=y
+ # CONFIG_TEGRA_LVDS is not set
+ CONFIG_TEGRA_MIPI_CAL=y
+ # CONFIG_TEGRA_PCI is not set
+-- 
+2.0.0.526.g5318336
+
