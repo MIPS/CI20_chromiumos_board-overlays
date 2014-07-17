@@ -1,7 +1,7 @@
-From e34e97a1589c0c10ab4fb4647f82ffe84c02ad2e Mon Sep 17 00:00:00 2001
+From f0da3be890ed18238a6e443458c67161dbc835b2 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?St=C3=A9phane=20Marchesin?= <marcheu@chromium.org>
-Date: Fri, 11 Apr 2014 16:30:27 -0700
-Subject: [PATCH 02/15] CHROMIUM: CONFIG: Enable tegra drm
+Date: Wed, 16 Jul 2014 20:01:26 -0700
+Subject: [PATCH] CHROMIUM: CONFIG: Enable tegra drm
 
 This enables the config options to turn on tegra drm and turn off
 the nvidia driver.
@@ -9,17 +9,17 @@ the nvidia driver.
 BUG=chromium:378998
 TEST=boot on nyan_big, see the splash screen and the console
 
-Change-Id: If7ac3b73607be5f8b3adb7670c456defd724cceb
+Change-Id: I332e4263b67964f261c02d733788378abc68167a
 ---
  .../armel/chromiumos-tegra124.flavour.config       | 43 +++++++++++++++-------
  chromeos/config/armel/common.config                |  2 +-
  2 files changed, 31 insertions(+), 14 deletions(-)
 
 diff --git a/chromeos/config/armel/chromiumos-tegra124.flavour.config b/chromeos/config/armel/chromiumos-tegra124.flavour.config
-index 927cc58..ed31823 100644
+index 9d48f39..a81b638 100644
 --- a/chromeos/config/armel/chromiumos-tegra124.flavour.config
 +++ b/chromeos/config/armel/chromiumos-tegra124.flavour.config
-@@ -54,6 +54,23 @@ CONFIG_DMA_ENGINE=y
+@@ -53,6 +53,23 @@ CONFIG_DMA_ENGINE=y
  CONFIG_DMA_OF=y
  # CONFIG_DW_DMAC is not set
  # CONFIG_DW_WATCHDOG is not set
@@ -43,7 +43,7 @@ index 927cc58..ed31823 100644
  CONFIG_EDP_MANAGEMENT=y
  CONFIG_FB_CFB_COPYAREA=y
  CONFIG_FB_CFB_FILLRECT=y
-@@ -198,15 +215,15 @@ CONFIG_TEGRA_124_DFLL_COOLING=y
+@@ -197,15 +214,15 @@ CONFIG_TEGRA_124_DFLL_COOLING=y
  CONFIG_TEGRA_124_DVFS=y
  CONFIG_TEGRA_CPUQUIET=y
  CONFIG_TEGRA_CPU_EDP_LIMITS=y
@@ -68,10 +68,10 @@ index 927cc58..ed31823 100644
  # CONFIG_TEGRA_DEBUG_UARTB is not set
  CONFIG_TEGRA_DEBUG_UART_AUTO_ODMDATA=y
  CONFIG_TEGRA_DVFS=y
-@@ -221,11 +238,11 @@ CONFIG_TEGRA_GRHOST_DEFAULT_TIMEOUT=10000
- CONFIG_TEGRA_GRHOST_USE_NVMAP=y
+@@ -221,11 +238,11 @@ CONFIG_TEGRA_GRHOST_USE_NVMAP=y
  CONFIG_TEGRA_IOMMU_GART=y
  CONFIG_TEGRA_IOMMU_SMMU=y
+ CONFIG_TEGRA_KFUSE=y
 -CONFIG_TEGRA_NVAVP=y
 -CONFIG_TEGRA_NVHDCP=y
 -CONFIG_TEGRA_NVMAP=y
