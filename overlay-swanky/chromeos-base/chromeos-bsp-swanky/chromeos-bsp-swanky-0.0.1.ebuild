@@ -45,4 +45,8 @@ src_install() {
 	doins "${FILESDIR}/discharging.png"
 	doins "${FILESDIR}/connect_ac.png"
 	doins "${FILESDIR}/connect_ac_batterycutoff.png"
+
+	# Install Bluetooth ID override.
+	insinto "/etc/bluetooth"
+	doins "${FILESDIR}/main.conf"
 }
