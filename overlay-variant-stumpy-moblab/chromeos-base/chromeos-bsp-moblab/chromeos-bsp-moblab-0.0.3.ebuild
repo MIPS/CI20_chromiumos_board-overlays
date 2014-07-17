@@ -63,10 +63,14 @@ src_install() {
 	dodir "/mnt/stateful_partition"
 	touch "${D}/mnt/stateful_partition/.developer_mode"
 
-	# Give moblab sudo access to servod, reboot and upstart controls.
+	# Give moblab full sudo access.
+	# NOTE: this is a temporary hack to allow FAFT tests
+	# to run on moblab using servoV2. Once we fully
+	# move over to servoV3, we should reduce this to
+	# the previous sudo access.
+	# See chromium:394593
 	insinto /etc/sudoers.d
-	echo "moblab ALL = NOPASSWD: /usr/bin/servod" > moblab-servod
-	echo "moblab ALL = NOPASSWD: /sbin/reboot" > moblab-reboot
+	echo "moblab ALL=NOPASSWD: ALL" > moblab-all
 	insopts -m600
-	doins moblab-servod moblab-reboot
+	doins moblab-all
 }
