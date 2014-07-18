@@ -40,7 +40,4 @@ src_install() {
 	doins "${FILESDIR}/wakeup_input_device_names"
 	doins "${FILESDIR}/low_battery_shutdown_percent"
 	doins "${FILESDIR}/low_battery_shutdown_time_s"
-
-	exeinto "/opt/google/touch"
-	doexe "${FILESDIR}/touch-control.sh"
 }

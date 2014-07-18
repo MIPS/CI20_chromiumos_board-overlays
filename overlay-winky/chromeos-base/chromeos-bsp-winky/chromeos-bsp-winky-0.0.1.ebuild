@@ -42,9 +42,6 @@ src_install() {
 	doins "${FILESDIR}/charging.png"
 	doins "${FILESDIR}/connect_ac.png"
 
-	exeinto "/opt/google/touch"
-	doexe "${FILESDIR}/touch-control.sh"
-
 	# Install Bluetooth ID override.
 	insinto "/etc/bluetooth"
 	doins "${FILESDIR}/main.conf"

@@ -44,9 +44,6 @@ src_install() {
 	doins "${FILESDIR}/dark_resume_sources"
 	doins "${FILESDIR}/dark_resume_battery_margins"
 
-	exeinto "/opt/google/touch"
-	doexe "${FILESDIR}/touch-control.sh"
-
 	# Install board-specific info.
 	insinto "/etc/laptop-mode/conf.d/board-specific"
 	doins "${FILESDIR}/cpufreq.conf"
