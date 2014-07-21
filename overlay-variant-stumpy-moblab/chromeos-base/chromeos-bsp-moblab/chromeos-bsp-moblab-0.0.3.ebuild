@@ -63,6 +63,9 @@ src_install() {
 	dodir "/mnt/stateful_partition"
 	touch "${D}/mnt/stateful_partition/.developer_mode"
 
+	# Create the mount point for external storage.
+	dodir "/mnt/moblab"
+
 	# Give moblab full sudo access.
 	# NOTE: this is a temporary hack to allow FAFT tests
 	# to run on moblab using servoV2. Once we fully
