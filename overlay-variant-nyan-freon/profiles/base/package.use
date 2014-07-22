@@ -1,3 +1,4 @@
 media-libs/mesa shared-glapi gles2 egl gbm
 media-libs/piglit waffle
 media-libs/waffle egl gbm
+x11-base/xorg-server opengl
