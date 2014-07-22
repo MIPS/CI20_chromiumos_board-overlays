@@ -1,3 +1,2 @@
 sys-apps/flashrom use_os_timer
-media-libs/waffle egl
 media-libs/piglit waffle
