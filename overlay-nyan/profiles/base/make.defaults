@@ -1,6 +1,6 @@
 # Copyright (c) 2013 The Chromium OS Authors. All rights reserved.
 # Distributed under the terms of the GNU General Public License v2
 
-USE="-bootflash-emmc bootflash-spi"
+USE="-bootflash-emmc bootflash-spi -opengl opengles"
 U_BOOT_CONFIG_USE="venice2"
 U_BOOT_FDT_USE="tegra124-venice2"
