@@ -8,7 +8,7 @@ inherit tegra-bct cros-board
 DESCRIPTION="Nyan BCT file"
 HOMEPAGE="http://src.chromium.org"
 
-LICENSE="BSD-3"
+LICENSE="GPL-2"
 SLOT="0"
 KEYWORDS="arm"
 IUSE="bootflash-spi bootflash-emmc"
