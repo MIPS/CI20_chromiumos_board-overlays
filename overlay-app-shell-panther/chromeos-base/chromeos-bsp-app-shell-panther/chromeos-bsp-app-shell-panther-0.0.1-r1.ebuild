@@ -1,1 +1,0 @@
-chromeos-bsp-app-shell-panther-0.0.1.ebuild

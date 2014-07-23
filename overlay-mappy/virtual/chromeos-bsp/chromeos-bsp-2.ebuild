@@ -3,16 +3,11 @@
 
 EAPI=4
 
-DESCRIPTION="app-shell-panther board-specific package"
+DESCRIPTION="Chrome OS BSP virtual package"
+HOMEPAGE="http://src.chromium.org"
 
 LICENSE="BSD-Google"
 SLOT="0"
 KEYWORDS="-* amd64 x86"
-IUSE=""
-S=${WORKDIR}
 
-DEPEND=""
-RDEPEND="
-	chromeos-base/app-shell-launcher
-	net-misc/openssh
-"
+RDEPEND="chromeos-base/chromeos-bsp-mappy"
