@@ -45,6 +45,7 @@ RDEPEND="
 # space constrained, so if you think it might be useful, include it.
 RDEPEND="${RDEPEND}
 	app-arch/gzip
+	app-arch/tar
 	app-editors/vim
 	app-misc/screen
 	app-shells/bash
@@ -52,6 +53,7 @@ RDEPEND="${RDEPEND}
 	net-analyzer/tcpdump
 	net-misc/iputils
 	net-misc/rsync
+	net-misc/wget
 	sys-apps/diffutils
 	sys-apps/file
 	sys-apps/i2c-tools
