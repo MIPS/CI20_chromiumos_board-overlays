@@ -1,7 +1,7 @@
-From 76b43f0400b2c6c56a7ce1fc5eae002e81d73b2f Mon Sep 17 00:00:00 2001
+From 91e251c8168ef0896bbed8f4c2390690aa5645d9 Mon Sep 17 00:00:00 2001
 From: Rob Clark <robdclark@gmail.com>
 Date: Fri, 4 Oct 2013 17:27:59 -0400
-Subject: [PATCH 06/18] UPSTREAM: drm: add atomic fxns
+Subject: [PATCH 02/15] UPSTREAM: drm: add atomic fxns
 
 The 'atomic' mechanism allows for multiple properties to be updated,
 checked, and commited atomically.  This will be the basis of atomic-
@@ -46,9 +46,7 @@ Change-Id: I4dbfad93a081d78ce67d4733ec3558833036c4b9
  drivers/gpu/drm/cirrus/cirrus_drv.h         |   1 +
  drivers/gpu/drm/drm_atomic.c                | 135 +++++++++++++++++++++
  drivers/gpu/drm/drm_crtc.c                  | 174 ++++++++++++++++++----------
- drivers/gpu/drm/exynos/exynos_drm_crtc.c    |   4 +-
  drivers/gpu/drm/exynos/exynos_drm_drv.c     |   7 ++
- drivers/gpu/drm/exynos/exynos_drm_encoder.c |   3 +-
  drivers/gpu/drm/exynos/exynos_hdmi.c        |   3 +-
  drivers/gpu/drm/gma500/cdv_intel_crt.c      |   4 +-
  drivers/gpu/drm/gma500/cdv_intel_dp.c       |   4 +-
@@ -85,20 +83,20 @@ Change-Id: I4dbfad93a081d78ce67d4733ec3558833036c4b9
  include/drm/drmP.h                          |  77 ++++++++++++
  include/drm/drm_atomic.h                    | 100 ++++++++++++++++
  include/drm/drm_crtc.h                      |  19 +--
- 47 files changed, 593 insertions(+), 101 deletions(-)
+ 45 files changed, 588 insertions(+), 99 deletions(-)
  create mode 100644 drivers/gpu/drm/drm_atomic.c
  create mode 100644 include/drm/drm_atomic.h
 
 diff --git a/drivers/gpu/drm/Makefile b/drivers/gpu/drm/Makefile
-index 96ad4d0..7ff7ce8 100644
+index 7950865..ea3db7a 100644
 --- a/drivers/gpu/drm/Makefile
 +++ b/drivers/gpu/drm/Makefile
 @@ -13,7 +13,7 @@ drm-y       :=	drm_auth.o drm_buffer.o drm_bufs.o drm_cache.o \
  		drm_crtc.o drm_modes.o drm_edid.o \
  		drm_info.o drm_debugfs.o drm_encoder_slave.o \
  		drm_trace_points.o drm_global.o drm_prime.o \
--		drm_rect.o drm_plane_helper.o
-+		drm_rect.o drm_plane_helper.o drm_atomic.o
+-		drm_rect.o drm_plane_helper.o drm_sync_helper.o
++		drm_rect.o drm_plane_helper.o drm_sync_helper.o drm_atomic.o
  
  drm-$(CONFIG_COMPAT) += drm_ioc32.o
  drm-$(CONFIG_DRM_GEM_CMA_HELPER) += drm_gem_cma_helper.o
@@ -575,24 +573,8 @@ index 6bd8da3..cb86af9 100644
  	drm_modeset_unlock_all(dev);
  	return ret;
  }
-diff --git a/drivers/gpu/drm/exynos/exynos_drm_crtc.c b/drivers/gpu/drm/exynos/exynos_drm_crtc.c
-index 7901706..802f7aa 100644
---- a/drivers/gpu/drm/exynos/exynos_drm_crtc.c
-+++ b/drivers/gpu/drm/exynos/exynos_drm_crtc.c
-@@ -576,8 +576,10 @@ static void exynos_drm_crtc_destroy(struct drm_crtc *crtc)
- }
- 
- static int exynos_drm_crtc_set_property(struct drm_crtc *crtc,
-+					void *state,
- 					struct drm_property *property,
--					uint64_t val)
-+					uint64_t val,
-+					void *blob_data)
- {
- 	struct drm_device *dev = crtc->dev;
- 	struct exynos_drm_private *dev_priv = dev->dev_private;
 diff --git a/drivers/gpu/drm/exynos/exynos_drm_drv.c b/drivers/gpu/drm/exynos/exynos_drm_drv.c
-index d183257..61b9ad4 100644
+index 8f1f4bd..5df8a50 100644
 --- a/drivers/gpu/drm/exynos/exynos_drm_drv.c
 +++ b/drivers/gpu/drm/exynos/exynos_drm_drv.c
 @@ -13,6 +13,7 @@
@@ -603,7 +585,7 @@ index d183257..61b9ad4 100644
  
  #include <drm/exynos_drm.h>
  
-@@ -404,6 +405,12 @@ static struct drm_driver exynos_drm_driver = {
+@@ -479,6 +480,12 @@ static struct drm_driver exynos_drm_driver = {
  	.dumb_create		= exynos_drm_gem_dumb_create,
  	.dumb_map_offset	= exynos_drm_gem_dumb_map_offset,
  	.dumb_destroy		= drm_gem_dumb_destroy,
@@ -616,25 +598,11 @@ index d183257..61b9ad4 100644
  	.prime_handle_to_fd	= drm_gem_prime_handle_to_fd,
  	.prime_fd_to_handle	= drm_gem_prime_fd_to_handle,
  	.gem_prime_export	= exynos_dmabuf_prime_export,
-diff --git a/drivers/gpu/drm/exynos/exynos_drm_encoder.c b/drivers/gpu/drm/exynos/exynos_drm_encoder.c
-index 632571f..8748968 100644
---- a/drivers/gpu/drm/exynos/exynos_drm_encoder.c
-+++ b/drivers/gpu/drm/exynos/exynos_drm_encoder.c
-@@ -159,7 +159,8 @@ static const struct drm_encoder_helper_funcs exynos_encoder_helper_funcs = {
- };
- 
- static int exynos_drm_encoder_set_property(struct drm_encoder *encoder,
--		struct drm_property *property, uint64_t val)
-+		void *state, struct drm_property *property, uint64_t val,
-+		void *blob_data)
- {
- 	struct exynos_drm_encoder *exynos_encoder = to_exynos_encoder(encoder);
- 	struct exynos_drm_display *display = exynos_encoder->display;
 diff --git a/drivers/gpu/drm/exynos/exynos_hdmi.c b/drivers/gpu/drm/exynos/exynos_hdmi.c
-index 2b1eb36..684f0e0e 100644
+index e4378a8..aac3ff1 100644
 --- a/drivers/gpu/drm/exynos/exynos_hdmi.c
 +++ b/drivers/gpu/drm/exynos/exynos_hdmi.c
-@@ -1628,7 +1628,8 @@ static int set_property(struct hdmi_context *hdata,
+@@ -1655,7 +1655,8 @@ static int set_property(struct hdmi_context *hdata, struct drm_mode_object *obj,
  }
  
  static int hdmi_connector_set_property(struct drm_connector *connector,
@@ -974,10 +942,10 @@ index e620ba8..b35b7bd 100644
  	struct nouveau_display *disp = nouveau_display(connector->dev);
  	struct nouveau_connector *nv_connector = nouveau_connector(connector);
 diff --git a/drivers/gpu/drm/nouveau/nouveau_drm.c b/drivers/gpu/drm/nouveau/nouveau_drm.c
-index a40b6cd..2ae61e4 100644
+index 0e37b3a..f1dfc78c 100644
 --- a/drivers/gpu/drm/nouveau/nouveau_drm.c
 +++ b/drivers/gpu/drm/nouveau/nouveau_drm.c
-@@ -671,6 +671,13 @@ driver = {
+@@ -672,6 +672,13 @@ driver = {
  	.dumb_map_offset = nouveau_display_dumb_map_offset,
  	.dumb_destroy = drm_gem_dumb_destroy,
  
@@ -1032,7 +1000,7 @@ index c6a4100..97e69c9 100644
  	struct drm_device *dev = connector->dev;
  	struct radeon_encoder *radeon_encoder;
 diff --git a/drivers/gpu/drm/radeon/radeon_drv.c b/drivers/gpu/drm/radeon/radeon_drv.c
-index 08fe023..01d4821 100644
+index 9fa1f29..eccc67e 100644
 --- a/drivers/gpu/drm/radeon/radeon_drv.c
 +++ b/drivers/gpu/drm/radeon/radeon_drv.c
 @@ -34,6 +34,7 @@
@@ -1043,7 +1011,7 @@ index 08fe023..01d4821 100644
  #include <linux/console.h>
  #include <linux/module.h>
  
-@@ -398,6 +399,14 @@ static struct drm_driver kms_driver = {
+@@ -399,6 +400,14 @@ static struct drm_driver kms_driver = {
  	.dumb_create = radeon_mode_dumb_create,
  	.dumb_map_offset = radeon_mode_dumb_mmap,
  	.dumb_destroy = drm_gem_dumb_destroy,
@@ -1189,10 +1157,10 @@ index 8d038c3..e259d6c 100644
  
  /*
 diff --git a/include/drm/drmP.h b/include/drm/drmP.h
-index 572c53c..d6878d4 100644
+index f3cbc77..335c5e5 100644
 --- a/include/drm/drmP.h
 +++ b/include/drm/drmP.h
-@@ -984,6 +984,83 @@ struct drm_driver {
+@@ -987,6 +987,83 @@ struct drm_driver {
  			    struct drm_device *dev,
  			    uint32_t handle);
  
@@ -1434,5 +1402,5 @@ index 563e263..2bcf3ed 100644
  
  enum drm_plane_type {
 -- 
-1.8.3.2
+2.0.0.526.g5318336
 

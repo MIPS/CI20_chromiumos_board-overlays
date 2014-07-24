@@ -1,7 +1,7 @@
-From 558b730fe0f2fcf0c8995dfc32bc99ff1c95dc24 Mon Sep 17 00:00:00 2001
+From 7a1a3f8030385ef30b8f46f6168f001b8c15733b Mon Sep 17 00:00:00 2001
 From: Sean Paul <seanpaul@chromium.org>
 Date: Mon, 12 May 2014 16:17:07 -0400
-Subject: [PATCH 17/18] drm: Fix up the atomic legacy paths so they work
+Subject: [PATCH 13/15] drm: Fix up the atomic legacy paths so they work
 
 BUG=chromium:336809
 TEST=Tested on snow & peppy
@@ -114,5 +114,5 @@ index 39cd72c..fc42ff4 100644
  	uint8_t num_connector_ids;
  	uint32_t *connector_ids;
 -- 
-1.8.3.2
+2.0.0.526.g5318336
 

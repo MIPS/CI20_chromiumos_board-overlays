@@ -1,7 +1,7 @@
-From c7351fdb9f64143e81a3425df2bd225783218206 Mon Sep 17 00:00:00 2001
+From 982bad0d4c940304943ba49cd31a15774e5f02d1 Mon Sep 17 00:00:00 2001
 From: Rob Clark <robdclark@gmail.com>
 Date: Sat, 15 Mar 2014 12:37:16 -0400
-Subject: [PATCH 15/18] UPSTREAM: drm: convert plane to properties/state
+Subject: [PATCH 11/15] UPSTREAM: drm: convert plane to properties/state
 
 Break the mutable state of a plane out into a separate structure
 and use atomic properties mechanism to set plane attributes.  This
@@ -42,7 +42,7 @@ Change-Id: Ibcd4a10fafb9ab50af1f51916e23150eea9d9075
  drivers/gpu/drm/drm_fb_helper.c            |  17 +-
  drivers/gpu/drm/drm_plane_helper.c         |   2 +
  drivers/gpu/drm/exynos/exynos_drm_fbdev.c  |   2 -
- drivers/gpu/drm/exynos/exynos_drm_fimd.c   |   2 +
+ drivers/gpu/drm/exynos/exynos_drm_fimd.c   |   8 +-
  drivers/gpu/drm/exynos/exynos_drm_plane.c  |   1 +
  drivers/gpu/drm/exynos/exynos_drm_vidi.c   |   2 +
  drivers/gpu/drm/exynos/exynos_mixer.c      |   2 +
@@ -51,7 +51,7 @@ Change-Id: Ibcd4a10fafb9ab50af1f51916e23150eea9d9075
  drivers/gpu/drm/shmobile/shmob_drm_plane.c |   2 +
  include/drm/drm_atomic.h                   |  28 +-
  include/drm/drm_crtc.h                     | 120 ++++++++-
- 14 files changed, 655 insertions(+), 146 deletions(-)
+ 14 files changed, 659 insertions(+), 148 deletions(-)
 
 diff --git a/drivers/gpu/drm/drm_atomic.c b/drivers/gpu/drm/drm_atomic.c
 index 96b817a..ac12b3b 100644
@@ -927,7 +927,7 @@ index 5a7cd8b..aa69fda 100644
 -	drm_modeset_unlock_all(dev);
  }
 diff --git a/drivers/gpu/drm/exynos/exynos_drm_fimd.c b/drivers/gpu/drm/exynos/exynos_drm_fimd.c
-index 5e04ee3..c1bf5a2 100644
+index 62a089a..77d1e55 100644
 --- a/drivers/gpu/drm/exynos/exynos_drm_fimd.c
 +++ b/drivers/gpu/drm/exynos/exynos_drm_fimd.c
 @@ -12,6 +12,7 @@
@@ -938,16 +938,23 @@ index 5e04ee3..c1bf5a2 100644
  
  #include <linux/kernel.h>
  #include <linux/spinlock.h>
-@@ -478,6 +479,7 @@ static int fimd_plane_disable(struct drm_plane *plane)
- static const struct drm_plane_funcs fimd_plane_funcs = {
- 	.update_plane = fimd_plane_update,
- 	.disable_plane = fimd_plane_disable,
+@@ -441,9 +442,12 @@ static int fimd_plane_helper_disable(struct drm_plane *plane)
+ 	return 0;
+ }
+ 
+-static const struct exynos_plane_helper_funcs fimd_plane_helper_funcs = {
++static const struct drm_plane_funcs fimd_plane_funcs = {
+ 	.commit_plane = fimd_plane_helper_commit,
+-	.disable_plane = fimd_plane_helper_disable,
++	.update_plane = fimd_plane_update,
++	.disable_plane = fimd_plane_disable,
 +	.set_property = drm_atomic_plane_set_property,
- 	.destroy = drm_plane_cleanup,
++	.destroy = drm_plane_cleanup,
  };
  
+ int fimd_plane_helper_update_plane(struct drm_plane *plane,
 diff --git a/drivers/gpu/drm/exynos/exynos_drm_plane.c b/drivers/gpu/drm/exynos/exynos_drm_plane.c
-index 34608bb..0955635 100644
+index d033db6..8363fc80 100644
 --- a/drivers/gpu/drm/exynos/exynos_drm_plane.c
 +++ b/drivers/gpu/drm/exynos/exynos_drm_plane.c
 @@ -10,6 +10,7 @@
@@ -956,10 +963,10 @@ index 34608bb..0955635 100644
  #include <drm/drmP.h>
 +#include <drm/drm_atomic.h>
  
- #include <drm/exynos_drm.h>
- #include "exynos_drm_drv.h"
+ #if defined(CONFIG_DMA_SHARED_BUFFER_USES_KDS) || defined(CONFIG_DRM_DMA_SYNC)
+ #include <linux/dma-buf.h>
 diff --git a/drivers/gpu/drm/exynos/exynos_drm_vidi.c b/drivers/gpu/drm/exynos/exynos_drm_vidi.c
-index 7f48657..1f71e41 100644
+index 6288962..9ec326f 100644
 --- a/drivers/gpu/drm/exynos/exynos_drm_vidi.c
 +++ b/drivers/gpu/drm/exynos/exynos_drm_vidi.c
 @@ -20,6 +20,7 @@
@@ -970,7 +977,7 @@ index 7f48657..1f71e41 100644
  
  #include "exynos_drm_drv.h"
  #include "exynos_drm_fb.h"
-@@ -234,6 +235,7 @@ static void vidi_plane_destroy(struct drm_plane *plane)
+@@ -257,6 +258,7 @@ static void vidi_plane_destroy(struct drm_plane *plane)
  const struct drm_plane_funcs vidi_plane_funcs = {
  	.update_plane = vidi_plane_update,
  	.disable_plane = vidi_plane_disable,
@@ -979,7 +986,7 @@ index 7f48657..1f71e41 100644
  };
  
 diff --git a/drivers/gpu/drm/exynos/exynos_mixer.c b/drivers/gpu/drm/exynos/exynos_mixer.c
-index 7e7366f..517e245 100644
+index f98a39a..33addb4 100644
 --- a/drivers/gpu/drm/exynos/exynos_mixer.c
 +++ b/drivers/gpu/drm/exynos/exynos_mixer.c
 @@ -16,6 +16,7 @@
@@ -990,10 +997,10 @@ index 7e7366f..517e245 100644
  
  #include "regs-mixer.h"
  #include "regs-vp.h"
-@@ -1066,6 +1067,7 @@ int mixer_plane_disable(struct drm_plane *plane)
+@@ -1041,6 +1042,7 @@ static const struct exynos_plane_helper_funcs mixer_plane_helper_funcs = {
  static const struct drm_plane_funcs mixer_plane_funcs = {
- 	.update_plane = mixer_plane_update,
- 	.disable_plane = mixer_plane_disable,
+ 	.update_plane = mixer_plane_update_plane,
+ 	.disable_plane = exynos_plane_helper_disable_plane,
 +	.set_property = drm_atomic_plane_set_property,
  	.destroy = drm_plane_cleanup,
  };
@@ -1295,5 +1302,5 @@ index 9912981..a9698bf 100644
 +
  #endif /* __DRM_CRTC_H__ */
 -- 
-1.8.3.2
+2.0.0.526.g5318336
 

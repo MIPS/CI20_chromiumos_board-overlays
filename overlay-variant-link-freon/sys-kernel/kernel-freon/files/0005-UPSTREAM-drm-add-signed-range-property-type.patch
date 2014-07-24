@@ -1,7 +1,7 @@
-From b36ba44e9aa32e6881cef669a68d6e0441c5d524 Mon Sep 17 00:00:00 2001
+From d367ac968d1c6b6e1d992f8486ad861d6e5bd91f Mon Sep 17 00:00:00 2001
 From: Rob Clark <robdclark@gmail.com>
 Date: Wed, 12 Sep 2012 22:22:31 -0500
-Subject: [PATCH 09/18] UPSTREAM: drm: add signed-range property type
+Subject: [PATCH 05/15] UPSTREAM: drm: add signed-range property type
 
 Like range, but values are signed.
 
@@ -127,5 +127,5 @@ index 5ec1bed..f1965aa 100644
  struct drm_mode_property_enum {
  	__u64 value;
 -- 
-1.8.3.2
+2.0.0.526.g5318336
 

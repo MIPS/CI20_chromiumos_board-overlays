@@ -1,7 +1,7 @@
-From ece60fa5f82626a57dadefed944c034deec6e830 Mon Sep 17 00:00:00 2001
+From 88cc19d1c1362fd5cbd7e51f00529163acc4e6e2 Mon Sep 17 00:00:00 2001
 From: Rob Clark <robdclark@gmail.com>
 Date: Tue, 19 Nov 2013 12:10:12 -0500
-Subject: [PATCH 07/18] UPSTREAM: drm: convert crtc to ww_mutex
+Subject: [PATCH 03/15] UPSTREAM: drm: convert crtc to ww_mutex
 
 For atomic, it will be quite convenient to not have to care so much
 about locking order.  And 'state' gives us a convenient place to stash a
@@ -511,10 +511,10 @@ index 190e082..12c99dc 100644
  	return 0;
  }
 diff --git a/include/drm/drmP.h b/include/drm/drmP.h
-index d6878d4..9b4b198 100644
+index 335c5e5..dbd9ae2 100644
 --- a/include/drm/drmP.h
 +++ b/include/drm/drmP.h
-@@ -1403,11 +1403,6 @@ static inline int drm_device_is_unplugged(struct drm_device *dev)
+@@ -1406,11 +1406,6 @@ static inline int drm_device_is_unplugged(struct drm_device *dev)
  	return ret;
  }
  
@@ -689,5 +689,5 @@ index fbfd532..6fe6706 100644
 +
  #endif
 -- 
-1.8.3.2
+2.0.0.526.g5318336
 

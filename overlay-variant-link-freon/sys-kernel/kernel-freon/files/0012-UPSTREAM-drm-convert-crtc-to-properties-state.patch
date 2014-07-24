@@ -1,7 +1,7 @@
-From 1e7d2cefba28c948298aa528028f07a4f06bacc9 Mon Sep 17 00:00:00 2001
+From d893f7f791c4844c66fafb0494987294451176de Mon Sep 17 00:00:00 2001
 From: Rob Clark <robdclark@gmail.com>
 Date: Sat, 15 Mar 2014 12:39:01 -0400
-Subject: [PATCH 16/18] UPSTREAM: drm: convert crtc to properties/state
+Subject: [PATCH 12/15] UPSTREAM: drm: convert crtc to properties/state
 
 Break the mutable state of a crtc out into a separate structure
 and use atomic properties mechanism to set crtc attributes.  This
@@ -43,7 +43,6 @@ Change-Id: I266c9bdc87f8c94bdec1ddae8b024f086bed0de1
  drivers/gpu/drm/cirrus/cirrus_mode.c       |   1 +
  drivers/gpu/drm/drm_atomic.c               | 231 +++++++++++-
  drivers/gpu/drm/drm_crtc.c                 | 576 +++++++++++++++++++----------
- drivers/gpu/drm/exynos/exynos_drm_crtc.c   |   7 +-
  drivers/gpu/drm/gma500/cdv_intel_display.c |   1 +
  drivers/gpu/drm/gma500/psb_intel_display.c |   1 +
  drivers/gpu/drm/i915/intel_display.c       |   1 +
@@ -56,7 +55,7 @@ Change-Id: I266c9bdc87f8c94bdec1ddae8b024f086bed0de1
  drivers/gpu/drm/vmwgfx/vmwgfx_scrn.c       |   1 +
  include/drm/drm_atomic.h                   |  28 ++
  include/drm/drm_crtc.h                     | 103 +++++-
- 17 files changed, 739 insertions(+), 221 deletions(-)
+ 16 files changed, 733 insertions(+), 220 deletions(-)
 
 diff --git a/drivers/gpu/drm/ast/ast_mode.c b/drivers/gpu/drm/ast/ast_mode.c
 index 9296cfe..0de5d53 100644
@@ -1196,38 +1195,6 @@ index f404b54..8738926 100644
  	return ret;
  }
  
-diff --git a/drivers/gpu/drm/exynos/exynos_drm_crtc.c b/drivers/gpu/drm/exynos/exynos_drm_crtc.c
-index 802f7aa..69ca66e 100644
---- a/drivers/gpu/drm/exynos/exynos_drm_crtc.c
-+++ b/drivers/gpu/drm/exynos/exynos_drm_crtc.c
-@@ -14,6 +14,7 @@
- 
- #include <drm/drmP.h>
- #include <drm/drm_crtc_helper.h>
-+#include <drm/drm_atomic.h>
- 
- #ifdef CONFIG_DMA_SHARED_BUFFER_USES_KDS
- #include <linux/dma-buf.h>
-@@ -584,6 +585,10 @@ static int exynos_drm_crtc_set_property(struct drm_crtc *crtc,
- 	struct drm_device *dev = crtc->dev;
- 	struct exynos_drm_private *dev_priv = dev->dev_private;
- 	struct exynos_drm_crtc *exynos_crtc = to_exynos_crtc(crtc);
-+	struct drm_crtc_state *cstate = drm_atomic_get_crtc_state(crtc, state);
-+
-+	if (IS_ERR(cstate))
-+		return PTR_ERR(cstate);
- 
- 	DRM_DEBUG_KMS("[CRTC:%d] [PROPERTY:%s] = %llu\n", DRM_BASE_ID(crtc),
- 			property->name, val);
-@@ -610,7 +615,7 @@ static int exynos_drm_crtc_set_property(struct drm_crtc *crtc,
- 		return 0;
- 	}
- 
--	return -EINVAL;
-+	return drm_crtc_set_property(crtc, cstate, property, val, blob_data);
- }
- 
- static const struct drm_crtc_funcs exynos_crtc_funcs = {
 diff --git a/drivers/gpu/drm/gma500/cdv_intel_display.c b/drivers/gpu/drm/gma500/cdv_intel_display.c
 index 9d4f6e7..6cb9dc0 100644
 --- a/drivers/gpu/drm/gma500/cdv_intel_display.c
@@ -1328,7 +1295,7 @@ index a7b0207..0e5b5b8 100644
  };
  
 diff --git a/drivers/gpu/drm/udl/udl_modeset.c b/drivers/gpu/drm/udl/udl_modeset.c
-index 6a65d60..be38652 100644
+index 20018c2..edc75860 100644
 --- a/drivers/gpu/drm/udl/udl_modeset.c
 +++ b/drivers/gpu/drm/udl/udl_modeset.c
 @@ -14,6 +14,7 @@
@@ -1339,14 +1306,14 @@ index 6a65d60..be38652 100644
  #include "udl_drv.h"
  
  /*
-@@ -388,6 +389,7 @@ static struct drm_crtc_helper_funcs udl_helper_funcs = {
+@@ -408,6 +409,7 @@ static struct drm_crtc_helper_funcs udl_helper_funcs = {
  
  static const struct drm_crtc_funcs udl_crtc_funcs = {
  	.set_config = drm_crtc_helper_set_config,
 +	.set_property = drm_atomic_crtc_set_property,
  	.destroy = udl_crtc_destroy,
+ 	.page_flip = udl_crtc_page_flip,
  };
- 
 diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_ldu.c b/drivers/gpu/drm/vmwgfx/vmwgfx_ldu.c
 index 7d83c99..1e26f8b 100644
 --- a/drivers/gpu/drm/vmwgfx/vmwgfx_ldu.c
@@ -1624,5 +1591,5 @@ index a9698bf..39cd72c 100644
  drm_plane_create_state(struct drm_plane *plane)
  {
 -- 
-1.8.3.2
+2.0.0.526.g5318336
 

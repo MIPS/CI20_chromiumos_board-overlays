@@ -1,7 +1,7 @@
-From 591b5da5e716b492ddf69334e287695049c61aee Mon Sep 17 00:00:00 2001
+From adc86851fe7fd81b4cdc32ff0dc15cb2c1b17295 Mon Sep 17 00:00:00 2001
 From: Rob Clark <robdclark@gmail.com>
 Date: Wed, 12 Sep 2012 16:59:13 -0500
-Subject: [PATCH 11/18] UPSTREAM: drm: split propvals out and blob property
+Subject: [PATCH 07/15] UPSTREAM: drm: split propvals out and blob property
  support
 
 Split property values out into a different struct, so we can later
@@ -32,8 +32,7 @@ Change-Id: Ibba82d8c03900214b90d0671a35fd1a577a77834
  drivers/gpu/drm/bridge/anx7808.c            |  8 +--
  drivers/gpu/drm/drm_crtc.c                  | 83 +++++++++++++++++++++--------
  drivers/gpu/drm/drm_fb_helper.c             |  3 +-
- drivers/gpu/drm/exynos/exynos_drm_encoder.c |  3 +-
- drivers/gpu/drm/exynos/exynos_hdmi.c        |  6 ++-
+ drivers/gpu/drm/exynos/exynos_hdmi.c        |  3 +-
  drivers/gpu/drm/gma500/cdv_intel_dp.c       |  3 +-
  drivers/gpu/drm/gma500/cdv_intel_hdmi.c     |  3 +-
  drivers/gpu/drm/gma500/cdv_intel_lvds.c     |  6 ++-
@@ -49,7 +48,7 @@ Change-Id: Ibba82d8c03900214b90d0671a35fd1a577a77834
  drivers/gpu/drm/nouveau/nouveau_connector.c |  4 +-
  drivers/gpu/drm/shmobile/shmob_drm_crtc.c   |  4 +-
  include/drm/drm_crtc.h                      | 12 ++++-
- 20 files changed, 147 insertions(+), 59 deletions(-)
+ 19 files changed, 143 insertions(+), 57 deletions(-)
 
 diff --git a/drivers/gpu/drm/bridge/anx7808.c b/drivers/gpu/drm/bridge/anx7808.c
 index 49c207b..e25dbe4 100644
@@ -295,36 +294,11 @@ index 32b10b7..348474f 100644
  		}
  	}
  	drm_modeset_unlock_all(dev);
-diff --git a/drivers/gpu/drm/exynos/exynos_drm_encoder.c b/drivers/gpu/drm/exynos/exynos_drm_encoder.c
-index 8748968..6888107 100644
---- a/drivers/gpu/drm/exynos/exynos_drm_encoder.c
-+++ b/drivers/gpu/drm/exynos/exynos_drm_encoder.c
-@@ -172,7 +172,8 @@ static int exynos_drm_encoder_set_property(struct drm_encoder *encoder,
- 			return ret;
- 	}
- 
--	return drm_object_property_set_value(&encoder->base, property, val);
-+	return drm_object_property_set_value(&encoder->base, &encoder->propvals,
-+			property, val, blob_data);
- }
- 
- static void exynos_drm_encoder_destroy(struct drm_encoder *encoder)
 diff --git a/drivers/gpu/drm/exynos/exynos_hdmi.c b/drivers/gpu/drm/exynos/exynos_hdmi.c
-index 684f0e0e..351cd35 100644
+index aac3ff1..71f189c 100644
 --- a/drivers/gpu/drm/exynos/exynos_hdmi.c
 +++ b/drivers/gpu/drm/exynos/exynos_hdmi.c
-@@ -1395,8 +1395,9 @@ static int hdcp_update_drm_property(struct hdmi_context *hdata, int value)
- 	list_for_each_entry(connector, &mode_config->connector_list, head) {
- 		if (connector->connector_type == DRM_MODE_CONNECTOR_HDMIA)
- 			return drm_object_property_set_value(&connector->base,
-+				&connector->propvals,
- 				mode_config->content_protection_property,
--				value);
-+				value, NULL);
- 	}
- 	return -ENODEV;
- }
-@@ -1638,7 +1639,8 @@ static int hdmi_connector_set_property(struct drm_connector *connector,
+@@ -1665,7 +1665,8 @@ static int hdmi_connector_set_property(struct drm_connector *connector,
  	if (ret)
  		return ret;
  
@@ -745,5 +719,5 @@ index 60d0f7e..ee40c87 100644
  					 struct drm_property *property,
  					 uint64_t *value);
 -- 
-1.8.3.2
+2.0.0.526.g5318336
 

@@ -1,7 +1,7 @@
-From 6c8ff356d7cbc8235bade794a248ee8fb545739a Mon Sep 17 00:00:00 2001
+From a6f4a7923255561e5f6e9f70cef61dabd185c44e Mon Sep 17 00:00:00 2001
 From: Sean Paul <seanpaul@chromium.org>
 Date: Mon, 12 May 2014 16:25:46 -0400
-Subject: [PATCH 18/18] HACK: drm/i915: Remove WARN for mode_config.mutex in
+Subject: [PATCH 14/15] HACK: drm/i915: Remove WARN for mode_config.mutex in
  ironlake_panel_vdd_off_sync
 
 BUG=chromium:336809
@@ -27,5 +27,5 @@ index 6dbbf6c..2ead490 100644
  		pp = ironlake_get_pp_control(dev_priv);
  		pp &= ~EDP_FORCE_VDD;
 -- 
-1.8.3.2
+2.0.0.526.g5318336
 

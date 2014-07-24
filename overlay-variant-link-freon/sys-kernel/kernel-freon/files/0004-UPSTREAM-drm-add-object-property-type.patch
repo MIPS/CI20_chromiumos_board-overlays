@@ -1,7 +1,7 @@
-From 0fb622798ab7c9f1295afac8e2647c71733d4e19 Mon Sep 17 00:00:00 2001
+From f55a9cfc7915775d861148f9ebf0445a1f3859c4 Mon Sep 17 00:00:00 2001
 From: Rob Clark <robdclark@gmail.com>
 Date: Wed, 12 Sep 2012 15:49:06 -0500
-Subject: [PATCH 08/18] UPSTREAM: drm: add object property type
+Subject: [PATCH 04/15] UPSTREAM: drm: add object property type
 
 An object property is an id (idr) for a drm mode object.  This
 will allow a property to be used set/get a framebuffer, CRTC, etc.
@@ -266,5 +266,5 @@ index 6fe6706..5ec1bed 100644
  	__u64 value;
  	char name[DRM_PROP_NAME_LEN];
 -- 
-1.8.3.2
+2.0.0.526.g5318336
 

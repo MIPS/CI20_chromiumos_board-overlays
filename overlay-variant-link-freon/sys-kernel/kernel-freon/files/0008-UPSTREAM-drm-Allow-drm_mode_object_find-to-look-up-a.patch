@@ -1,7 +1,7 @@
-From 5faa5b23ae36189fa1d8312ea05b95e596f45174 Mon Sep 17 00:00:00 2001
+From da8ce0e36fe967c3ee2a30aa0b902eb801e7323d Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= <ville.syrjala@linux.intel.com>
 Date: Wed, 23 May 2012 15:31:30 +0300
-Subject: [PATCH 12/18] UPSTREAM: drm: Allow drm_mode_object_find() to look up
+Subject: [PATCH 08/15] UPSTREAM: drm: Allow drm_mode_object_find() to look up
  an object of any type
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -52,5 +52,5 @@ index ee40c87..48fc9e1 100644
  struct drm_mode_object {
  	uint32_t id;
 -- 
-1.8.3.2
+2.0.0.526.g5318336
 

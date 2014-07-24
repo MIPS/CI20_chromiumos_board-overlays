@@ -1,7 +1,7 @@
-From 7930f8246c18436260fb6bf0f1584499c0210dec Mon Sep 17 00:00:00 2001
+From 5cc86548f9b26723a9603338b4355c8231556678 Mon Sep 17 00:00:00 2001
 From: Rob Clark <robdclark@gmail.com>
 Date: Wed, 20 Nov 2013 10:24:51 -0500
-Subject: [PATCH 14/18] UPSTREAM: drm: allow FB's in drm_mode_object_find
+Subject: [PATCH 10/15] UPSTREAM: drm: allow FB's in drm_mode_object_find
 
 We do actually want to permit FB's in atomic case, since FB will be
 looked up like any other object property value in a few code paths
@@ -98,5 +98,5 @@ index 48fc9e1..9912981 100644
  extern int drm_mode_getresources(struct drm_device *dev,
  				 void *data, struct drm_file *file_priv);
 -- 
-1.8.3.2
+2.0.0.526.g5318336
 
