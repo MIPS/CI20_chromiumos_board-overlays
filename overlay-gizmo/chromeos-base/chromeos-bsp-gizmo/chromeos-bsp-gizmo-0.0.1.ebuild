@@ -11,4 +11,7 @@ KEYWORDS="-* amd64 x86"
 IUSE=""
 
 DEPEND=""
-RDEPEND="app-shells/bash"
+RDEPEND="
+	app-shells/bash
+	chromeos-base/peerd
+"
