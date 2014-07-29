@@ -32,4 +32,6 @@ src_install() {
 	doins "${FILESDIR}/wakeup_input_device_names"
 	doins "${FILESDIR}/low_battery_shutdown_percent"
 	doins "${FILESDIR}/low_battery_shutdown_time_s"
+	doins "${FILESDIR}/instant_transitions_below_min_level"
+	doins "${FILESDIR}/min_visible_backlight_level"
 }
