@@ -1,0 +1,15 @@
+{
+  "metadata":{
+    "rootdev_base": "/sys/devices/pci0000:00/0000:00:1f.2/ata1/host*/target*/*/block/sd*"
+  },
+  "parent": "legacy_disk_layout.json",
+  "layouts":{
+    "usb": [
+      {
+        "num": 3,
+        "size":"2048 MiB",
+        "fs_size":"2000 MiB"
+      }
+    ]
+  }
+}
