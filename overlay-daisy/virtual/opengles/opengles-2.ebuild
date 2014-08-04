@@ -9,4 +9,5 @@ SLOT="0"
 KEYWORDS="-* arm"
 IUSE=""
 
-RDEPEND="media-libs/mali-drivers-bin"
+DEPEND="media-libs/mali-drivers-bin"
+RDEPEND="${DEPEND}"
