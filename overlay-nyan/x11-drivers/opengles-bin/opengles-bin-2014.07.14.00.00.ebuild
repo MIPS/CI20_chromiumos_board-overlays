@@ -13,9 +13,14 @@ SLOT="0"
 KEYWORDS="arm"
 IUSE=""
 
-RDEPEND="~sys-apps/nvrm-${PV}
+DEPEND="
 	x11-drivers/opengles-headers
-	!x11-drivers/opengles"
+	"
+
+RDEPEND="
+	~sys-apps/nvrm-${PV}
+	!x11-drivers/opengles
+	"
 
 S=${WORKDIR}
 

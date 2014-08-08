@@ -13,13 +13,18 @@ LICENSE="Google-TOS"
 SLOT="0"
 KEYWORDS="-* arm"
 
-DEPEND="x11-drivers/opengles-headers"
-RDEPEND="!media-libs/mali-drivers
+DEPEND="
+	x11-drivers/opengles-headers
+	"
+
+RDEPEND="
+	!media-libs/mali-drivers
 	x11-base/xorg-server
-	x11-libs/libdrm
 	x11-drivers/xf86-video-armsoc
 	x11-drivers/mali-rules
-	!x11-drivers/opengles"
+	!x11-drivers/opengles
+	x11-libs/libdrm
+	"
 
 src_install() {
 	emake DESTDIR="${D}" LIBDIR="/usr/$(get_libdir)" install
