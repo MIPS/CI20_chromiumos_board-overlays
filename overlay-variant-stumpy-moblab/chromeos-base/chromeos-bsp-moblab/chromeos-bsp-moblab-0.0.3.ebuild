@@ -74,6 +74,8 @@ src_install() {
 	# See chromium:394593
 	insinto /etc/sudoers.d
 	echo "moblab ALL=NOPASSWD: ALL" > moblab-all
+	echo "apache ALL = NOPASSWD: /sbin/reboot" > apache-reboot
 	insopts -m600
 	doins moblab-all
+	doins apache-reboot
 }
