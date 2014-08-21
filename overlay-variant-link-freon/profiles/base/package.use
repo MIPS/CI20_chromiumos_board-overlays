@@ -2,6 +2,7 @@ app-misc/utouch-evemu -X
 chromeos-base/ascender_to_license -X
 chromeos-base/chromeos-login -X
 chromeos-base/crosh -X
+chromeos-base/gestures -X
 chromeos-base/inputcontrol -X
 chromeos-base/ja-motoyafonts -X
 chromeos-base/libchromeos-use-flags -X
