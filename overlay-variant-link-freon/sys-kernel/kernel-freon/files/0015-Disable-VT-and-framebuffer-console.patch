@@ -1,0 +1,45 @@
+From ddb69a05b7b6dc7ad7092629afd0c0ac5e619f3d Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?St=C3=A9phane=20Marchesin?= <marcheu@chromium.org>
+Date: Thu, 21 Aug 2014 18:39:56 -0700
+Subject: [PATCH] Disable VT and framebuffer console.
+
+This change disables VT and framebuffer console. This is probably
+going to break things, so let's land it so we can figure out what
+those things are.
+
+BUG=chromium:406208
+TEST=boot on link_freon, I don't see the splash screen any longer which means it worked
+
+Change-Id: Ib9debf5439917541e375d795904e9a2e045d6d9e
+---
+ chromeos/config/base.config | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/chromeos/config/base.config b/chromeos/config/base.config
+index ffbe4da..1b0f5e4 100644
+--- a/chromeos/config/base.config
++++ b/chromeos/config/base.config
+@@ -483,7 +483,7 @@ CONFIG_FIRMWARE_IN_KERNEL=y
+ # CONFIG_FONTS is not set
+ CONFIG_FONT_8x16=y
+ CONFIG_FONT_8x8=y
+-CONFIG_FRAMEBUFFER_CONSOLE=y
++CONFIG_FRAMEBUFFER_CONSOLE=n
+ # CONFIG_FRAMEBUFFER_CONSOLE_ROTATION is not set
+ CONFIG_FRAME_POINTER=y
+ CONFIG_FREEZER=y
+@@ -2049,9 +2049,9 @@ CONFIG_VIRT_TO_BUS=y
+ # CONFIG_VITESSE_PHY is not set
+ # CONFIG_VLAN_8021Q is not set
+ CONFIG_VM_EVENT_COUNTERS=y
+-CONFIG_VT=y
++CONFIG_VT=n
+ # CONFIG_VT6656 is not set
+-CONFIG_VT_CONSOLE=y
++CONFIG_VT_CONSOLE=n
+ CONFIG_VT_CONSOLE_SLEEP=y
+ CONFIG_VT_HW_CONSOLE_BINDING=y
+ # CONFIG_VXFS_FS is not set
+-- 
+2.1.0.rc2.206.gedb03e5
+
