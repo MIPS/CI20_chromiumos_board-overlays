@@ -28,6 +28,8 @@ src_install() {
 	insinto "/usr/share/power_manager/board_specific"
 	doins "${FILESDIR}/low_battery_shutdown_percent"
 	doins "${FILESDIR}/wakeup_input_device_names"
+	doins "${FILESDIR}/instant_transitions_below_min_level"
+	doins "${FILESDIR}/min_visible_backlight_level"
 
 	# Battery cut-off
 	dosbin "${FILESDIR}/battery_cut_off.sh"
