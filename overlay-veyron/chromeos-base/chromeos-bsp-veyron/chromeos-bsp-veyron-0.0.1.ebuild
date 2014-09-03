@@ -11,7 +11,11 @@ KEYWORDS="-* arm"
 IUSE=""
 
 # Add dependencies on other ebuilds from within this board overlay
-RDEPEND="chromeos-base/AP6335-wifi-bin"
+DEPEND=""
+RDEPEND="${DEPEND}
+	chromeos-base/AP6335-wifi-bin
+	x11-drivers/mali-rules
+"
 
 S=${WORKDIR}
 
