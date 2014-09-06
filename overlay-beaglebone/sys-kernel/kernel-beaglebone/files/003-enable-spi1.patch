@@ -36,8 +36,8 @@ index 0000000..2a234c0
 +            spi1_pins_s0: spi1_pins_s0 {
 +                        pinctrl-single,pins = <
 +                                0x190 0x33
-+                                0x194 0x13
-+                                0x198 0x33
++                                0x194 0x33
++                                0x198 0x13
 +                                0x19c 0x13
 +                >;
 +            };
