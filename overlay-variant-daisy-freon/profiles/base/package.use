@@ -3,6 +3,3 @@ chromeos-base/chromeos-chrome X
 
 # This is not ready to build without X yet.
 media-libs/mali-drivers X
-
-# I have no idea why this is required to build.
-net-firewall/iptables ipv6

@@ -3,4 +3,4 @@
 # found in the LICENSE file.
 
 # X11 is not used for this board.
-USE="${USE} -X"
+USE="-X"

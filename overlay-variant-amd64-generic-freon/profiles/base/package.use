@@ -5,6 +5,3 @@ media-libs/piglit waffle
 
 # workaround for crbug.com/403905
 chromeos-base/chromeos-chrome X
-
-# I have no idea why portage requires this.
-net-firewall/iptables ipv6
