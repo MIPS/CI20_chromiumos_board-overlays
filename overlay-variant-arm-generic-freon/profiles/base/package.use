@@ -1,5 +1,0 @@
-# workaround for crbug.com/403905
-chromeos-base/chromeos-chrome X
-
-# This is not ready to build without X yet.
-media-libs/mali-drivers X

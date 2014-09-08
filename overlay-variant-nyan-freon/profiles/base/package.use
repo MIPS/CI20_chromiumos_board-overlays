@@ -1,7 +1,0 @@
-media-libs/mesa shared-glapi gles2 egl gbm
-media-libs/piglit waffle
-media-libs/waffle gbm
-x11-base/xorg-server opengl
-
-# workaround for crbug.com/403905
-chromeos-base/chromeos-chrome X
