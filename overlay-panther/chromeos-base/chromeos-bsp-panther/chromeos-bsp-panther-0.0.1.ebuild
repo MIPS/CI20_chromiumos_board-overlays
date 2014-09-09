@@ -18,6 +18,7 @@ S="${WORKDIR}"
 # Panther itself requires no special firmware, but we modify panthers
 # to add WiFi parts that require firmware when building test APs.
 RDEPEND="
+	chromeos-base/jabra-vold
 	sys-kernel/linux-firmware
 "
 
