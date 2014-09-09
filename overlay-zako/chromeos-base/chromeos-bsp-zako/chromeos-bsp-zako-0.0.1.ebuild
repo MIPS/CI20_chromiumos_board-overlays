@@ -15,7 +15,9 @@ IUSE=""
 S="${WORKDIR}"
 
 # Add dependencies on other ebuilds from within this board overlay
-RDEPEND=""
+RDEPEND="
+	chromeos-base/jabra-vold
+"
 
 src_install() {
 	doappid "{C3EA54EB-348D-5118-8598-CFD6317AD268}"
