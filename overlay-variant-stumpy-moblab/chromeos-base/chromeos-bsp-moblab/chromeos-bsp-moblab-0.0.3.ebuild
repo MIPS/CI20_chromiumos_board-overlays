@@ -7,9 +7,9 @@ inherit appid user
 
 DESCRIPTION="Ebuild which pulls in any necessary ebuilds as dependencies or portage actions"
 
-LICENSE="BSD"
+LICENSE="BSD-Google"
 SLOT="0"
-KEYWORDS="amd64 x86"
+KEYWORDS="*"
 IUSE=""
 
 # These packages are meant to set up the Chromium OS Basic environment to
@@ -78,4 +78,7 @@ src_install() {
 	insopts -m600
 	doins moblab-all
 	doins apache-reboot
+
+	insinto /root
+	newins "${FILESDIR}/bash_profile" .bash_profile
 }

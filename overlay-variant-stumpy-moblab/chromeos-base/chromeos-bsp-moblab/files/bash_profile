@@ -1,0 +1,17 @@
+# Copyright 2014 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+alias atest=/usr/local/autotest/cli/atest
+alias host_add='/usr/local/autotest/cli/atest host create'
+alias host_delete='/usr/local/autotest/cli/atest host delete'
+alias label_create='/usr/local/autotest/cli/atest label create'
+alias label_add='/usr/local/autotest/cli/atest label add'
+alias label_delete='/usr/local/autotest/cli/atest label delete'
+alias abort_jobs='/usr/local/autotest/cli/atest job abort'
+alias run_suite='/usr/local/autotest/site_utils/run_suite.py'
+alias edit_mob_config='vi /usr/local/autotest/shadow_config.ini'
+alias import_tests='/usr/local/autotest/utils/test_importer.py -A'
+PATH=$PATH:/usr/local/autotest:/usr/local/autotest/utils
+PATH=$PATH:/usr/local/autotest/site_utils
+export PATH
