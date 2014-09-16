@@ -27,6 +27,7 @@ src_install() {
 	doappid "{D0DBB0D9-6EEB-B148-F8AF-AE8AF86ECE5B}"
 
 	# Install platform specific config files for power_manager.
+	udev_dorules "${FILESDIR}/92-powerd-overrides.rules"
 	insinto "/usr/share/power_manager/board_specific"
 	doins "${FILESDIR}/low_battery_shutdown_percent"
 	doins "${FILESDIR}/min_visible_backlight_level"

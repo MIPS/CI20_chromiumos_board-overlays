@@ -1,0 +1,2 @@
+# No wakeup through touchpad on this system
+ENV{POWERD_ROLE}=="internal_touchpad", ENV{POWERD_TAGS_WAKEUP}=""
