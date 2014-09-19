@@ -38,7 +38,6 @@ src_install() {
 	doins "${FILESDIR}/low_battery_shutdown_percent"
 	doins "${FILESDIR}/low_battery_shutdown_time_s"
 	doins "${FILESDIR}/min_visible_backlight_level"
-	doins "${FILESDIR}/wakeup_input_device_names"
 	doins "${FILESDIR}/dark_resume_suspend_durations"
 	doins "${FILESDIR}/dark_resume_devices"
 	doins "${FILESDIR}/dark_resume_sources"

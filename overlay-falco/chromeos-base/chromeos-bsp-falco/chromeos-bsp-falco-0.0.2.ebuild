@@ -24,7 +24,6 @@ src_install() {
 	doins "${FILESDIR}/low_battery_shutdown_time_s"
 	doins "${FILESDIR}/min_visible_backlight_level"
 	doins "${FILESDIR}/power_supply_full_factor"
-	doins "${FILESDIR}/wakeup_input_device_names"
 
 	# Install board-specific laptop mode configs.
 	insinto "/etc/laptop-mode/conf.d/board-specific"
