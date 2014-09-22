@@ -1,9 +1,9 @@
-# Copyright (c) 2013 The Chromium OS Authors. All rights reserved.
+# Copyright 2014 The Chromium OS Authors. All rights reserved.
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI="4"
 
-inherit appid user
+inherit user
 
 DESCRIPTION="Ebuild which pulls in any necessary ebuilds as dependencies or portage actions"
 
@@ -40,8 +40,6 @@ pkg_setup() {
 }
 
 src_install() {
-	doappid "{0A54D104-EC0D-450D-8588-FB106B2C6703}"
-
 	insinto /etc/init
 	doins "${FILESDIR}"/init/*.conf
 

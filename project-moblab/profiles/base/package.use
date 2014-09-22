@@ -1,0 +1,8 @@
+# Copyright (c) 2014 The Chromium OS Authors. All rights reserved.
+# Distributed under the terms of the GNU General Public License v2
+
+net-misc/dhcp server -client
+
+# For ft2232_spi support in flashrom.
+dev-libs/libusb static-libs
+sys-apps/flashrom ft2232_spi
