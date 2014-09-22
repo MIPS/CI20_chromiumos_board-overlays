@@ -3,7 +3,7 @@
 
 EAPI=4
 
-inherit appid
+inherit appid udev
 
 DESCRIPTION="Clapper private bsp (meta package to pull in driver/tool deps)"
 
