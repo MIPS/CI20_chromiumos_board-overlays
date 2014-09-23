@@ -13,5 +13,4 @@ IUSE=""
 DEPEND=""
 RDEPEND="
 	app-shells/bash
-	chromeos-base/peerd
 "
