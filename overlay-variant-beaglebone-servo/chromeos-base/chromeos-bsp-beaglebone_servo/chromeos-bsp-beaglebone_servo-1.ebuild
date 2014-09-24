@@ -25,6 +25,7 @@ DEPEND=""
 #     dev-embedded/openocd - Used for EC programming on x86 device.
 #     dev-util/hdctools - servod support.
 #     net-misc/openssh - ssh client, sshd server, and related tools.
+#     net-misc/ser2net - allow remote connection to various console output
 RDEPEND="
 	chromeos-base/chromeos-ec
 	chromeos-base/chromeos-test-testauthkeys
@@ -34,6 +35,7 @@ RDEPEND="
 	dev-embedded/openocd
 	dev-util/hdctools
 	net-misc/openssh
+	net-misc/ser2net
 	sys-apps/flashrom
 "
 
