@@ -14,6 +14,6 @@ IUSE=""
 S=${WORKDIR}
 
 src_install() {
-	insinto /lib/firmware/tegra12x
-	doins lib/firmware/tegra_xusb_firmware
+	insinto /lib/firmware/nvidia/tegra124
+	doins lib/firmware/nvidia/tegra124/xusb.bin
 }
