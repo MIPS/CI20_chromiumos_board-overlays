@@ -1,0 +1,1 @@
+chromeos-bsp-parry-0.0.1.ebuild
