@@ -10,5 +10,6 @@ LICENSE="BSD-Google"
 SLOT="0"
 KEYWORDS="-* amd64 x86"
 
-RDEPEND="chromeos-base/chromeos-bsp-moblab
+RDEPEND="chromeos-base/chromeos-bsp-mobbase
+	chromeos-base/chromeos-bsp-moblab
 	chromeos-base/chromeos-bsp-stumpy-moblab"

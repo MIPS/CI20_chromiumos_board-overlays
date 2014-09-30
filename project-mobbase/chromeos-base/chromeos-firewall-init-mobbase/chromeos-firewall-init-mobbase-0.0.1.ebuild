@@ -15,6 +15,7 @@ S=${WORKDIR}
 RDEPEND="
 	chromeos-base/chromeos-init
 	net-firewall/iptables[ipv6]
+	!chromeos-base/chromeos-firewall-init-moblab
 "
 
 src_install() {

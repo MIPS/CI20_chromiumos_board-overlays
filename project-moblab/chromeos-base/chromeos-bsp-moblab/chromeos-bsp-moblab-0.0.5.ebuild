@@ -49,18 +49,6 @@ src_install() {
 	insinto /etc/dhcp
 	doins "${FILESDIR}/dhcpd-moblab.conf"
 
-	insinto "/usr/share/power_manager/board_specific"
-	doins "${FILESDIR}/avoid_suspend_when_headphone_jack_plugged"
-	doins "${FILESDIR}/require_usb_input_device_to_suspend"
-
-	insinto "/usr/share/power_manager/"
-	doins "${FILESDIR}/disable_idle_suspend"
-
-	# TODO (crbug.com/348172) - This is a temporary fix to not wipe
-	# stateful when booting off USB as a base image.
-	dodir "/mnt/stateful_partition"
-	touch "${D}/mnt/stateful_partition/.developer_mode"
-
 	# Create the mount point for external storage.
 	dodir "/mnt/moblab"
 
