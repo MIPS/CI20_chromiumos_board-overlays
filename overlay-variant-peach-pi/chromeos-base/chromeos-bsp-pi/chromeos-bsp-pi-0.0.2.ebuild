@@ -11,7 +11,7 @@ LICENSE="BSD-Google"
 SLOT="0"
 KEYWORDS="-* arm"
 
-DEPEND=""
+DEPEND="!<chromeos-base/chromeos-bsp-pi-private-0.0.2"
 RDEPEND="${DEPEND}
 	chromeos-base/ec-utils
 	chromeos-base/thermal
@@ -21,6 +21,15 @@ S=${WORKDIR}
 
 src_install() {
 	doappid "{5615D466-EF74-FCD0-46EA-D7F60416B3CD}" # peach-pi
+
+	dosbin "${FILESDIR}/battery_cut_off.sh"
+	dosbin "${FILESDIR}/board_factory_wipe.sh"
+	dosbin "${FILESDIR}/board_factory_reset.sh"
+
+	insinto "/usr/share/factory/images"
+	doins "${FILESDIR}/remove_ac.png"
+	doins "${FILESDIR}/cutting_off.png"
+	doins "${FILESDIR}/cutoff_failed.png"
 
 	# Install platform-specific ambient light sensor configuration.
 	udev_dorules "${FILESDIR}/99-light-sensor.rules"
