@@ -9,5 +9,8 @@ SLOT="0"
 KEYWORDS="-* arm"
 IUSE=""
 
-DEPEND="media-libs/mali-drivers-bin"
+DEPEND="
+	media-libs/mali-drivers-bin
+	x11-drivers/opengles-headers
+"
 RDEPEND="${DEPEND}"
