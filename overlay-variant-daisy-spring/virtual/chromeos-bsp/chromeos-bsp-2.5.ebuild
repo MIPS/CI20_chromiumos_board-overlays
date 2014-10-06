@@ -6,9 +6,9 @@ EAPI=4
 DESCRIPTION="Chrome OS BSP virtual package"
 HOMEPAGE="http://src.chromium.org"
 
-LICENSE="GPL-2"
+LICENSE=""
 SLOT="0"
-KEYWORDS="arm"
+KEYWORDS="-* arm"
 
 RDEPEND="chromeos-base/chromeos-bsp-daisy
 	chromeos-base/chromeos-bsp-spring"
