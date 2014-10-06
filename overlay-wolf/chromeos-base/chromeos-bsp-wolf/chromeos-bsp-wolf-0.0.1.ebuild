@@ -10,18 +10,38 @@ or portage actions."
 
 LICENSE="BSD-Google"
 SLOT="0"
-KEYWORDS="amd64 x86"
+KEYWORDS="-* amd64 x86"
 IUSE=""
-S="${WORKDIR}"
 
 # Add dependencies on other ebuilds from within this board overlay
-
-RDEPEND=""
-
+RDEPEND="
+	!<chromeos-base/chromeos-bsp-wolf-private-0.0.2
+	media-gfx/ply-image
+	chromeos-base/ec-utils
+"
 DEPEND="${RDEPEND}"
+
+S="${WORKDIR}"
 
 src_install() {
 	doappid "{1E454867-ACF6-5F8B-091F-145680D4A7F5}"
+
+	# Battery cut-off or power-off
+	dosbin "${FILESDIR}/battery_cut_off.sh"
+	dosbin "${FILESDIR}/board_factory_wipe.sh"
+	dosbin "${FILESDIR}/board_factory_reset.sh"
+	dosbin "${FILESDIR}/board_charge_battery.sh"
+	dosbin "${FILESDIR}/board_poweroff.sh"
+
+	insinto "/usr/share/factory/images"
+	doins "${FILESDIR}/remove_ac.png"
+	doins "${FILESDIR}/cutting_off.png"
+	doins "${FILESDIR}/cutoff_failed.png"
+	doins "${FILESDIR}/charging.png"
+	doins "${FILESDIR}/connect_ac.png"
+	doins "${FILESDIR}/powering_off.png"
+	doins "${FILESDIR}/poweroff_failed.png"
+	doins "${FILESDIR}/press_space_to_poweroff.png"
 
 	# Install board-specific info.
 	insinto "/etc/laptop-mode/conf.d/board-specific"
