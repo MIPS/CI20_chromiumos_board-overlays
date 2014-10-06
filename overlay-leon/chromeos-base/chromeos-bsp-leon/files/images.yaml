@@ -1,0 +1,32 @@
+- image: cutoff_failed.png
+  text: Battery cut-off failed\nContact factory team\n无法切断电池电源\n请联络RD
+  fg_color: '#ff0000'
+  font_size: 60
+- image: cutting_off.png
+  text: Cutting off battery.\nPlease wait...\n切断电池电源中\n请稍候...
+  fg_color: '#ffffff'
+  font_size: 60
+- image: poweroff_failed.png
+  text: Power-off failed\nContact factory team\n关机失败\n请联络RD
+  fg_color: '#ff0000'
+  font_size: 60
+- image: powering_off.png
+  text: Powering-off.\nPlease wait...\n系统正在关机中\n请稍候...
+  fg_color: '#ffffff'
+  font_size: 60
+- image: remove_ac.png
+  text: Please remove AC power\nfor battery cut-off\n请移除AC电源
+  fg_color: '#ffff00'
+  font_size: 60
+- image: connect_ac.png
+  text: Battery level too low.\nPlease connect AC power.\n电池电量过低\n请连接AC电源
+  fg_color: '#ffff00'
+  font_size: 60
+- image: press_space_to_poweroff.png
+  text: Please press space key\nto power-off\n请按空格键关机
+  fg_color: '#ffff00'
+  font_size: 60
+- image: charging.png
+  text: Charging battery to 40%...\n正在充电...（目标40％）
+  fg_color: '#ffffff'
+  font_size: 60
