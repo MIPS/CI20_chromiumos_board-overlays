@@ -11,18 +11,15 @@ or portage actions."
 LICENSE="BSD-Google"
 SLOT="0"
 KEYWORDS="-* amd64 x86"
-IUSE="-variant_build"
+IUSE=""
 S="${WORKDIR}"
 
 # Add dependencies on other ebuilds from within this board overlay
 RDEPEND="
-	chromeos-base/ec-utils
-	sys-kernel/linux-firmware
+	!<chromeos-base/chromeos-bsp-auron-0.0.1-r3
 "
 DEPEND="${RDEPEND}"
 
 src_install() {
-	if use !variant_build; then
-		doappid "{BAADD281-8816-1D16-5D83-0341376424DC}"
-	fi
+	doappid "{0AA3F9E1-A088-9252-50B8-5A1345D09AEB}"
 }
