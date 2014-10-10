@@ -19,7 +19,7 @@ DEPEND="${RDEPEND}"
 S=${WORKDIR}
 
 src_install() {
-	local sover='19.021'
+	local sover='19.022'
 
 	insinto /lib/firmware
 	doins lib/firmware/*
