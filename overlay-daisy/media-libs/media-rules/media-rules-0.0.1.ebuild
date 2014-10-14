@@ -24,4 +24,6 @@ S="${WORKDIR}"
 src_install() {
 	insinto /etc/udev/rules.d
 	doins "${FILESDIR}"/50-media.rules
+	insinto /etc/init
+	doins "${FILESDIR}"/udev-trigger-codec.conf
 }
