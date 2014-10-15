@@ -14,10 +14,31 @@ IUSE=""
 S="${WORKDIR}"
 
 RDEPEND="
+	chromeos-base/ec-utils
 	sys-kernel/linux-firmware
+	media-gfx/ply-image
 "
 DEPEND="${RDEPEND}"
+S="${WORKDIR}"
 
 src_install() {
 	doappid "{DEA86483-0D13-D8A2-125F-795B7C6712C3}"
+
+	# Install platform specific config files for power_manager.
+	insinto "/usr/share/power_manager/board_specific"
+	doins "${FILESDIR}/battery_stabilized_after_startup_ms"
+	doins "${FILESDIR}/low_battery_shutdown_percent"
+
+	# Battery cut-off
+	dosbin "${FILESDIR}/battery_cut_off.sh"
+	dosbin "${FILESDIR}/board_factory_wipe.sh"
+	dosbin "${FILESDIR}/board_factory_reset.sh"
+	dosbin "${FILESDIR}/board_charge_battery.sh"
+
+	insinto "/usr/share/factory/images"
+	doins "${FILESDIR}/remove_ac.png"
+	doins "${FILESDIR}/cutting_off.png"
+	doins "${FILESDIR}/cutoff_failed.png"
+	doins "${FILESDIR}/charging.png"
+	doins "${FILESDIR}/connect_ac.png"
 }
