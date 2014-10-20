@@ -25,4 +25,8 @@ src_install() {
 	if use !variant_build; then
 		doappid "{BAADD281-8816-1D16-5D83-0341376424DC}"
 	fi
+
+    # Install platform specific config files for power_manager.
+    insinto "/usr/share/power_manager/board_specific"
+    doins "${FILESDIR}/low_battery_shutdown_percent"
 }
