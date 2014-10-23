@@ -1,1 +1,0 @@
-kernel-freon-3.8.11.ebuild
