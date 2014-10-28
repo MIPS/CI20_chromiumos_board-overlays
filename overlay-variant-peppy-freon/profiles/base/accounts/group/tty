@@ -1,0 +1,4 @@
+group:tty
+gid:5
+# Chrome needs to control the tty when there's no X11
+users:cras,power,chronos
