@@ -1,0 +1,17 @@
+# Copyright 2014 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# Build app_shell instead of Chrome.
+USE="app_shell"
+
+# Make it small.
+USE="${USE} -cellular -cros_disks -cros_p2p -debugd -vpn -build_tests -netflix"
+
+# Use pam so that sudo is pulled in properly.
+USE="${USE} pam"
+
+# Work around http://crbug.com/372435.
+USE="${USE} -encrypted_stateful"
+
+USE="${USE} nacl"

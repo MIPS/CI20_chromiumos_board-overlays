@@ -3,16 +3,11 @@
 
 EAPI=4
 
-DESCRIPTION="mappy board-specific package"
+DESCRIPTION="Chrome OS BSP virtual package"
+HOMEPAGE="http://src.chromium.org"
 
 LICENSE="BSD-Google"
 SLOT="0"
-KEYWORDS="-* amd64 x86"
-IUSE=""
-S=${WORKDIR}
+KEYWORDS="*"
 
-DEPEND=""
-RDEPEND="
-	chromeos-base/app-shell-launcher
-	net-misc/openssh
-"
+RDEPEND="chromeos-base/chromeos-bsp-app-shell"
