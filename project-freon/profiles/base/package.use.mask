@@ -1,0 +1,1 @@
+chromeos-base/power_manager lockvt

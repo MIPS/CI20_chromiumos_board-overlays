@@ -1,0 +1,29 @@
+# Copyright 2014 The Chromium OS Authors. All rights reserved.
+# Distributed under the terms of the GNU General Public License v2
+
+# Disable X11.
+USE="-X"
+
+# Use opengles instead of opengl
+USE="${USE} -opengl opengles"
+
+# Enable ozone in Chrome.
+USE="${USE} ozone"
+
+# Enable atomic modesetting.
+USE="${USE} drm_atomic"
+
+# Enable gestures support in Chrome.
+USE="${USE} evdev_gestures"
+
+# Enable xkbcommon in Chrome for keyboard layouts.
+USE="${USE} xkbcommon"
+
+# Disable tty2 console. Not sure why TTY_CONSOLE can't be used for this.
+USE="${USE} -tty_console_tty2"
+
+# Disable VTs and framebuffer console in kernel.
+USE="${USE} -fbconsole -vtconsole"
+
+# Enable the freon console
+USE="${USE} frecon"

@@ -1,0 +1,10 @@
+chromeos-base/avtest_label_detect -vaapi
+chromeos-base/autotest-tests-graphics -tests_graphics_Piglit -tests_graphics_PiglitBVT
+media-libs/mesa shared-glapi gles2 egl gbm
+media-libs/piglit waffle
+
+# Temporarily provide X11 libs in the chrome SDK to smooth transition.
+chromeos-base/chromeos-chrome X
+
+# Doesn't built with USE=-X yet
+media-libs/mali-drivers X

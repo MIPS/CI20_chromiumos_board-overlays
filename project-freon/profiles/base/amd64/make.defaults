@@ -1,0 +1,8 @@
+# Copyright 2014 The Chromium OS Authors. All rights reserved.
+# Distributed under the terms of the GNU General Public License v2
+
+# Ozone platforms to build into Chrome.
+OZONE_PLATFORM="dri gbm"
+
+# Of the above, platform to use by default at runtime.
+OZONE_PLATFORM_DEFAULT="gbm"

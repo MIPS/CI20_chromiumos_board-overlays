@@ -1,2 +1,2 @@
 arm-generic:base
-chromiumos:features/freon/arm
+freon:base/arm

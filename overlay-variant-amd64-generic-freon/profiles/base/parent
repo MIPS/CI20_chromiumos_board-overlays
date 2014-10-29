@@ -1,2 +1,2 @@
 amd64-generic:base
-chromiumos:features/freon/amd64
+freon:base/amd64
