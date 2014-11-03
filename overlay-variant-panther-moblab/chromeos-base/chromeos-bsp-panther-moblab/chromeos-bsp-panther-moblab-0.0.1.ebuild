@@ -13,3 +13,7 @@ KEYWORDS="-* amd64 x86"
 IUSE=""
 
 S=${WORKDIR}
+
+src_install() {
+	doappid "{0A54D104-EC0D-450D-8588-FB106B2C6703}"
+}
