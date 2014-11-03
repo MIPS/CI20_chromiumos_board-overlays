@@ -11,4 +11,5 @@ USE="
 	-tests_security_Firewall
 	-tests_security_NetworkListeners
 	-tests_security_RootfsStatefulSymlinks
+	-tests_security_StatefulPermissions
 "
