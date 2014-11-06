@@ -1,7 +1,7 @@
-From 63df3e795c957f2b0fa4e8fea1cd292795830864 Mon Sep 17 00:00:00 2001
+From fd4bdedf9d34c9a7b25ae325f9d93088018760f1 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?St=C3=A9phane=20Marchesin?= <marcheu@chromium.org>
 Date: Fri, 20 Jun 2014 17:07:27 -0700
-Subject: [PATCH 03/15] drm/nouveau: Prevent inlining of ramfuc_reg
+Subject: [PATCH 2/3] drm/nouveau: Prevent inlining of ramfuc_reg
 
 Apparently when gcc inlines it, it eats up 16 bytes on the stack every
 time. Eventually we hit errors because our stack grew too much:
@@ -17,18 +17,18 @@ Change-Id: Ie5d58727c7f9dd6bfd7da89606bd89809dd127b3
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/gpu/drm/nouveau/core/subdev/fb/ramfuc.h b/drivers/gpu/drm/nouveau/core/subdev/fb/ramfuc.h
-index 0f57fcf..04e3849 100644
+index 04e3849..ddd23c0 100644
 --- a/drivers/gpu/drm/nouveau/core/subdev/fb/ramfuc.h
 +++ b/drivers/gpu/drm/nouveau/core/subdev/fb/ramfuc.h
-@@ -26,7 +26,7 @@ ramfuc_reg2(u32 addr1, u32 addr2)
- 	};
- }
+@@ -16,7 +16,7 @@ struct ramfuc_reg {
+ 	u32 data;
+ };
  
 -static inline struct ramfuc_reg
 +static noinline struct ramfuc_reg
- ramfuc_reg(u32 addr)
+ ramfuc_reg2(u32 addr1, u32 addr2)
  {
- 	return ramfuc_reg2(addr, addr);
+ 	return (struct ramfuc_reg) {
 -- 
-2.0.0.526.g5318336
+2.1.2
 

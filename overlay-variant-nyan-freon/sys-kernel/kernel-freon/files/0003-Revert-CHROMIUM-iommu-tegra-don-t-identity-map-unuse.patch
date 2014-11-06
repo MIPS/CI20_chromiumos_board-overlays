@@ -1,8 +1,8 @@
-From 0b2e0f049a72148f4858f82798d6ba76a3a176d2 Mon Sep 17 00:00:00 2001
+From 9fb73c4f8319d1e87fd7f38c180bce0ecd05f63a Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?St=C3=A9phane=20Marchesin?= <marcheu@chromium.org>
 Date: Mon, 16 Jun 2014 14:52:46 -0700
-Subject: [PATCH 06/15] Revert "CHROMIUM: iommu/tegra: don't identity-map
- unused IOVAs"
+Subject: [PATCH 3/3] Revert "CHROMIUM: iommu/tegra: don't identity-map unused
+ IOVAs"
 
 This reverts commit c4b3bb2b438bc535f7c5906b0a08cfe43a0be0d5.
 ---
@@ -27,5 +27,5 @@ index 6e57981..7b87122 100644
  #define SMMU_MK_PDIR(page, attr)	\
  		((page_to_phys(page) >> SMMU_PDIR_SHIFT) | (attr))
 -- 
-2.0.0.526.g5318336
+2.1.2
 
