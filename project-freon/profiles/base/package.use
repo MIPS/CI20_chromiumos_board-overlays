@@ -1,5 +1,4 @@
 chromeos-base/avtest_label_detect -vaapi
-chromeos-base/autotest-tests-graphics -tests_graphics_Piglit -tests_graphics_PiglitBVT
 media-libs/mesa shared-glapi gles2 egl gbm
 media-libs/piglit waffle
 media-libs/waffle gbm
