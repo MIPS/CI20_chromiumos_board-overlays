@@ -16,6 +16,21 @@ IUSE=""
 # properly handle the services required by mobbuild.
 RDEPEND=""
 
+# TODO (sbasi) - Remove test keys once proper ssh key installation flow is
+# determined.
+RDEPEND="${RDEPEND}
+	chromeos-base/chromeos-test-testauthkeys"
+
+# Mobbuild Deps.
+RDEPEND="${RDEPEND}
+	app-crypt/gnupg
+	dev-libs/protobuf
+	dev-python/mysql-python
+	dev-python/sqlalchemy
+	dev-vcs/git
+	dev-vcs/repo
+"
+
 DEPEND=""
 
 S=${WORKDIR}
@@ -23,4 +38,14 @@ S=${WORKDIR}
 pkg_setup() {
 	enewgroup mobbuild
 	enewuser mobbuild
+}
+
+src_install(){
+	insinto /etc/init
+	doins "${FILESDIR}"/init/*.conf
+
+	insinto /etc/sudoers.d
+	echo "mobbuild ALL=NOPASSWD: ALL" > mobbuild-all
+	insopts -m600
+	doins mobbuild-all
 }
