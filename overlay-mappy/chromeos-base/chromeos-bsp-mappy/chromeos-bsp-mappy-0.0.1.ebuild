@@ -3,11 +3,13 @@
 
 EAPI=4
 
-DESCRIPTION="Chrome OS BSP virtual package"
+DESCRIPTION="mappy board-specific package"
 HOMEPAGE="http://src.chromium.org"
 
 LICENSE="BSD-Google"
 SLOT="0"
 KEYWORDS="*"
+IUSE=""
 
+DEPEND=""
 RDEPEND="chromeos-base/chromeos-bsp-app-shell"
