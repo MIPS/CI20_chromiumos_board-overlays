@@ -3,6 +3,8 @@
 
 EAPI=4
 
+inherit udev
+
 DESCRIPTION="Rules for setting up multimedia /dev/ nodes"
 
 LICENSE="BSD-Google"
@@ -22,8 +24,7 @@ RDEPEND="${DEPEND}"
 S="${WORKDIR}"
 
 src_install() {
-	insinto /etc/udev/rules.d
-	doins "${FILESDIR}"/50-media.rules
+	udev_dorules "${FILESDIR}"/50-media.rules
 	insinto /etc/init
 	doins "${FILESDIR}"/udev-trigger-codec.conf
 }
