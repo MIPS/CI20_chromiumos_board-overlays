@@ -42,8 +42,7 @@ src_install() {
 
 	# Install platform specific config files for power_manager.
 	insinto "/usr/share/power_manager/board_specific"
-	doins "${FILESDIR}/min_visible_backlight_level"
-	doins "${FILESDIR}/low_battery_shutdown_percent"
+	doins "${FILESDIR}"/powerd_prefs/*
 
 	# Install upstart script for setting CPU governors.
 	insinto "/etc/init"

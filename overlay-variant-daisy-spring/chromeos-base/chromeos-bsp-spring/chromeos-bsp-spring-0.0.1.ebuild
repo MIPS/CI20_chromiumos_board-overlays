@@ -33,8 +33,5 @@ src_install() {
 
 	# Install platform specific config file for power_manager
 	insinto "/usr/share/power_manager/board_specific"
-	doins "${FILESDIR}/internal_backlight_no_als_ac_brightness"
-	doins "${FILESDIR}/internal_backlight_no_als_battery_brightness"
-	doins "${FILESDIR}/min_visible_backlight_level"
-	doins "${FILESDIR}/power_supply_full_factor"
+	doins "${FILESDIR}"/powerd_prefs/*
 }

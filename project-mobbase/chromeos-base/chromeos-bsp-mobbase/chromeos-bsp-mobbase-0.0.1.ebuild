@@ -25,11 +25,7 @@ src_install() {
 	doins "${FILESDIR}"/init/*.conf
 
 	insinto "/usr/share/power_manager/board_specific"
-	doins "${FILESDIR}/avoid_suspend_when_headphone_jack_plugged"
-	doins "${FILESDIR}/require_usb_input_device_to_suspend"
-
-	insinto "/usr/share/power_manager/"
-	doins "${FILESDIR}/disable_idle_suspend"
+	doins "${FILESDIR}"/powerd_prefs/*
 
 	# TODO (crbug.com/348172) - This is a temporary fix to not wipe
 	# stateful when booting off USB as a base image.

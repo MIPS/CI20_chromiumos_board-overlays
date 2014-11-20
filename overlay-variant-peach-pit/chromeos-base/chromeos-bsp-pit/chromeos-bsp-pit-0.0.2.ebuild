@@ -39,8 +39,7 @@ src_install() {
 
 	# Install platform specific config files for power_manager.
 	insinto "/usr/share/power_manager/board_specific"
-	doins "${FILESDIR}/low_battery_shutdown_percent"
-	doins "${FILESDIR}/low_battery_shutdown_time_s"
+	doins "${FILESDIR}"/powerd_prefs/*
 
 	# Install platform specific laptop mode tools configuration files
 	insinto "/etc/laptop-mode/conf.d/board-specific"

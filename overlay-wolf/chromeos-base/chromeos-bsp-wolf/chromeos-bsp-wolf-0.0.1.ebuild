@@ -49,8 +49,5 @@ src_install() {
 
 	# Install platform specific config file for power_manager
 	insinto "/usr/share/power_manager/board_specific"
-	doins "${FILESDIR}/low_battery_shutdown_percent"
-	doins "${FILESDIR}/low_battery_shutdown_time_s"
-	doins "${FILESDIR}/instant_transitions_below_min_level"
-	doins "${FILESDIR}/min_visible_backlight_level"
+	doins "${FILESDIR}"/powerd_prefs/*
 }

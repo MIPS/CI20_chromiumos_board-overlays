@@ -22,7 +22,7 @@ src_install() {
 
 	# Install platform specific config file for power_manager
 	insinto "/usr/share/power_manager/board_specific"
-	doins "${FILESDIR}/min_visible_backlight_level"
+	doins "${FILESDIR}"/powerd_prefs/*
 
 	# Install board-specific info.
 	insinto "/etc/laptop-mode/conf.d/board-specific"

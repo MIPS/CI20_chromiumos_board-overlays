@@ -27,11 +27,7 @@ src_install() {
 
 	# Install platform specific config file for power_manager
 	insinto "/usr/share/power_manager/board_specific"
-	doins "${FILESDIR}/dark_resume_suspend_durations"
-	doins "${FILESDIR}/dark_resume_devices"
-	doins "${FILESDIR}/dark_resume_sources"
-	doins "${FILESDIR}/dark_resume_battery_margins"
-	doins "${FILESDIR}/allow_docked_mode"
+	doins "${FILESDIR}"/powerd_prefs/*
 
 	# Install board-specific info.
 	insinto "/etc/laptop-mode/conf.d/board-specific"

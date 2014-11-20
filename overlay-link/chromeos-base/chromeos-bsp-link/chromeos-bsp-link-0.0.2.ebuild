@@ -34,14 +34,7 @@ src_install() {
 
 	# Install platform specific config files for power_manager.
 	insinto "/usr/share/power_manager/board_specific"
-	doins "${FILESDIR}/instant_transitions_below_min_level"
-	doins "${FILESDIR}/low_battery_shutdown_percent"
-	doins "${FILESDIR}/low_battery_shutdown_time_s"
-	doins "${FILESDIR}/min_visible_backlight_level"
-	doins "${FILESDIR}/dark_resume_suspend_durations"
-	doins "${FILESDIR}/dark_resume_devices"
-	doins "${FILESDIR}/dark_resume_sources"
-	doins "${FILESDIR}/dark_resume_battery_margins"
+	doins "${FILESDIR}"/powerd_prefs/*
 
 	# Install board-specific info.
 	insinto "/etc/laptop-mode/conf.d/board-specific"
