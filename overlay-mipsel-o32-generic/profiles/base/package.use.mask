@@ -1,0 +1,4 @@
+# Temporarily enable chromeos-chrome package in mips generic overlays.
+# TODO(benchan): Remove this override once the mipsel-o32-generic overlay is
+# migrated from the embedded profile to the regular profile.
+virtual/chromeos-interface chromeless_tty

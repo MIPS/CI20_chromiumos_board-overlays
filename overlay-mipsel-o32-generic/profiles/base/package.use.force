@@ -1,0 +1,4 @@
+# Re-enable USE flags that are disabled by the embedded profile.
+# TODO(benchan): Remove these overrides once the mipsel-o32-generic overlay is
+# migrated from the embedded profile to the regular profile.
+chromeos-base/chromeos-chrome accessibility chrome_remoting X
