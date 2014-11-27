@@ -1,2 +1,2 @@
-ATTR{name}=="vpu-dec", SYMLINK+="video-dec"
-ATTR{name}=="vpu-enc", SYMLINK+="video-enc"
+ATTR{name}=="rk3288-vpu-dec", SYMLINK+="video-dec"
+ATTR{name}=="rk3288-vpu-enc", SYMLINK+="video-enc"
