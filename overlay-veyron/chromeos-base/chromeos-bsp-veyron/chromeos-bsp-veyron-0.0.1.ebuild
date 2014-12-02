@@ -16,6 +16,7 @@ RDEPEND="${DEPEND}
 	chromeos-base/AP6335-wifi-bin
 	x11-drivers/mali-rules
 	media-libs/media-rules
+	net-wireless/broadcom
 "
 
 S=${WORKDIR}
@@ -24,4 +25,10 @@ src_install() {
 	# Install platform specific config files for power_manager.
 	insinto "/usr/share/power_manager/board_specific"
 	doins "${FILESDIR}"/powerd_prefs/*
+
+	# Install platform specific files for bcm4354 bluetooth.
+	insinto "/etc/init"
+	doins "${FILESDIR}"/brcm_patchram_plus.conf
+	insinto "/etc/modprobe.d"
+	doins "${FILESDIR}"/blacklist-btsdio.conf
 }
