@@ -12,7 +12,7 @@
 #
 # Example:
 #   activate_date          set the activate date to now if not set yet
-#   activate_date --clean  reset the activate date to an empty string.
+#   activate_date --clean  delete the activate date VPD key, if present.
 #
 
 # VPD program location
@@ -37,7 +37,8 @@ write_activate_date() {
 
 clean_activate_date() {
   echo "Clean Activate Date."
-  write_activate_date ""
+  ${VPD} -i "${PARTITION}" -d "${FIELD_NAME}" ||
+    echo "Can't delete ${FIELD_NAME}, it may not exist in ${PARTITION}."
 }
 
 main() {
@@ -55,28 +56,24 @@ main() {
   # unique identity correlation by activation date.
   ACTIVATE_DATE="$("${VPD}" -i "${PARTITION}" -g "${FIELD_NAME}" || true)"
 
+  # Always attempt to delete the key if requested.
+  if [ ${CLEAN} -eq 1 ]; then
+    clean_activate_date
   # If 1. no VPD entry is set, or
   #    2. ActivateDate is empty string,
-  #   Then, write down current time into VPD.
-  if [ -z "${ACTIVATE_DATE}" ]; then
-    if [ ${CLEAN} -eq 1 ]; then
-      echo "Activate Date is not set yet. --clean is ignored."
-    else
+  # Then, write down current time into VPD.
+  else
+    if [ -z "${ACTIVATE_DATE}" ]; then
       # No activate date is set. Use current UTC time.
       nowDate=$(date --utc "+%Y-%W")
       echo "Setting Activate Date to ${nowDate}."
       write_activate_date "${nowDate}"
-    fi
-    echo "Done."
-  else
-    if [ ${CLEAN} -eq 1 ]; then
-      clean_activate_date
-      echo "Done."
     else
       # An activate date is set. Do nothing.
-      echo "Activate Date has been set to ${ACTIVATE_DATE}."
+      echo "Activate Date has already been set to ${ACTIVATE_DATE}."
     fi
   fi
+  echo "Done."
 }
 
 main $1
