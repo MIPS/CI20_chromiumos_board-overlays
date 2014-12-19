@@ -1,24 +1,7 @@
-From 7afb91fcebec1d437ed9bb23b4134e2bf7f445f1 Mon Sep 17 00:00:00 2001
-From: =?UTF-8?q?St=C3=A9phane=20Marchesin?= <marcheu@chromium.org>
-Date: Wed, 16 Jul 2014 20:01:26 -0700
-Subject: [PATCH 1/3] CHROMIUM: CONFIG: Enable tegra drm
-
-This enables the config options to turn on tegra drm and turn off
-the nvidia driver.
-
-BUG=chromium:378998
-TEST=boot on nyan_big, see the splash screen and the console
-
-Change-Id: I332e4263b67964f261c02d733788378abc68167a
----
- .../armel/chromiumos-tegra124.flavour.config       | 43 +++++++++++++++-------
- chromeos/config/armel/common.config                |  2 +-
- 2 files changed, 31 insertions(+), 14 deletions(-)
-
-diff --git a/chromeos/config/armel/chromiumos-tegra124.flavour.config b/chromeos/config/armel/chromiumos-tegra124.flavour.config
+diff --git a/chromeos/config/armel/chromeos-tegra.flavour.config b/chromeos/config/armel/chromeos-tegra.flavour.config
 index 9d48f39..a81b638 100644
---- a/chromeos/config/armel/chromiumos-tegra124.flavour.config
-+++ b/chromeos/config/armel/chromiumos-tegra124.flavour.config
+--- a/chromeos/config/armel/chromeos-tegra.flavour.config
++++ b/chromeos/config/armel/chromeos-tegra.flavour.config
 @@ -53,6 +53,23 @@ CONFIG_DMA_ENGINE=y
  CONFIG_DMA_OF=y
  # CONFIG_DW_DMAC is not set
@@ -85,10 +68,10 @@ index 9d48f39..a81b638 100644
  CONFIG_TEGRA_THROUGHPUT=y
  CONFIG_TEGRA_WATCHDOG=y
 diff --git a/chromeos/config/armel/common.config b/chromeos/config/armel/common.config
-index f74fc8c..a02cdc4 100644
+index eb0f897..1bf594d 100644
 --- a/chromeos/config/armel/common.config
 +++ b/chromeos/config/armel/common.config
-@@ -443,7 +443,7 @@ CONFIG_TEGRA_DP=y
+@@ -435,7 +435,7 @@ CONFIG_TEGRA_DP=y
  # CONFIG_TEGRA_GRHOST_FORCE_NVMAP is not set
  # CONFIG_TEGRA_GRHOST_GK20A_PHYS_PAGE_TABLES is not set
  CONFIG_TEGRA_GRHOST_USE_DMABUF=y
@@ -97,6 +80,3 @@ index f74fc8c..a02cdc4 100644
  # CONFIG_TEGRA_LVDS is not set
  CONFIG_TEGRA_MIPI_CAL=y
  # CONFIG_TEGRA_PCI is not set
--- 
-2.1.2
-
