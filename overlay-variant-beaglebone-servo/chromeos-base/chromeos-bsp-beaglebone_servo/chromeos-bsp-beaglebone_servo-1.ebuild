@@ -7,7 +7,7 @@ DESCRIPTION="Servo bsp (meta package to pull in driver/tool dependencies)"
 
 LICENSE="BSD-Google"
 SLOT="0"
-KEYWORDS="arm"
+KEYWORDS="*"
 IUSE=""
 
 DEPEND=""
@@ -53,6 +53,7 @@ RDEPEND="${RDEPEND}
 	app-shells/bash
 	dev-util/strace
 	net-analyzer/tcpdump
+	net-dialup/minicom
 	net-misc/iputils
 	net-misc/rsync
 	net-misc/wget
