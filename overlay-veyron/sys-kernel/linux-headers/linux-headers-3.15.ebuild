@@ -27,6 +27,8 @@ src_unpack() {
 
 src_prepare() {
 	[[ -n ${PATCH_VER} ]] && EPATCH_SUFFIX="patch" epatch "${WORKDIR}"/${PV}
+
+	epatch "${FILESDIR}/0001-CHROMIUM-media-headers-Import-V4L2-headers-from-Chro.patch"
 }
 
 src_install() {
