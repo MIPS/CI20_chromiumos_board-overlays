@@ -1,0 +1,2 @@
+ATTR{name}=="go2001-dec", SYMLINK+="video-dec"
+ATTR{name}=="go2001-enc", SYMLINK+="video-enc"
