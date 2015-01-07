@@ -10,12 +10,13 @@ or portage actions."
 
 LICENSE="BSD"
 SLOT="0"
-KEYWORDS="amd64 x86"
+KEYWORDS="-* amd64 x86"
 IUSE=""
 
 DEPEND="!chromeos-base/light-sensor"
 RDEPEND="${DEPEND}
 	chromeos-base/chromeos-board-info-link
+	chromeos-base/chromeos-touch-config-link
 	chromeos-base/ca0132-dsp-firmware
 	chromeos-base/ec-utils
 	chromeos-base/lte-quirks
