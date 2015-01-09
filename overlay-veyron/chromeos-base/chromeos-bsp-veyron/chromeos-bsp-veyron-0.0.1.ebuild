@@ -3,6 +3,8 @@
 
 EAPI=4
 
+inherit udev
+
 DESCRIPTION="Veyron bsp (meta package to pull in driver/tool dependencies)"
 
 LICENSE="BSD-Google"
@@ -31,4 +33,9 @@ src_install() {
 	doins "${FILESDIR}"/brcm_patchram_plus.conf
 	insinto "/etc/modprobe.d"
 	doins "${FILESDIR}"/blacklist-btsdio.conf
+
+	# Install platform specific files for usb camera.
+	udev_dorules "${FILESDIR}/99-usb-camera-quirks.rules"
+	exeinto "$(udev_get_udevdir)"
+	doexe "${FILESDIR}/usb-camera-quirks.sh"
 }
