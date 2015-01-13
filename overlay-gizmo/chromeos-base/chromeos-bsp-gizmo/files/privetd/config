@@ -1,0 +1,14 @@
+# Copyright 2015 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# WiFi boostrapping can be one of "off", "manual", or "automatic".
+# Automatic mode causes privetd to automatically bring up a SoftAP for
+# bootstrapping when it looses network connectivity for long enough,
+# and on first boot.
+wifi_bootstrapping_mode=automatic
+
+# GCD bootstrapping can be one of "off", "manual", or "automatic".
+# Automatic mode causes privetd to ask for GCD credentials as part
+# of bootstrapping and provide them to buffet.
+gcd_bootstrapping_mode=automatic

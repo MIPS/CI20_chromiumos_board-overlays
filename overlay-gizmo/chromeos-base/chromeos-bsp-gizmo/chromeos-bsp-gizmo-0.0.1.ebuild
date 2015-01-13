@@ -14,3 +14,16 @@ DEPEND=""
 RDEPEND="
 	app-shells/bash
 "
+
+# Because this ebuild has no source package, "${S}" doesn't get
+# automatically created.  The compile phase depends on "${S}" to
+# exist, so we make sure "${S}" refers to a real directory.
+#
+# The problem is apparently an undocumented feature of EAPI 4;
+# earlier versions of EAPI don't require this.
+S="${WORKDIR}"
+
+src_install() {
+	insinto /etc/privetd
+	doins "${FILESDIR}/privetd/config"
+}
