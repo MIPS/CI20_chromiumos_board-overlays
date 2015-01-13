@@ -1,1 +1,1 @@
->=sys-kernel/linux-headers-3.17
+>sys-kernel/linux-headers-3.17-r2
