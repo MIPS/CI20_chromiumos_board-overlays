@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (c) 2014 The Chromium OS Authors. All rights reserved.
+# Copyright 2015 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 #
@@ -24,9 +24,6 @@ if (ectool battery | grep -q AC_PRESENT); then
     sleep 0.5;
   done
 fi
-
-# Discharge battery to ensure battery capacity in desired range
-/usr/sbin/board_discharge_battery.sh
 
 if [ -e "${IMG_PATH}/cutting_off.png" ]; then
   ply-image --clear 0x000000 "${IMG_PATH}/cutting_off.png"

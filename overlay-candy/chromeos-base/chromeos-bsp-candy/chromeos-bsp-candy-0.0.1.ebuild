@@ -33,6 +33,8 @@ src_install() {
 	dosbin "${FILESDIR}/board_factory_wipe.sh"
 	dosbin "${FILESDIR}/board_factory_reset.sh"
 	dosbin "${FILESDIR}/board_charge_battery.sh"
+        dosbin "${FILESDIR}/board_discharge_battery.sh"
+        dosbin "${FILESDIR}/rma_battery_cut_off.sh"
 
 	insinto "/usr/share/factory/images"
 	doins "${FILESDIR}/remove_ac.png"
@@ -40,6 +42,7 @@ src_install() {
 	doins "${FILESDIR}/cutoff_failed.png"
 	doins "${FILESDIR}/charging.png"
 	doins "${FILESDIR}/connect_ac.png"
+        doins "${FILESDIR}/discharging.png"
 
 	# Install Bluetooth ID override.
 	insinto "/etc/bluetooth"

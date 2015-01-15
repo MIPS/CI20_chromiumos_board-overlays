@@ -14,7 +14,21 @@ sync
 sleep 3
 
 # this script is called by clobber-state
-/usr/sbin/battery_cut_off.sh
+for WIPE_OPTION in "$@"; do
+  if [ "$WIPE_OPTION" = "battery_cut_off" ]; then
+    # battery cut-off after factory wipe-out
+    echo "start battery cut-off"
+    /usr/sbin/battery_cut_off.sh
+  elif [ "$WIPE_OPTION" = "shutdown" ]; then
+    # shutdown after factory wipe-out
+    echo "start system shutdown"
+    /sbin/shutdown -h now
+  elif [ "$WIPE_OPTION" = "rma_battery_cut_off" ]; then
+    # rma shim battery cut-off
+    echo "start rma shim battery cut-off"
+    /usr/sbin/rma_battery_cut_off.sh
+  fi
+done
 
 # Battery cut-off is failed if it returns with 1.
 if [ $? -eq 1 ]; then
