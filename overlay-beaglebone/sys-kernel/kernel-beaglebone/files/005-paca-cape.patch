@@ -1,0 +1,1002 @@
+From c51911c509efffb7a397bd47e3d8bbaa8c38260d Mon Sep 17 00:00:00 2001
+From: Stefan Sauer <ensonic@google.com>
+Date: Tue, 24 Feb 2015 09:25:43 +0100
+Subject: [PATCH 5/7] paca: enable 3 capes and update the drivers
+
+Activate capes for accelerometer, audio and capacitive touch in the device-
+tree part for the beaglebone black. Backport driver changes from upstream.
+---
+ arch/arm/boot/dts/am335x-boneblack.dts  |  22 ++++++
+ drivers/input/misc/ad714x.c             |  72 +++++++++++++++++--
+ drivers/input/misc/mma8450.c            |  44 ++++++------
+ firmware/Makefile                       |   3 +
+ firmware/capes/BB-BONE-ACCL-01-00A0.dts |  47 +++++++++++++
+ firmware/capes/BB-BONE-AUDI-02-00A0.dts | 118 ++++++++++++++++++++++++++++++++
+ firmware/capes/BB-BONE-CAPT-02-00A0.dts |  73 ++++++++++++++++++++
+ include/sound/tlv320aic32x4.h           |  18 +++--
+ sound/soc/codecs/tlv320aic32x4.c        |  42 ++++++++++--
+ sound/soc/codecs/tlv320aic32x4.h        |   4 ++
+ sound/soc/davinci/Kconfig               |   2 +-
+ sound/soc/davinci/davinci-evm.c         |  62 ++++++++++++-----
+ sound/soc/davinci/davinci-mcasp.c       |  55 +++++++++++++--
+ 13 files changed, 496 insertions(+), 66 deletions(-)
+ create mode 100644 firmware/capes/BB-BONE-ACCL-01-00A0.dts
+ create mode 100644 firmware/capes/BB-BONE-AUDI-02-00A0.dts
+ create mode 100644 firmware/capes/BB-BONE-CAPT-02-00A0.dts
+
+diff --git a/arch/arm/boot/dts/am335x-boneblack.dts b/arch/arm/boot/dts/am335x-boneblack.dts
+index a7eb55b..b9bd856 100644
+--- a/arch/arm/boot/dts/am335x-boneblack.dts
++++ b/arch/arm/boot/dts/am335x-boneblack.dts
+@@ -18,6 +18,21 @@
+ 			0x50 0x17	/* gpmc_a4.gpio1_20, OUTPUT | MODE7 | PULLUP */
+ 		>;
+ 	};
++  i2c1_pins: pinmux_i2c1_pins {
++    pinctrl-single,pins = <
++      0x158 0x7f 	/* uart1_ctsn.i2c2_sda, SLEWCTRL_SLOW | INPUT_PULLUP | MODE2 */
++      0x15c 0x7f 	/* uart1_rtsn.i2c2_scl, SLEWCTRL_SLOW | INPUT_PULLUP | MODE2 */
++      0x180 0x7b 	/* uart1_ctsn.i2c2_sda, SLEWCTRL_SLOW | INPUT_PULLUP | MODE2 */
++      0x184 0x7b 	/* uart1_rtsn.i2c2_scl, SLEWCTRL_SLOW | INPUT_PULLUP | MODE2 */
++    >;
++  };
++  i2c2_pins: pinmux_i2c2_pins {
++    pinctrl-single,pins = <
++      0x44 0x2F	/* disable pulldown on irq from cap sensor */
++      0x178 0x73 	/* uart1_ctsn.i2c2_sda, SLEWCTRL_SLOW | INPUT_PULLUP | MODE3 */
++      0x17c 0x73	/* uart1_rtsn.i2c2_scl, SLEWCTRL_SLOW | INPUT_PULLUP | MODE3 */
++    >;
++  };
+ };
+ 
+ &ldo3_reg {
+@@ -52,6 +67,13 @@
+ 	reset-names = "eMMC_RSTn-CONSUMER";
+ };
+ 
++&i2c1 {
++	status = "okay";
++	pinctrl-names = "default";
++	pinctrl-0 = <&i2c1_pins>;
++
++	clock-frequency = <100000>;
++};
+ 
+ &cpu {
+ 	/*
+diff --git a/drivers/input/misc/ad714x.c b/drivers/input/misc/ad714x.c
+index 2e5d5e1..0db2e55 100644
+--- a/drivers/input/misc/ad714x.c
++++ b/drivers/input/misc/ad714x.c
+@@ -13,6 +13,7 @@
+ #include <linux/slab.h>
+ #include <linux/input/ad714x.h>
+ #include <linux/module.h>
++#include <linux/gpio.h>
+ #include "ad714x.h"
+ 
+ #define AD714X_PWR_CTRL           0x0
+@@ -219,8 +220,7 @@ static void ad714x_button_state_machine(struct ad714x_chip *ad714x, int idx)
+ 
+ 	switch (sw->state) {
+ 	case IDLE:
+-		if (((ad714x->h_state & hw->h_mask) == hw->h_mask) &&
+-		    ((ad714x->l_state & hw->l_mask) == hw->l_mask)) {
++		if((ad714x->h_state & hw->h_mask) == hw->h_mask) {
+ 			dev_dbg(ad714x->dev, "button %d touched\n", idx);
+ 			input_report_key(sw->input, hw->keycode, 1);
+ 			input_sync(sw->input);
+@@ -229,8 +229,7 @@ static void ad714x_button_state_machine(struct ad714x_chip *ad714x, int idx)
+ 		break;
+ 
+ 	case ACTIVE:
+-		if (((ad714x->h_state & hw->h_mask) != hw->h_mask) ||
+-		    ((ad714x->l_state & hw->l_mask) != hw->l_mask)) {
++		if((ad714x->l_state & hw->l_mask) == hw->l_mask) {
+ 			dev_dbg(ad714x->dev, "button %d released\n", idx);
+ 			input_report_key(sw->input, hw->keycode, 0);
+ 			input_sync(sw->input);
+@@ -961,6 +960,61 @@ static irqreturn_t ad714x_interrupt_thread(int irq, void *data)
+ 	return IRQ_HANDLED;
+ }
+ 
++// temporary static configuration of ad7142
++static struct ad714x_button_plat ad7142_i2c_button_plat[] = {
++	{
++		.keycode = BTN_1,
++		.l_mask = 0x01,
++		.h_mask = 0x01,
++	},
++	{
++		.keycode = BTN_2,
++		.l_mask = 0x02,
++		.h_mask = 0x02,
++	},
++	{
++		.keycode = BTN_3,
++		.l_mask = 0x04,
++		.h_mask = 0x04,
++	},
++	{
++		.keycode = BTN_4,
++		.l_mask = 0x08,
++		.h_mask = 0x08,
++	},
++	{
++		.keycode = BTN_5,
++		.l_mask = 0x10,
++		.h_mask = 0x10,
++	},
++	{
++		.keycode = BTN_6,
++		.l_mask = 0x20,
++		.h_mask = 0x20,
++	},
++};
++
++static struct ad714x_platform_data ad7142_i2c_platform_data = {
++	.button_num = 6,
++	.button = ad7142_i2c_button_plat,
++	.stage_cfg_reg =  {
++/*		CON_L	CON_H	AFE_OFF	SENS	OFF_L	OFF_H	OFF_CL	OFF_CH	*/
++		{0x3FFE, 0x3FFF, 0x7000, 0x1111, 0x0010, 0x2100, 0x2260, 0x2260},
++		{0x3FEF, 0x3FFF, 0x7000, 0x1111, 0x0010, 0x2100, 0x2260, 0x2260},
++		{0x3EFF, 0x3FFF, 0x7000, 0x1111, 0x0010, 0x2100, 0x2260, 0x2260},
++		{0x2FFF, 0x3FFF, 0x7000, 0x1111, 0x0010, 0x2100, 0x2260, 0x2260},
++		{0x3FFF, 0x3FFB, 0x7000, 0x1111, 0x0010, 0x2100, 0x2260, 0x2260},
++		{0x3FFF, 0x3FBF, 0x7000, 0x1111, 0x0010, 0x2100, 0x2260, 0x2260},
++		{0xFFFF, 0x3FFF, 0x0000, 0x0F0F, 0x01F4, 0x01F4, 0x0320, 0x0320},
++		{0xFFFF, 0x3FFF, 0x0000, 0x0606, 0x01F4, 0x01F4, 0x0320, 0x0320},
++		{0xFFFF, 0x3FFF, 0x0000, 0x0606, 0x01F4, 0x01F4, 0x0320, 0x0320},
++		{0xFFFF, 0x3FFF, 0x0000, 0x0606, 0x01F4, 0x01F4, 0x0320, 0x0320},
++		{0xFFFF, 0x3FFF, 0x0000, 0x0606, 0x01F4, 0x01F4, 0x0320, 0x0320},
++		{0xFFFF, 0x3FFF, 0x0000, 0x0606, 0x01F4, 0x01F4, 0x0320, 0x0320},
++	},
++	.sys_cfg_reg = {0x20B0, 0x0000, 0x0FF0, 0x0164, 0x3FFF, 0x003F, 0x003F, 0x0000},
++};
++
+ #define MAX_DEVICE_NUM 8
+ struct ad714x_chip *ad714x_probe(struct device *dev, u16 bus_type, int irq,
+ 				 ad714x_read_t read, ad714x_write_t write)
+@@ -987,11 +1041,15 @@ struct ad714x_chip *ad714x_probe(struct device *dev, u16 bus_type, int irq,
+ 	}
+ 
+ 	if (dev->platform_data == NULL) {
+-		dev_err(dev, "platform data for ad714x doesn't exist\n");
+-		error = -EINVAL;
+-		goto err_out;
++		dev_err(dev, "platform data for ad714x doesn't exist, assuming defaults\n");
++		dev->platform_data = &ad7142_i2c_platform_data;
++		plat_data = dev->platform_data;
+ 	}
+ 
++	gpio_request(49, "capsensor");
++	gpio_direction_input(49);
++	irq = gpio_to_irq(49);
++
+ 	ad714x = kzalloc(sizeof(*ad714x) + sizeof(*ad714x->sw) +
+ 			 sizeof(*sd_drv) * plat_data->slider_num +
+ 			 sizeof(*wl_drv) * plat_data->wheel_num +
+diff --git a/drivers/input/misc/mma8450.c b/drivers/input/misc/mma8450.c
+index 480557f..1b4fcdc 100644
+--- a/drivers/input/misc/mma8450.c
++++ b/drivers/input/misc/mma8450.c
+@@ -33,24 +33,24 @@
+ #define POLL_INTERVAL_MAX	500
+ 
+ /* register definitions */
+-#define MMA8450_STATUS		0x00
+-#define MMA8450_STATUS_ZXYDR	0x08
++#define MMA8450_STATUS			0x00
++#define MMA8450_STATUS_ZXYDR	0x80
+ 
+ #define MMA8450_OUT_X8		0x01
+ #define MMA8450_OUT_Y8		0x02
+ #define MMA8450_OUT_Z8		0x03
+ 
+-#define MMA8450_OUT_X_LSB	0x05
+-#define MMA8450_OUT_X_MSB	0x06
+-#define MMA8450_OUT_Y_LSB	0x07
+-#define MMA8450_OUT_Y_MSB	0x08
+-#define MMA8450_OUT_Z_LSB	0x09
+-#define MMA8450_OUT_Z_MSB	0x0a
++#define MMA8450_OUT_X_LSB	0x02
++#define MMA8450_OUT_X_MSB	0x01
++#define MMA8450_OUT_Y_LSB	0x04
++#define MMA8450_OUT_Y_MSB	0x03
++#define MMA8450_OUT_Z_LSB	0x06
++#define MMA8450_OUT_Z_MSB	0x05
+ 
+-#define MMA8450_XYZ_DATA_CFG	0x16
++#define MMA8450_XYZ_DATA_CFG	0x0E
+ 
+-#define MMA8450_CTRL_REG1	0x38
+-#define MMA8450_CTRL_REG2	0x39
++#define MMA8450_CTRL_REG1	0x2A
++#define MMA8450_CTRL_REG2	0x2B
+ 
+ /* mma8450 status */
+ struct mma8450 {
+@@ -119,13 +119,13 @@ static void mma8450_poll(struct input_polled_dev *dev)
+ 	if (!(ret & MMA8450_STATUS_ZXYDR))
+ 		return;
+ 
+-	ret = mma8450_read_block(m, MMA8450_OUT_X_LSB, buf, sizeof(buf));
++	ret = mma8450_read_block(m, MMA8450_OUT_X_MSB, buf, sizeof(buf));
+ 	if (ret < 0)
+ 		return;
+ 
+-	x = ((buf[1] << 4) & 0xff0) | (buf[0] & 0xf);
+-	y = ((buf[3] << 4) & 0xff0) | (buf[2] & 0xf);
+-	z = ((buf[5] << 4) & 0xff0) | (buf[4] & 0xf);
++	x = (((int8_t)buf[0]) << 4) | (buf[1] >> 4);
++	y = (((int8_t)buf[2]) << 4) | (buf[3] >> 4);
++	z = (((int8_t)buf[4]) << 4) | (buf[5] >> 4);
+ 
+ 	input_report_abs(dev->input, ABS_X, x);
+ 	input_report_abs(dev->input, ABS_Y, y);
+@@ -139,15 +139,13 @@ static void mma8450_open(struct input_polled_dev *dev)
+ 	struct mma8450 *m = dev->private;
+ 	int err;
+ 
+-	/* enable all events from X/Y/Z, no FIFO */
+-	err = mma8450_write(m, MMA8450_XYZ_DATA_CFG, 0x07);
+-	if (err)
++	/* Full scale selection - Active, +/- 2G, HPF disabled	*/
++	err = mma8450_write(m, MMA8450_XYZ_DATA_CFG, 0x00);
++	if(err)
+ 		return;
+ 
+ 	/*
+-	 * Sleep mode poll rate - 50Hz
+-	 * System output data rate - 400Hz
+-	 * Full scale selection - Active, +/- 2G
++	 * Set active mode, 800Hz sample interval
+ 	 */
+ 	err = mma8450_write(m, MMA8450_CTRL_REG1, 0x01);
+ 	if (err < 0)
+@@ -161,7 +159,6 @@ static void mma8450_close(struct input_polled_dev *dev)
+ 	struct mma8450 *m = dev->private;
+ 
+ 	mma8450_write(m, MMA8450_CTRL_REG1, 0x00);
+-	mma8450_write(m, MMA8450_CTRL_REG2, 0x01);
+ }
+ 
+ /*
+@@ -187,6 +184,7 @@ static int mma8450_probe(struct i2c_client *c,
+ 	idev->private		= m;
+ 	idev->input->name	= MMA8450_DRV_NAME;
+ 	idev->input->id.bustype	= BUS_I2C;
++	idev->input->dev.parent = &c->dev;
+ 	idev->poll		= mma8450_poll;
+ 	idev->poll_interval	= POLL_INTERVAL;
+ 	idev->poll_interval_max	= POLL_INTERVAL_MAX;
+@@ -204,6 +202,8 @@ static int mma8450_probe(struct i2c_client *c,
+ 		goto err_free_mem;
+ 	}
+ 
++	i2c_set_clientdata(c, m);
++
+ 	return 0;
+ 
+ err_free_mem:
+diff --git a/firmware/Makefile b/firmware/Makefile
+index 8e8ea3b..893e67c 100644
+--- a/firmware/Makefile
++++ b/firmware/Makefile
+@@ -153,6 +153,9 @@ fw-shipped-$(CONFIG_CAPE_BEAGLEBONE) += \
+ 	BB-BONE-LCD7-01-00A2.dtbo \
+ 	BB-BONE-LCD7-01-00A3.dtbo \
+ 	BB-BONE-LCD7-01-00A4.dtbo \
++	BB-BONE-ACCL-01-00A0.dtbo \
++	BB-BONE-AUDI-02-00A0.dtbo \
++	BB-BONE-CAPT-02-00A0.dtbo \
+ 	BB-BONE-eMMC1-01-00A0.dtbo \
+ 	BB-BONE-GPEVT-00A0.dtbo \
+ 	BB-BONE-RTC-00A0.dtbo \
+diff --git a/firmware/capes/BB-BONE-ACCL-01-00A0.dts b/firmware/capes/BB-BONE-ACCL-01-00A0.dts
+new file mode 100644
+index 0000000..f5427bd
+--- /dev/null
++++ b/firmware/capes/BB-BONE-ACCL-01-00A0.dts
+@@ -0,0 +1,47 @@
++/*
++ * Copyright (C) 2012 Texas Instruments Incorporated - http://www.ti.com/
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++/dts-v1/;
++/plugin/;
++
++/ {
++	compatible = "ti,beaglebone", "ti,beaglebone-black";
++
++	/* identification */
++	part-number = "BB-BONE-ACCL-01";
++	version = "00A0", "A0";
++
++	fragment@0 {
++		target = <&am33xx_pinmux>;
++		__overlay__ {
++
++			i2c2_pins: pinmux_i2c2_pins {
++				pinctrl-single,pins = <
++					0x188 0x7b 	/*spi0_scl.i2c2_sda,SLEWCTRL_SLOW | INPUT_PULLUP |MODE2*/
++					0x18c 0x7b	/*spi0_d0.i2c2_scl,SLEWCTRL_SLOW | INPUT_PULLUP | MODE2*/
++				>;
++			};
++		};
++	};
++
++	fragment@1 {
++		target = <&i2c2>;
++		__overlay__ {
++			#address-cells = <1>;
++			#size-cells = <0>;
++			clock-frequency = <100000>;
++			status = "okay";
++			pinctrl-names = "default";
++			pinctrl-0 = <&i2c2_pins>;
++
++            accelerometer: mma8450@1d {
++                compatible = "fsl,mma8450";
++                reg = <0x1d>;
++            };
++		};
++	};
++};
+diff --git a/firmware/capes/BB-BONE-AUDI-02-00A0.dts b/firmware/capes/BB-BONE-AUDI-02-00A0.dts
+new file mode 100644
+index 0000000..9c2537a
+--- /dev/null
++++ b/firmware/capes/BB-BONE-AUDI-02-00A0.dts
+@@ -0,0 +1,118 @@
++/*
++ * Copyright (C) 2012 Texas Instruments Incorporated - http://www.ti.com/
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++/dts-v1/;
++/plugin/;
++
++/ {
++	compatible = "ti,beaglebone", "ti,beaglebone-black";
++
++	/* identification */
++	part-number = "BB-BONE-AUDI-02";
++	version = "00A0", "A0";
++
++	/* state the resources this cape uses */
++	exclusive-use =
++		/* the pin header uses */
++		"P9.31",	/* mcasp0: mcasp0_aclkx */
++		"P9.29",	/* mcasp0: mcasp0_fsx */
++		"P9.28",	/* mcasp0: mcasp0_axr2 */
++		"P9.25",	/* mcasp0: mcasp0_ahclkx */
++		/* the hardware ip uses */
++		/* "gpio1_18", "gpio1_19", */
++		"mcasp0";
++
++	fragment@0 {
++		target = <&am33xx_pinmux>;
++		__overlay__ {
++
++			i2c2_pins: pinmux_i2c2_pins {
++				pinctrl-single,pins = <
++					0x150 0x72 	/*spi0_scl.i2c2_sda,SLEWCTRL_SLOW | INPUT_PULLUP |MODE2*/
++					0x154 0x72	/*spi0_d0.i2c2_scl,SLEWCTRL_SLOW | INPUT_PULLUP | MODE2*/
++				>;
++			};
++
++			bone_audio_cape_audio_pins: pinmux_bone_audio_cape_audio_pins {
++				pinctrl-single,pins = <
++					0x1ac 0x22      /* mcasp0_ahclkx.mcasp0_axr3, MODE2 | INPUT */
++					0x19c 0x02	/* mcasp0_ahclkr.mcasp0_axr2, MODE2 | OUTPUT  */
++					0x194 0x20      /* mcasp0_fsx,         	      MODE0 | INPUT  */
++					0x190 0x20      /* mcasp0_aclkx, 	      MODE0 | INPUT */
++				>;
++			};
++		};
++	};
++
++	fragment@1 {
++		target = <&i2c2>;
++		__overlay__ {
++			#address-cells = <1>;
++			#size-cells = <0>;
++			clock-frequency = <100000>;
++			status = "okay";
++			pinctrl-names = "default";
++			pinctrl-0 = <&i2c2_pins>;
++
++
++			tlv320aic32x4: tlv320aic32x4@18 {
++				compatible = "tlv320aic32x4";
++				reg = <0x18>;
++				status = "okay";
++			};
++		};
++	};
++
++	fragment@2 {
++		target = <&mcasp0>;
++		__overlay__ {
++			pinctrl-names = "default";
++			pinctrl-0 = <&bone_audio_cape_audio_pins>;
++
++			status = "okay";
++			compatible = "ti,omap2-mcasp-audio";
++			op-mode = <0>;          /* MCASP_IIS_MODE */
++			tdm-slots = <2>;
++			num-serializer = <16>;
++			serial-dir = <  /* 0: INACTIVE, 1: TX, 2: RX */
++				0 0 1 2
++				0 0 0 0
++				0 0 0 0
++				0 0 0 0
++			>;
++			tx-num-evt = <1>;
++			rx-num-evt = <1>;
++		};
++	};
++
++	fragment@3 {
++		target = <&ocp>;
++		__overlay__ {
++			sound {
++				compatible = "ti,da830-evm-audio";
++				ti,model = "TI BeagleBone Black";
++				ti,audio-codec = <&tlv320aic32x4>;
++				ti,mcasp-controller = <&mcasp0>;
++				ti,codec-clock-rate = <12000000>;
++/*				mcasp_clock_enable = <&gpio2 27 0>; BeagleBone Black Clk enable on GPIO1_27 */
++				ti,audio-routing =
++					"Mic Bias",             "Mic Jack",
++					"Headphone Jack",       "HPL",
++					"Headphone Jack",       "HPR",
++					"Line Out",             "LOL",
++					"Line Out",             "LOR",
++					"IN1_L",                "Mic Bias",
++					"IN1_R",                "Mic Bias",
++					"IN2_L",                "Mic Bias",
++					"IN2_R",                "Mic Bias",
++					"IN3_L",                "Mic Bias",
++					"IN3_R",                "Mic Bias";
++			};
++		};
++
++	};
++};
+diff --git a/firmware/capes/BB-BONE-CAPT-02-00A0.dts b/firmware/capes/BB-BONE-CAPT-02-00A0.dts
+new file mode 100644
+index 0000000..2d50858
+--- /dev/null
++++ b/firmware/capes/BB-BONE-CAPT-02-00A0.dts
+@@ -0,0 +1,73 @@
++/*
++ * Copyright (C) 2012 Texas Instruments Incorporated - http://www.ti.com/
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++/dts-v1/;
++/plugin/;
++
++/ {
++	compatible = "ti,beaglebone", "ti,beaglebone-black";
++
++	/* identification */
++	part-number = "BB-BONE-CAPT-02";
++	version = "00A0", "A0";
++/*
++	fragment@0 {
++		target = <&am33xx_pinmux>;
++			__overlay__ {
++				cirqpin: pinmux_cirqpin {
++					pinctrl-single,pins = <
++						0x044 0x2F  // GPIO1_31 Mode7, GPIO
++					>;
++				};
++			};
++	};
++
++	fragment@1 {
++		target = <&ocp>;
++			__overlay__ {
++				cirqpin_helper {
++					compatible = "bone-pinmux-helper";
++					pinctrl-names = "default";
++					pinctrl-0 = <&cirqpin>;
++					status = "okay";
++				};
++			};
++		}; */
++
++	fragment@2 {
++		target = <&am33xx_pinmux>;
++		__overlay__ {
++
++			i2c2_pins: pinmux_i2c2_pins {
++				pinctrl-single,pins = <
++					0x188 0x7b 	/*spi0_scl.i2c2_sda,SLEWCTRL_SLOW | INPUT_PULLUP |MODE2*/
++					0x18c 0x7b	/*spi0_d0.i2c2_scl,SLEWCTRL_SLOW | INPUT_PULLUP | MODE2*/
++				>;
++			};
++		};
++	};
++
++	fragment@3 {
++		target = <&i2c2>;
++		__overlay__ {
++			#address-cells = <1>;
++			#size-cells = <0>;
++			clock-frequency = <100000>;
++			status = "okay";
++			pinctrl-names = "default";
++			pinctrl-0 = <&i2c2_pins>;
++
++            captouch: @2c {
++                compatible = "ad7142_captouch";
++                reg = <0x2c>;
++                interrupt-parrent = <&gpio1>;
++                interrupts = <17 0x0>;
++                };
++            };
++		};
++};
++
+diff --git a/include/sound/tlv320aic32x4.h b/include/sound/tlv320aic32x4.h
+index 24e5d99..6371cf1 100644
+--- a/include/sound/tlv320aic32x4.h
++++ b/include/sound/tlv320aic32x4.h
+@@ -13,14 +13,18 @@
+ #ifndef _AIC32X4_PDATA_H
+ #define _AIC32X4_PDATA_H
+ 
+-#define AIC32X4_PWR_MICBIAS_2075_LDOIN		0x00000001
+-#define AIC32X4_PWR_AVDD_DVDD_WEAK_DISABLE	0x00000002
+-#define AIC32X4_PWR_AIC32X4_LDO_ENABLE		0x00000004
+-#define AIC32X4_PWR_CMMODE_LDOIN_RANGE_18_36	0x00000008
+-#define AIC32X4_PWR_CMMODE_HP_LDOIN_POWERED	0x00000010
++#define AIC32X4_PWR_MICBIAS_2075_LDOIN			0x00000001
++#define AIC32X4_PWR_AVDD_DVDD_WEAK_DISABLE		0x00000002
++#define AIC32X4_PWR_AIC32X4_LDO_ENABLE			0x00000004
++#define AIC32X4_PWR_CMMODE_LDOIN_RANGE_18_36		0x00000008
++#define AIC32X4_PWR_CMMODE_HP_LDOIN_POWERED		0x00000010
+ 
+-#define AIC32X4_MICPGA_ROUTE_LMIC_IN2R_10K	0x00000001
+-#define AIC32X4_MICPGA_ROUTE_RMIC_IN1L_10K	0x00000002
++#define AIC32X4_MICPGA_ROUTE_LMIC_IN2R_10K		0x00000001
++#define AIC32X4_MICPGA_ROUTE_LMIC_CM_10K		0x00000002
++#define AIC32X4_MICPGA_ROUTE_LMIC_IN3R_10K		0x00000004
++
++#define AIC32X4_MICPGA_ROUTE_RMIC_IN1L_10K		0x00000008
++#define AIC32X4_MICPGA_ROUTE_RMIC_CM_10K		0x00000010
+ 
+ struct aic32x4_pdata {
+ 	u32 power_cfg;
+diff --git a/sound/soc/codecs/tlv320aic32x4.c b/sound/soc/codecs/tlv320aic32x4.c
+index 17df4e3..1cacf7c 100644
+--- a/sound/soc/codecs/tlv320aic32x4.c
++++ b/sound/soc/codecs/tlv320aic32x4.c
+@@ -165,6 +165,7 @@ static const struct snd_kcontrol_new lol_output_mixer_controls[] = {
+ 
+ static const struct snd_kcontrol_new lor_output_mixer_controls[] = {
+ 	SOC_DAPM_SINGLE("R_DAC Switch", AIC32X4_LORROUTE, 3, 1, 0),
++	SOC_DAPM_SINGLE("MAR Switch", AIC32X4_LORROUTE, 1, 1, 0),
+ };
+ 
+ static const struct snd_kcontrol_new left_input_mixer_controls[] = {
+@@ -180,6 +181,7 @@ static const struct snd_kcontrol_new right_input_mixer_controls[] = {
+ };
+ 
+ static const struct snd_soc_dapm_widget aic32x4_dapm_widgets[] = {
++	/* LEFT OUTPUT CHANNEL */
+ 	SND_SOC_DAPM_DAC("Left DAC", "Left Playback", AIC32X4_DACSETUP, 7, 0),
+ 	SND_SOC_DAPM_MIXER("HPL Output Mixer", SND_SOC_NOPM, 0, 0,
+ 			   &hpl_output_mixer_controls[0],
+@@ -191,25 +193,33 @@ static const struct snd_soc_dapm_widget aic32x4_dapm_widgets[] = {
+ 			   ARRAY_SIZE(lol_output_mixer_controls)),
+ 	SND_SOC_DAPM_PGA("LOL Power", AIC32X4_OUTPWRCTL, 3, 0, NULL, 0),
+ 
++	/* RIGHT OUTPUT CHANNEL */
+ 	SND_SOC_DAPM_DAC("Right DAC", "Right Playback", AIC32X4_DACSETUP, 6, 0),
+ 	SND_SOC_DAPM_MIXER("HPR Output Mixer", SND_SOC_NOPM, 0, 0,
+ 			   &hpr_output_mixer_controls[0],
+ 			   ARRAY_SIZE(hpr_output_mixer_controls)),
+ 	SND_SOC_DAPM_PGA("HPR Power", AIC32X4_OUTPWRCTL, 4, 0, NULL, 0),
++
+ 	SND_SOC_DAPM_MIXER("LOR Output Mixer", SND_SOC_NOPM, 0, 0,
+ 			   &lor_output_mixer_controls[0],
+ 			   ARRAY_SIZE(lor_output_mixer_controls)),
+ 	SND_SOC_DAPM_PGA("LOR Power", AIC32X4_OUTPWRCTL, 2, 0, NULL, 0),
++	SND_SOC_DAPM_PGA("MAR Power", AIC32X4_OUTPWRCTL, 0, 0, NULL, 0),
++
++	/* INPUT CHANNELS */
+ 	SND_SOC_DAPM_MIXER("Left Input Mixer", SND_SOC_NOPM, 0, 0,
+ 			   &left_input_mixer_controls[0],
+ 			   ARRAY_SIZE(left_input_mixer_controls)),
+ 	SND_SOC_DAPM_MIXER("Right Input Mixer", SND_SOC_NOPM, 0, 0,
+ 			   &right_input_mixer_controls[0],
+ 			   ARRAY_SIZE(right_input_mixer_controls)),
++
+ 	SND_SOC_DAPM_ADC("Left ADC", "Left Capture", AIC32X4_ADCSETUP, 7, 0),
+ 	SND_SOC_DAPM_ADC("Right ADC", "Right Capture", AIC32X4_ADCSETUP, 6, 0),
++	
+ 	SND_SOC_DAPM_MICBIAS("Mic Bias", AIC32X4_MICBIAS, 6, 0),
+ 
++	/* I/O CONNECTORS */
+ 	SND_SOC_DAPM_OUTPUT("HPL"),
+ 	SND_SOC_DAPM_OUTPUT("HPR"),
+ 	SND_SOC_DAPM_OUTPUT("LOL"),
+@@ -243,6 +253,8 @@ static const struct snd_soc_dapm_route aic32x4_dapm_routes[] = {
+ 	{"HPR", NULL, "HPR Power"},
+ 
+ 	{"LOR Output Mixer", "R_DAC Switch", "Right DAC"},
++	{"LOR Output Mixer", "MAR Switch", "MAR Power"},		//added MAR -> MAR_EN -> LOR
++	{"MAR Power", NULL, "Right Input Mixer"},			//added INR -> MAR
+ 
+ 	{"LOR Power", NULL, "LOR Output Mixer"},
+ 	{"LOR", NULL, "LOR Power"},
+@@ -421,6 +433,7 @@ static int aic32x4_set_dai_fmt(struct snd_soc_dai *codec_dai, unsigned int fmt)
+ 	snd_soc_write(codec, AIC32X4_IFACE1, iface_reg_1);
+ 	snd_soc_write(codec, AIC32X4_IFACE2, iface_reg_2);
+ 	snd_soc_write(codec, AIC32X4_IFACE3, iface_reg_3);
++
+ 	return 0;
+ }
+ 
+@@ -674,13 +687,27 @@ static int aic32x4_probe(struct snd_soc_codec *codec)
+ 		snd_soc_write(codec, AIC32X4_DACSETUP, AIC32X4_LDAC2LCHN | AIC32X4_RDAC2RCHN);
+ 	}
+ 
+-	/* Mic PGA routing */
++	/* Mic PGA routing (negative terminals) */
++	tmp_reg = 0;
+ 	if (aic32x4->micpga_routing & AIC32X4_MICPGA_ROUTE_LMIC_IN2R_10K) {
+-		snd_soc_write(codec, AIC32X4_LMICPGANIN, AIC32X4_LMICPGANIN_IN2R_10K);
++		tmp_reg = AIC32X4_LMICPGANIN_IN2R_10K;
+ 	}
++	if (aic32x4->micpga_routing & AIC32X4_MICPGA_ROUTE_LMIC_CM_10K) {
++		tmp_reg = AIC32X4_LMICPGANIN_CM_10K;
++	}
++	if (aic32x4->micpga_routing & AIC32X4_MICPGA_ROUTE_LMIC_IN3R_10K) {
++		tmp_reg = AIC32X4_LMICPGANIN_IN3R_10K;
++	}
++	snd_soc_write(codec, AIC32X4_LMICPGANIN, tmp_reg);
++
++	tmp_reg = 0;
+ 	if (aic32x4->micpga_routing & AIC32X4_MICPGA_ROUTE_RMIC_IN1L_10K) {
+-		snd_soc_write(codec, AIC32X4_RMICPGANIN, AIC32X4_RMICPGANIN_IN1L_10K);
++		tmp_reg = AIC32X4_RMICPGANIN_IN1L_10K;
++	}
++	if (aic32x4->micpga_routing & AIC32X4_MICPGA_ROUTE_RMIC_CM_10K) {
++		tmp_reg = AIC32X4_RMICPGANIN_CM_10K;
+ 	}
++	snd_soc_write(codec, AIC32X4_RMICPGANIN, tmp_reg);
+ 
+ 	aic32x4_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
+ 	snd_soc_add_codec_controls(codec, aic32x4_snd_controls,
+@@ -737,9 +764,14 @@ static int aic32x4_i2c_probe(struct i2c_client *i2c,
+ 		aic32x4->micpga_routing = pdata->micpga_routing;
+ 		aic32x4->rstn_gpio = pdata->rstn_gpio;
+ 	} else {
+-		aic32x4->power_cfg = 0;
++		aic32x4->power_cfg = AIC32X4_PWR_MICBIAS_2075_LDOIN |
++				     AIC32X4_PWR_AVDD_DVDD_WEAK_DISABLE |
++				     AIC32X4_PWR_AIC32X4_LDO_ENABLE |
++				     AIC32X4_PWR_CMMODE_LDOIN_RANGE_18_36 |
++				     AIC32X4_PWR_CMMODE_HP_LDOIN_POWERED;
+ 		aic32x4->swapdacs = false;
+-		aic32x4->micpga_routing = 0;
++		aic32x4->micpga_routing = AIC32X4_MICPGA_ROUTE_LMIC_CM_10K | \
++				     AIC32X4_MICPGA_ROUTE_RMIC_CM_10K;
+ 		aic32x4->rstn_gpio = -1;
+ 	}
+ 
+diff --git a/sound/soc/codecs/tlv320aic32x4.h b/sound/soc/codecs/tlv320aic32x4.h
+index 3577422..e0f078d 100644
+--- a/sound/soc/codecs/tlv320aic32x4.h
++++ b/sound/soc/codecs/tlv320aic32x4.h
+@@ -120,7 +120,11 @@
+ #define AIC32X4_MICBIAS_2075V		0x60
+ 
+ #define AIC32X4_LMICPGANIN_IN2R_10K	0x10
++#define AIC32X4_LMICPGANIN_IN3R_10K	0x04
++#define AIC32X4_LMICPGANIN_CM_10K	0x40
++
+ #define AIC32X4_RMICPGANIN_IN1L_10K	0x10
++#define AIC32X4_RMICPGANIN_CM_10K	0x40
+ 
+ #define AIC32X4_LMICPGAVOL_NOGAIN	0x80
+ #define AIC32X4_RMICPGAVOL_NOGAIN	0x80
+diff --git a/sound/soc/davinci/Kconfig b/sound/soc/davinci/Kconfig
+index cfeb3a0..05ca22a 100644
+--- a/sound/soc/davinci/Kconfig
++++ b/sound/soc/davinci/Kconfig
+@@ -9,7 +9,7 @@ config SND_DAVINCI_SOC
+ config SND_AM33XX_SOC
+ 	tristate "SoC Audio for the AM33XX chip"
+ 	depends on SOC_AM33XX
+-	select SND_SOC_TLV320AIC3X
++	select SND_SOC_TLV320AIC32X4
+ 	help
+ 	  Say Y or M if you want to add support for SoC audio on AM33xx
+ 	  boards using McASP and TLV320AIC3X codec.
+diff --git a/sound/soc/davinci/davinci-evm.c b/sound/soc/davinci/davinci-evm.c
+index 7a7fc47..f97d7f7 100644
+--- a/sound/soc/davinci/davinci-evm.c
++++ b/sound/soc/davinci/davinci-evm.c
+@@ -85,12 +85,12 @@ static int evm_hw_params(struct snd_pcm_substream *substream,
+ 		return ret;
+ 
+ 	/* set the codec system clock */
+-	ret = snd_soc_dai_set_sysclk(codec_dai, 0, sysclk, SND_SOC_CLOCK_OUT);
++	ret = snd_soc_dai_set_sysclk(codec_dai, 0, sysclk, SND_SOC_CLOCK_IN);
+ 	if (ret < 0)
+ 		return ret;
+ 
+ 	/* set the CPU system clock */
+-	ret = snd_soc_dai_set_sysclk(cpu_dai, 0, sysclk, SND_SOC_CLOCK_OUT);
++	ret = snd_soc_dai_set_sysclk(cpu_dai, 0, sysclk, SND_SOC_CLOCK_IN);
+ 	if (ret < 0)
+ 		return ret;
+ 
+@@ -146,6 +146,32 @@ static const struct snd_soc_dapm_route audio_map[] = {
+ };
+ 
+ /* Logic for a aic3x as connected on a davinci-evm */
++static int evm_tda998x_init(struct snd_soc_pcm_runtime *rtd)
++{
++	struct snd_soc_dai *codec_dai = rtd->codec_dai;
++	struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
++	int ret;
++
++	ret = snd_soc_dai_set_clkdiv(cpu_dai, 0, 1);
++	if (ret < 0)
++		return ret;
++
++	ret = snd_soc_dai_set_clkdiv(cpu_dai, 1, 8);
++	if (ret < 0)
++		return ret;
++
++	ret = snd_soc_dai_set_sysclk(cpu_dai, 0, 0, SND_SOC_CLOCK_IN);
++	if (ret < 0)
++		return ret;
++
++	ret = snd_soc_dai_set_fmt(cpu_dai, SND_SOC_DAIFMT_CBS_CFS | SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_IB_NF);
++	if (ret < 0)
++		return ret;
++
++	return 0;
++}
++
++/* Logic for a aic3x as connected on a davinci-evm */
+ static int evm_aic3x_init(struct snd_soc_pcm_runtime *rtd)
+ {
+ 	struct snd_soc_codec *codec = rtd->codec;
+@@ -186,8 +212,8 @@ static struct snd_soc_dai_link dm6446_evm_dai = {
+ 	.name = "TLV320AIC3X",
+ 	.stream_name = "AIC3X",
+ 	.cpu_dai_name = "davinci-mcbsp",
+-	.codec_dai_name = "tlv320aic3x-hifi",
+-	.codec_name = "tlv320aic3x-codec.1-001b",
++	.codec_dai_name = "tlv320aic32x4-hifi",
++	.codec_name = "tlv320aic32x4.1-001b",
+ 	.platform_name = "davinci-mcbsp",
+ 	.init = evm_aic3x_init,
+ 	.ops = &evm_ops,
+@@ -197,8 +223,8 @@ static struct snd_soc_dai_link dm355_evm_dai = {
+ 	.name = "TLV320AIC3X",
+ 	.stream_name = "AIC3X",
+ 	.cpu_dai_name = "davinci-mcbsp.1",
+-	.codec_dai_name = "tlv320aic3x-hifi",
+-	.codec_name = "tlv320aic3x-codec.1-001b",
++	.codec_dai_name = "tlv320aic32x4-hifi",
++	.codec_name = "tlv320aic32x4.1-001b",
+ 	.platform_name = "davinci-mcbsp.1",
+ 	.init = evm_aic3x_init,
+ 	.ops = &evm_ops,
+@@ -209,9 +235,9 @@ static struct snd_soc_dai_link dm365_evm_dai = {
+ 	.name = "TLV320AIC3X",
+ 	.stream_name = "AIC3X",
+ 	.cpu_dai_name = "davinci-mcbsp",
+-	.codec_dai_name = "tlv320aic3x-hifi",
++	.codec_dai_name = "tlv320aic32x4-hifi",
+ 	.init = evm_aic3x_init,
+-	.codec_name = "tlv320aic3x-codec.1-0018",
++	.codec_name = "tlv320aic32x4.1-0018",
+ 	.ops = &evm_ops,
+ 	.platform_name = "davinci-mcbsp",
+ #elif defined(CONFIG_SND_DM365_VOICE_CODEC)
+@@ -229,9 +255,9 @@ static struct snd_soc_dai_link dm6467_evm_dai[] = {
+ 		.name = "TLV320AIC3X",
+ 		.stream_name = "AIC3X",
+ 		.cpu_dai_name= "davinci-mcasp.0",
+-		.codec_dai_name = "tlv320aic3x-hifi",
++		.codec_dai_name = "tlv320aic32x4-hifi",
+ 		.platform_name = "davinci-mcasp.0",
+-		.codec_name = "tlv320aic3x-codec.0-001a",
++		.codec_name = "tlv320aic32x4.0-001a",
+ 		.init = evm_aic3x_init,
+ 		.ops = &evm_ops,
+ 	},
+@@ -250,8 +276,8 @@ static struct snd_soc_dai_link da830_evm_dai = {
+ 	.name = "TLV320AIC3X",
+ 	.stream_name = "AIC3X",
+ 	.cpu_dai_name = "davinci-mcasp.1",
+-	.codec_dai_name = "tlv320aic3x-hifi",
+-	.codec_name = "tlv320aic3x-codec.1-0018",
++	.codec_dai_name = "tlv320aic32x4-hifi",
++	.codec_name = "tlv320aic32x4.1-0018",
+ 	.platform_name = "davinci-mcasp.1",
+ 	.init = evm_aic3x_init,
+ 	.ops = &evm_ops,
+@@ -261,8 +287,8 @@ static struct snd_soc_dai_link da850_evm_dai = {
+ 	.name = "TLV320AIC3X",
+ 	.stream_name = "AIC3X",
+ 	.cpu_dai_name= "davinci-mcasp.0",
+-	.codec_dai_name = "tlv320aic3x-hifi",
+-	.codec_name = "tlv320aic3x-codec.1-0018",
++	.codec_dai_name = "tlv320aic32x4-hifi",
++	.codec_name = "tlv320aic32x4-codec.1-0018",
+ 	.platform_name = "davinci-mcasp.0",
+ 	.init = evm_aic3x_init,
+ 	.ops = &evm_ops,
+@@ -338,7 +364,7 @@ static const struct of_device_id davinci_evm_dt_ids[] = {
+ 	},
+ 	{ /* sentinel */ }
+ };
+-MODULE_DEVICE_TABLE(of, davinci_mcasp_dt_ids);
++MODULE_DEVICE_TABLE(of, davinci_evm_dt_ids);
+ 
+ /*
+  * This struct is just used as place holder. It will be filled with
+@@ -347,7 +373,7 @@ MODULE_DEVICE_TABLE(of, davinci_mcasp_dt_ids);
+ static struct snd_soc_dai_link evm_dai = {
+ 	.name		= "TLV320AIC3X",
+ 	.stream_name	= "AIC3X",
+-	.codec_dai_name	= "tlv320aic3x-hifi",
++	.codec_dai_name	= "tlv320aic32x4-hifi",
+ };
+ 
+ /* davinci evm audio machine driver */
+@@ -380,7 +406,9 @@ static int davinci_evm_probe(struct platform_device *pdev)
+ 		evm_dai.name		= "NXP TDA HDMI Chip";
+ 		evm_dai.stream_name	= "HDMI";
+ 		evm_dai.codec_dai_name	= "nxp-hdmi-hifi";
++		evm_dai.init = evm_tda998x_init;
+ 
++#if 0
+ 		/* 
+ 		 * Move GPIO handling out of the probe, if probe gets 
+ 		 * deferred, the gpio will have been claimed on previous
+@@ -400,7 +428,7 @@ static int davinci_evm_probe(struct platform_device *pdev)
+ 		gpio_set_value(clk_gpio, 1);
+ 		evm_dai.dai_fmt = SND_SOC_DAIFMT_CBS_CFS | SND_SOC_DAIFMT_DSP_B | SND_SOC_DAIFMT_IB_NF;
+ 		break;
+-	  
++#endif
+ 	}
+ 	
+ 
+diff --git a/sound/soc/davinci/davinci-mcasp.c b/sound/soc/davinci/davinci-mcasp.c
+index bef4e72..c96da20 100644
+--- a/sound/soc/davinci/davinci-mcasp.c
++++ b/sound/soc/davinci/davinci-mcasp.c
+@@ -347,6 +347,23 @@ static inline void mcasp_set_ctl_reg(void __iomem *regs, u32 val)
+ 
+ static void mcasp_start_rx(struct davinci_audio_dev *dev)
+ {
++	u32 pdir = mcasp_get_reg(dev->base + DAVINCI_MCASP_PDIR_REG);
++	u32 thclk_reg = mcasp_get_reg(dev->base + DAVINCI_MCASP_AHCLKXCTL_REG);
++	u32 tclk_reg = mcasp_get_reg(dev->base + DAVINCI_MCASP_ACLKXCTL_REG);
++
++	/*
++	*  If Transmit CLK or High Frequency Transmit CLK are set to output
++	*  and they use the internally generated clock. Do not reset the
++	*  transmit clock divider when receiving data in case they supply
++	*  the clock source for another device.
++	*/
++	if((pdir & ACLKX) && (tclk_reg & ACLKXE)) {
++		mcasp_set_ctl_reg(dev->base + DAVINCI_MCASP_GBLCTLX_REG, TXCLKRST);
++	}
++
++	if((pdir & AHCLKX) && (thclk_reg & AHCLKXE)) {
++		mcasp_set_ctl_reg(dev->base + DAVINCI_MCASP_GBLCTLX_REG, TXHCLKRST);
++	}
+ 	mcasp_set_ctl_reg(dev->base + DAVINCI_MCASP_GBLCTLR_REG, RXHCLKRST);
+ 	mcasp_set_ctl_reg(dev->base + DAVINCI_MCASP_GBLCTLR_REG, RXCLKRST);
+ 	mcasp_set_ctl_reg(dev->base + DAVINCI_MCASP_GBLCTLR_REG, RXSERCLR);
+@@ -364,6 +381,23 @@ static void mcasp_start_tx(struct davinci_audio_dev *dev)
+ {
+ 	u8 offset = 0, i;
+ 	u32 cnt;
++	u32 pdir = mcasp_get_reg(dev->base + DAVINCI_MCASP_PDIR_REG);
++	u32 rhclk_reg = mcasp_get_reg(dev->base + DAVINCI_MCASP_AHCLKRCTL_REG);
++	u32 rclk_reg = mcasp_get_reg(dev->base + DAVINCI_MCASP_ACLKRCTL_REG);
++
++	/*
++	*  If Receive CLK or High Frequency Receive CLK are set to output
++	*  and they use the internally generated clock. Do not reset the
++	*  receive clock divider when transmitting data in case they supply
++	*  the clock source for another device.
++	*/
++	if((pdir & ACLKR) && (rclk_reg & ACLKRE)) {
++		mcasp_set_ctl_reg(dev->base + DAVINCI_MCASP_GBLCTLR_REG, RXCLKRST);
++	}
++
++	if((pdir & AHCLKR) && (rhclk_reg & AHCLKRE)) {
++		mcasp_set_ctl_reg(dev->base + DAVINCI_MCASP_GBLCTLR_REG, RXHCLKRST);
++	}
+ 
+ 	mcasp_set_ctl_reg(dev->base + DAVINCI_MCASP_GBLCTLX_REG, TXHCLKRST);
+ 	mcasp_set_ctl_reg(dev->base + DAVINCI_MCASP_GBLCTLX_REG, TXCLKRST);
+@@ -479,11 +513,24 @@ static int davinci_mcasp_set_dai_fmt(struct snd_soc_dai *cpu_dai,
+ 	void __iomem *base = dev->base;
+ 
+ 	switch (fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
++	case SND_SOC_DAIFMT_DSP_A:
++		mcasp_clr_bits(dev->base + DAVINCI_MCASP_TXFMCTL_REG, FSXDUR);
++		mcasp_clr_bits(dev->base + DAVINCI_MCASP_RXFMCTL_REG, FSRDUR);
++
++		/* make 1st data bit occur one ACLK cycle after the frame sync */
++		mcasp_set_bits(dev->base + DAVINCI_MCASP_TXFMT_REG, FSXDLY(1));
++		mcasp_set_bits(dev->base + DAVINCI_MCASP_RXFMT_REG, FSRDLY(1));
++
++		break;
+ 	case SND_SOC_DAIFMT_DSP_B:
+ 	case SND_SOC_DAIFMT_AC97:
+ 		mcasp_clr_bits(dev->base + DAVINCI_MCASP_TXFMCTL_REG, FSXDUR);
+ 		mcasp_clr_bits(dev->base + DAVINCI_MCASP_RXFMCTL_REG, FSRDUR);
+ 		break;
++	case SND_SOC_DAIFMT_I2S:
++		mcasp_set_bits(dev->base + DAVINCI_MCASP_TXFMCTL_REG, FSXDUR);
++		mcasp_set_bits(dev->base + DAVINCI_MCASP_RXFMCTL_REG, FSRDUR);
++		break;
+ 	default:
+ 		/* configure a full-word SYNC pulse (LRCLK) */
+ 		mcasp_set_bits(dev->base + DAVINCI_MCASP_TXFMCTL_REG, FSXDUR);
+@@ -498,16 +545,13 @@ static int davinci_mcasp_set_dai_fmt(struct snd_soc_dai *cpu_dai,
+ 	switch (fmt & SND_SOC_DAIFMT_MASTER_MASK) {
+ 	case SND_SOC_DAIFMT_CBS_CFS:
+ 		/* codec is clock and frame slave */
+-	  	mcasp_set_bits(base + DAVINCI_MCASP_ACLKXCTL_REG, ACLKXE | ACLKXDIV(7));
+-	  	mcasp_set_bits(base + DAVINCI_MCASP_AHCLKXCTL_REG,  AHCLKXDIV(0));
+-	  	mcasp_clr_bits(base + DAVINCI_MCASP_AHCLKXCTL_REG,  AHCLKXE);
++		mcasp_set_bits(base + DAVINCI_MCASP_ACLKXCTL_REG, ACLKXE);
+ 		mcasp_set_bits(base + DAVINCI_MCASP_TXFMCTL_REG, AFSXE);
+ 
+ 		mcasp_set_bits(base + DAVINCI_MCASP_ACLKRCTL_REG, ACLKRE);
+ 		mcasp_set_bits(base + DAVINCI_MCASP_RXFMCTL_REG, AFSRE);
+ 
+ 		mcasp_set_bits(base + DAVINCI_MCASP_PDIR_REG, ACLKX | AFSX);
+-		mcasp_clr_bits(base + DAVINCI_MCASP_PDIR_REG, AHCLKX);
+ 		break;
+ 	case SND_SOC_DAIFMT_CBM_CFS:
+ 		/* codec is clock master and frame slave */
+@@ -749,7 +793,6 @@ static void davinci_hw_param(struct davinci_audio_dev *dev, int stream)
+ 	if (stream == SNDRV_PCM_STREAM_PLAYBACK) {
+ 		/* bit stream is MSB first  with no delay */
+ 		/* DSP_B mode */
+-	  	mcasp_clr_bits(dev->base + DAVINCI_MCASP_AHCLKXCTL_REG, AHCLKXE);
+ 		mcasp_set_reg(dev->base + DAVINCI_MCASP_TXTDM_REG, mask);
+ 		mcasp_set_bits(dev->base + DAVINCI_MCASP_TXFMT_REG, TXORD);
+ 
+@@ -759,8 +802,6 @@ static void davinci_hw_param(struct davinci_audio_dev *dev, int stream)
+ 		else
+ 			printk(KERN_ERR "playback tdm slot %d not supported\n",
+ 				dev->tdm_slots);
+-		mcasp_set_bits(dev->base + DAVINCI_MCASP_TXFMCTL_REG, AFSXE);
+-		mcasp_set_bits(dev->base + DAVINCI_MCASP_TXFMCTL_REG, FSXDUR);
+ 	} else {
+ 		/* bit stream is MSB first with no delay */
+ 		/* DSP_B mode */
+-- 
+2.2.0.rc0.207.ga3a616c
+
