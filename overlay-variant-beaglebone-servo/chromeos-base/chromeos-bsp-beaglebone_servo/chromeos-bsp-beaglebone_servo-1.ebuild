@@ -27,8 +27,8 @@ DEPEND=""
 #     net-misc/openssh - ssh client, sshd server, and related tools.
 #     net-misc/ser2net - allow remote connection to various console output
 RDEPEND="
-	chromeos-base/chromeos-ec
 	chromeos-base/chromeos-test-testauthkeys
+	chromeos-base/ec-devutils
 	chromeos-base/ec-utils
 	chromeos-base/openssh-server-init
 	chromeos-base/vboot_reference
