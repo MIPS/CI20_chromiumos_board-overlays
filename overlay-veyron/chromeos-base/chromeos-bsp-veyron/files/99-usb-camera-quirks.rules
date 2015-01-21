@@ -1,3 +1,0 @@
-# Workaround: force to do reset resume usb camera if it doesn't respond after
-# an autosuspend.
-ACTION=="add|change", SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{idVendor}=="13d3", ATTR{idProduct}=="5661", RUN+="usb-camera-quirks.sh"

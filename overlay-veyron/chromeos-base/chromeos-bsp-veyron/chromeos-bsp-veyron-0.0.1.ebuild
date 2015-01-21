@@ -34,8 +34,6 @@ src_install() {
 	insinto "/etc/modprobe.d"
 	doins "${FILESDIR}"/blacklist-btsdio.conf
 
-	# Install platform specific files for usb camera.
-	udev_dorules "${FILESDIR}/99-usb-camera-quirks.rules"
-	exeinto "$(udev_get_udevdir)"
-	doexe "${FILESDIR}/usb-camera-quirks.sh"
+	# Install platform specific files to enable persist on usb3
+	udev_dorules "${FILESDIR}/99-rk3288-usb3-persist.rules"
 }
