@@ -8,15 +8,14 @@ inherit tegra-bct eutils
 DESCRIPTION="Puppy BCT file"
 HOMEPAGE="http://src.chromium.org"
 
-LICENSE="BSD-3"
+LICENSE="BSD"
 SLOT="0"
-KEYWORDS="arm"
+KEYWORDS="-* arm"
 IUSE="bootflash-spi bootflash-emmc dalmore"
 REQUIRED_USE="
 	bootflash-spi? ( !bootflash-emmc )
 	bootflash-emmc? ( !bootflash-spi )
 "
-PROVIDE="virtual/tegra-bct"
 
 S=${WORKDIR}
 

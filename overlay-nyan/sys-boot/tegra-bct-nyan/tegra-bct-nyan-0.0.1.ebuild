@@ -16,7 +16,6 @@ REQUIRED_USE="
 	bootflash-spi? ( !bootflash-emmc )
 	bootflash-emmc? ( !bootflash-spi )
 "
-PROVIDE="virtual/tegra-bct"
 
 S=${WORKDIR}
 
