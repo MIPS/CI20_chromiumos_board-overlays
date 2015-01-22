@@ -3,14 +3,14 @@
 
 EAPI=4
 
-inherit tegra-bct cros-board
+inherit tegra-bct
 
 DESCRIPTION="Nyan BCT file"
 HOMEPAGE="http://src.chromium.org"
 
 LICENSE="GPL-2"
 SLOT="0"
-KEYWORDS="arm"
+KEYWORDS="-* arm"
 IUSE="bootflash-spi bootflash-emmc"
 REQUIRED_USE="
 	bootflash-spi? ( !bootflash-emmc )
@@ -21,7 +21,7 @@ PROVIDE="virtual/tegra-bct"
 S=${WORKDIR}
 
 src_configure() {
-	local board=$(get_current_board_no_variant)
+	local board="nyan"
 
 	if use bootflash-emmc; then
 		TEGRA_BCT_FLASH_CONFIG="${board}/emmc.cfg"
