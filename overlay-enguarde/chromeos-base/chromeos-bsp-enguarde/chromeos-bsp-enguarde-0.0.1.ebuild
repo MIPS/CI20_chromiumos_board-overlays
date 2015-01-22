@@ -14,6 +14,7 @@ IUSE=""
 S="${WORKDIR}"
 
 RDEPEND="
+	!<chromeos-base/chromeos-bsp-enguarde-private-0.0.1-r4
 	chromeos-base/chromeos-touch-config-enguarde
 	chromeos-base/ec-utils
 	sys-kernel/linux-firmware
@@ -40,4 +41,8 @@ src_install() {
 	doins "${FILESDIR}/cutoff_failed.png"
 	doins "${FILESDIR}/charging.png"
 	doins "${FILESDIR}/connect_ac.png"
+
+	# Install Bluetooth ID override.
+	insinto "/etc/bluetooth"
+	doins "${FILESDIR}/main.conf"
 }
