@@ -1,3 +1,4 @@
 media-libs/piglit waffle
 media-libs/libv4lplugins rockchip
 chromeos-base/chromeos-chrome v4lplugin
+sys-apps/flashrom use_os_timer
