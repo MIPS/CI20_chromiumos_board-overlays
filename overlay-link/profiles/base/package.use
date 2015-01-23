@@ -1,0 +1,2 @@
+sys-boot/chromeos-bootimage u_boot_netboot
+sys-boot/chromeos-u-boot u_boot_netboot
