@@ -1,24 +1,30 @@
-diff --git a/arch/arm/boot/dts/am335x-bone-common.dtsi b/arch/arm/boot/dts/am335x-bone-common.dtsi
-index cd009ea..b0de839 100644
---- a/arch/arm/boot/dts/am335x-bone-common.dtsi
-+++ b/arch/arm/boot/dts/am335x-bone-common.dtsi
-@@ -41,6 +41,12 @@
- 				0x18c 0x70	/* i2c0_scl, SLEWCTRL_SLOW | INPUT_PULLUP | MODE0 */
- 			>;
- 		};
-+		i2c1_pins: pinmux_i2c1_pins {
-+			pinctrl-single,pins = <
-+				0x158 0x72 	/* uart1_ctsn.i2c2_sda, SLEWCTRL_SLOW | INPUT_PULLUP | MODE2 */
-+				0x15c 0x72 	/* uart1_rtsn.i2c2_scl, SLEWCTRL_SLOW | INPUT_PULLUP | MODE2 */
-+			>;
-+		};
- 		i2c2_pins: pinmux_i2c2_pins {
- 			pinctrl-single,pins = <
- 				0x178 0x73 	/* uart1_ctsn.i2c2_sda, SLEWCTRL_SLOW | INPUT_PULLUP | MODE3 */
-@@ -398,6 +404,14 @@
- 	};
- };
+From 3e53602b4159a3f1f2eff8fd9b1913a38d3868c6 Mon Sep 17 00:00:00 2001
+From: Stefan Sauer <ensonic@google.com>
+Date: Mon, 26 Jan 2015 10:36:08 +0100
+Subject: [PATCH] enable-i2c1: enable and configure i2c-1
+
+---
+ arch/arm/boot/dts/am335x-bone.dts | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
+
+diff --git a/arch/arm/boot/dts/am335x-bone.dts b/arch/arm/boot/dts/am335x-bone.dts
+index 9abc1f3..d3ec5c3 100644
+--- a/arch/arm/boot/dts/am335x-bone.dts
++++ b/arch/arm/boot/dts/am335x-bone.dts
+@@ -10,3 +10,20 @@
+ /include/ "am33xx.dtsi"
  
+ /include/ "am335x-bone-common.dtsi"
++
++&am33xx_pinmux {
++	i2c1_pins: pinmux_i2c1_pins {
++		pinctrl-single,pins = <
++			0x158 0x72 	/* spi0_d1.i2c1_sda, SLEWCTRL_SLOW | INPUT_PULLUP | MODE2 */
++			0x15c 0x72 	/* spi0_cs0.i2c1_scl, SLEWCTRL_SLOW | INPUT_PULLUP | MODE2 */
++		>;
++	};
++};
++
 +&i2c1 {
 +	status = "okay";
 +	pinctrl-names = "default";
@@ -26,7 +32,6 @@ index cd009ea..b0de839 100644
 +
 +	clock-frequency = <100000>;
 +};
-+
- &i2c2 {
- 	status = "okay";
- 	pinctrl-names = "default";
+-- 
+2.2.0.rc0.207.ga3a616c
+
