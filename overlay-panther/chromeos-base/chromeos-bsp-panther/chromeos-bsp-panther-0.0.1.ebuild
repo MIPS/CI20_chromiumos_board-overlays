@@ -20,6 +20,7 @@ S="${WORKDIR}"
 RDEPEND="
 	chromeos-base/jabra-vold
 	sys-kernel/linux-firmware
+	media-libs/media-rules
 "
 
 DEPEND="${RDEPEND}"
