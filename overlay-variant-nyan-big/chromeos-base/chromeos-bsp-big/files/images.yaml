@@ -1,0 +1,20 @@
+- image: cutoff_failed.png
+  text: Battery cut-off failed\nContact factory team\n无法切断电池电源\n请联络RD
+  fg_color: '#ff0000'
+  font_size: 60
+- image: cutting_off.png
+  text: Cutting off battery.\nPlease wait...\n切断电池电源中\n请稍候...
+  fg_color: '#ffffff'
+  font_size: 60
+- image: remove_ac.png
+  text: Please remove AC power\nfor battery cut-off\n请移除AC电源
+  fg_color: '#ffff00'
+  font_size: 60
+- image: battery_input.png
+  text: Please Input Unlock Magic Words for\nBattery Cut-Off\n请輸入Battery Cut-Off密碼
+  fg_color: '#ffffff'
+  font_size: 60
+- image: go_to_repair.png
+  text: Battery level below 35% !\nPlease go to repair station\n電量不足35% !\n请至修護站維修\n
+  fg_color: '#ff0000'
+  font_size: 60
