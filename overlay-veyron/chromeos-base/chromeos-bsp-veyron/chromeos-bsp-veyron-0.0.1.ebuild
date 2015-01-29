@@ -19,6 +19,7 @@ RDEPEND="${DEPEND}
 	x11-drivers/mali-rules
 	media-libs/media-rules
 	net-wireless/broadcom
+	chromeos-base/ec-utils
 "
 
 S=${WORKDIR}
