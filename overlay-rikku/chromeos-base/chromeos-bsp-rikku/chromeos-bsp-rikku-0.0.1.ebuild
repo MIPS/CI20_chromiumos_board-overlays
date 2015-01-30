@@ -19,6 +19,7 @@ RDEPEND="
 	chromeos-base/ec-utils
 	sys-kernel/linux-firmware
 	media-gfx/ply-image
+	media-libs/go2001-fw
 "
 DEPEND="${RDEPEND}"
 

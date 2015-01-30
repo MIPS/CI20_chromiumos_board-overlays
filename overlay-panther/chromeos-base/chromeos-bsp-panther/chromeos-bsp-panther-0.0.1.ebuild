@@ -21,6 +21,7 @@ RDEPEND="
 	chromeos-base/jabra-vold
 	sys-kernel/linux-firmware
 	media-libs/media-rules
+	media-libs/go2001-fw
 "
 
 DEPEND="${RDEPEND}"
