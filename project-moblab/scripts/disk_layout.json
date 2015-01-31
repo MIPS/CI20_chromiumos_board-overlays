@@ -7,13 +7,13 @@
   "layouts":{
     "usb": [
       {
-        "num": 1,
-        "size":"3072 MiB"
-      },
-      {
         "num": 3,
         "size":"2048 MiB",
         "fs_size":"2000 MiB"
+      },
+      {
+        "num": 1,
+        "size":"3072 MiB"
       }
     ]
   }
