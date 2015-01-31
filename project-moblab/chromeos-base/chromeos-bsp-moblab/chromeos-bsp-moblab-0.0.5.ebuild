@@ -15,6 +15,8 @@ IUSE=""
 # These packages are meant to set up the Chromium OS Basic environment to
 # properly handle the services required by the lab infrastructure.
 RDEPEND="
+	app-crypt/gnupg
+	app-emulation/lxc
 	chromeos-base/chromeos-init
 	chromeos-base/chromeos-test-testauthkeys
 	chromeos-base/openssh-server-init
