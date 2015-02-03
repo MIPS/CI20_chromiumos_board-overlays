@@ -7,7 +7,7 @@ inherit unpacker
 
 DESCRIPTION="Mali drivers, binary only install"
 HOMEPAGE="http://www.chromium.org/chromium-os/developer-information-for-chrome-os-devices/samsung-arm-chromebook"
-SRC_URI="http://commondatastorage.googleapis.com/chromeos-localmirror/distfiles/mali-drivers-${PVR}.run"
+SRC_URI="http://commondatastorage.googleapis.com/chromeos-localmirror/distfiles/mali-drivers-daisy-${PVR}.run"
 
 LICENSE="Google-TOS"
 SLOT="0"

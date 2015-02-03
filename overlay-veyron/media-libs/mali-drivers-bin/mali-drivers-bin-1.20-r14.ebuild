@@ -7,7 +7,7 @@ inherit unpacker
 
 DESCRIPTION="Mali drivers, binary only install"
 HOMEPAGE=""
-SRC_URI="http://commondatastorage.googleapis.com/chromeos-localmirror/distfiles/mali-drivers-${PVR}.run"
+SRC_URI="http://commondatastorage.googleapis.com/chromeos-localmirror/distfiles/mali-drivers-veyron-${PVR}.run"
 
 LICENSE="Google-TOS"
 SLOT="0"
