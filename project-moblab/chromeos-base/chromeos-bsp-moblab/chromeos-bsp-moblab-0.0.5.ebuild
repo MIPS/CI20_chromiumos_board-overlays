@@ -23,6 +23,7 @@ RDEPEND="
 	chromeos-base/jabra-vold
 	net-analyzer/fping
 	net-ftp/tftp-hpa
+	net-misc/bridge-utils
 	net-misc/dhcp
 	net-misc/rsync
 "
