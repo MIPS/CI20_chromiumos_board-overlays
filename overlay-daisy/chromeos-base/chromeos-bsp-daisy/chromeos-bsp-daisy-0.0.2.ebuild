@@ -3,13 +3,13 @@
 
 EAPI=4
 
-inherit appid toolchain-funcs udev
+inherit appid udev
 
 DESCRIPTION="Daisy public bsp (meta package to pull in driver/tool dependencies)"
 
 LICENSE="BSD-Google"
 SLOT="0"
-KEYWORDS="arm"
+KEYWORDS="-* arm"
 IUSE="-spring -snow -skate"
 
 DEPEND="
@@ -39,6 +39,10 @@ src_install() {
 		doappid "{ADA16F7B-283C-4907-AE27-ABBF5CA4F7F1}"
 	elif use snow; then
 		doappid "{D851316B-7E57-4805-A7CE-01829AC1443E}"
+
+		dosbin "${FILESDIR}/battery_cut_off.sh"
+		dosbin "${FILESDIR}/board_factory_wipe.sh"
+		dosbin "${FILESDIR}/board_factory_reset.sh"
 	fi
 
 	# Install platform-specific ambient light sensor configuration.
