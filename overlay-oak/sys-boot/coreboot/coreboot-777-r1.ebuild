@@ -1,0 +1,1 @@
+coreboot-777.ebuild
