@@ -1,0 +1,8 @@
+This is a basic overlay for Atmel SAMA5D3 Xplained
+
+http://www.atmel.com/tools/ATSAMA5D3-XPLD.aspx
+
+This overlay will build an image suitable to boot from SD card on this
+platform. Install to NAND is not supported at this time.
+
+There is no UI/Chrome on this board.

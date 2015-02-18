@@ -1,0 +1,22 @@
+diff --git a/include/configs/sama5d3_xplained.h b/include/configs/sama5d3_xplained.h
+index d5588b12414c..cf97ddc0e717 100644
+--- a/include/configs/sama5d3_xplained.h
++++ b/include/configs/sama5d3_xplained.h
+@@ -173,7 +173,7 @@
+ #define CONFIG_ENV_OFFSET	0x2000
+ #define CONFIG_ENV_SIZE		0x1000
+ #define CONFIG_BOOTCOMMAND	"fatload mmc 0:1 0x21000000 at91-sama5d3_xplained.dtb; " \
+-				"fatload mmc 0:1 0x22000000 zImage; " \
++				"fatload mmc 0:1 0x22000000 vmlinuz.a; " \
+ 				"bootz 0x22000000 - 0x21000000"
+ #define CONFIG_SYS_MMC_ENV_DEV	0
+ #else
+@@ -183,7 +183,7 @@
+ #ifdef CONFIG_SYS_USE_MMC
+ #define CONFIG_BOOTARGS							\
+ 	"console=ttyS0,115200 earlyprintk "				\
+-	"root=/dev/mmcblk0p2 rw rootwait"
++	"root=/dev/mmcblk0p3 ro rootwait"
+ #else
+ #define CONFIG_BOOTARGS							\
+ 	"console=ttyS0,115200 earlyprintk "				\
