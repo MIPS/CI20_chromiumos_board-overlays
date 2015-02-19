@@ -4,6 +4,3 @@ media-libs/waffle gbm
 
 # Temporarily provide X11 libs in the chrome SDK to smooth transition.
 chromeos-base/chromeos-chrome X
-
-# Doesn't built with USE=-X yet
-media-libs/mali-drivers X
