@@ -27,3 +27,9 @@ USE="${USE} -fbconsole -vtconsole"
 
 # Enable the freon console
 USE="${USE} frecon"
+
+# Ozone platforms to build into Chrome.
+OZONE_PLATFORM="dri gbm"
+
+# Of the above, platform to use by default at runtime.
+OZONE_PLATFORM_DEFAULT="gbm"
