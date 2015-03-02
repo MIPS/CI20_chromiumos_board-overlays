@@ -1,0 +1,4 @@
+# Avoid gpio-charger wakeup system
+
+ACTION=="add|change", SUBSYSTEM=="platform", ENV{DRIVER}=="gpio-charger", ATTR{power/wakeup}="disabled"
+

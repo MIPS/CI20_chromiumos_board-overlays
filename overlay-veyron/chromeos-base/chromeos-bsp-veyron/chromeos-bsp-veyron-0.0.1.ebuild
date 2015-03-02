@@ -37,4 +37,6 @@ src_install() {
 
 	# Install platform specific files to enable persist on usb3
 	udev_dorules "${FILESDIR}/99-rk3288-usb3-persist.rules"
+	# Install platform specific files to avoid wakeup system by gpio-charger
+	udev_dorules "${FILESDIR}/99-rk3288-gpio-charger.rules"
 }
