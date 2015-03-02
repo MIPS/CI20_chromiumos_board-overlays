@@ -1,0 +1,1 @@
+chromeos-bsp-sumo-0.0.1.ebuild
