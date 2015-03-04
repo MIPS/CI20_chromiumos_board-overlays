@@ -5,5 +5,5 @@
 #
 # Note that this is safe, because only internal devices use this controller.
 
-ACTION=="add|change", SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{busnum}=="3", ATTR{power/persist}="1"
+ACTION=="add|change", SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ENV{ID_MODEL}!="EHCI_Host_Controller", DRIVERS=="ehci-platform", ATTR{power/persist}="1"
 
