@@ -3,17 +3,18 @@
 
 EAPI=4
 
-inherit appid cros-board
+inherit appid
 
 DESCRIPTION="Nyan bsp (meta package to pull in driver/tool dependencies)"
 
 LICENSE="BSD-Google"
 SLOT="0"
-KEYWORDS="arm"
-IUSE="opengles tegra-ldk"
+KEYWORDS="-* arm"
+IUSE="opengles tegra-ldk variant_build"
 
 DEPEND="sys-boot/chromeos-bootimage"
 RDEPEND="
+	!variant_build? ( chromeos-base/chromeos-touch-config-nyan )
 	sys-kernel/tegra_lp0_resume
 	tegra-ldk? (
 		opengles? ( media-libs/openmax media-libs/openmax-codecs )
@@ -26,8 +27,7 @@ S=${WORKDIR}
 
 src_install() {
 	# Variants of nyan will have their own appids
-	local board=$(get_current_board_with_variant)
-	if [[ "$board" = "nyan" ]]; then
+	if ! use variant_build; then
 		doappid "{334FF5FA-CEE5-7688-1C73-78CE7F5B24A9}"
 	fi
 

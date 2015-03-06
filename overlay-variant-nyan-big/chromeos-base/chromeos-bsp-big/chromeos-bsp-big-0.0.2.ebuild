@@ -13,6 +13,7 @@ KEYWORDS="-* arm"
 
 DEPEND=""
 RDEPEND="
+	chromeos-base/chromeos-touch-config-big
 	chromeos-base/ec-utils
 "
 

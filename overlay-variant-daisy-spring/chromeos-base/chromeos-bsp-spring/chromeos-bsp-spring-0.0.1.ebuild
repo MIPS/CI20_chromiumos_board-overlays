@@ -13,6 +13,7 @@ IUSE=""
 DEPEND=""
 RDEPEND="
 	!<chromeos-base/chromeos-bsp-spring-private-0.0.2
+	chromeos-base/chromeos-touch-config-spring
 	chromeos-base/ec-utils
 "
 

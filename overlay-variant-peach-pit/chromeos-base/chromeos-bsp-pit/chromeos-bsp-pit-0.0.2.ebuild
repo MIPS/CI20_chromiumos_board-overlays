@@ -13,6 +13,7 @@ KEYWORDS="-* arm"
 
 DEPEND="!<chromeos-base/chromeos-bsp-pit-private-0.0.2"
 RDEPEND="${DEPEND}
+	chromeos-base/chromeos-touch-config-pit
 	chromeos-base/default-zram-size
 	chromeos-base/ec-utils
 	chromeos-base/thermal
