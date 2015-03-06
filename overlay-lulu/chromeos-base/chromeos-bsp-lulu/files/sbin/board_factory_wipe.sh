@@ -14,12 +14,24 @@ sync
 sleep 3
 
 # this script is called by clobber-state
-/usr/sbin/battery_cut_off.sh
+for WIPE_OPTION in "$@"; do
+  if [ "$WIPE_OPTION" = "battery_cut_off" ]; then
+    # battery cut-off after factory wipe-out
+    /usr/sbin/battery_cut_off.sh
+  elif [ "$WIPE_OPTION" = "shutdown" ]; then
+    # shutdown after factory wipe-out
+    /sbin/shutdown -h now
+  elif [ "$WIPE_OPTION" = "reboot" ]; then
+    # reboot after factory wipe-out
+    /sbin/reboot
+  fi
+done
 
-# Battery cut-off is failed if it returns with 1.
+# Board wiping is failed if it returns with 1.
 if [ $? -eq 1 ]; then
-    echo "Battery cut-off is failed."
+    echo "Board wiping is failed."
 fi
 exit 1
 
 # reboot after return to clobber-state(default)
+
