@@ -5,7 +5,7 @@ EAPI=4
 
 inherit appid
 
-DESCRIPTION="Ebuild which pulls in any necessary ebuilds as dependencies or portage actions"
+DESCRIPTION="Sumo bsp (meta package to pull in driver/tool deps)"
 
 LICENSE="BSD-Google"
 SLOT="0"
@@ -13,6 +13,16 @@ KEYWORDS="-* amd64 x86"
 IUSE=""
 S="${WORKDIR}"
 
+RDEPEND="
+	chromeos-base/ec-utils
+	sys-kernel/linux-firmware
+	media-gfx/ply-image
+"
+DEPEND="${RDEPEND}"
+S="${WORKDIR}"
+
 src_install() {
 	doappid "{FEF8EE3B-4E4C-956F-15CA-B36006D11E46}"
+	dosbin "${FILESDIR}/board_factory_wipe.sh"
+	dosbin "${FILESDIR}/board_factory_reset.sh"
 }
