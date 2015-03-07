@@ -32,7 +32,9 @@ else
   echo "==== Cutting off battery. Wait 10 seconds. ====" >"$TTY"
   echo "===============================================" >"$TTY"
 fi
-ectool batterycutoff
+
+ectool batterycutoff at-shutdown
+shutdown -h now
 sleep 15
 
 # Couldn't have reached here
