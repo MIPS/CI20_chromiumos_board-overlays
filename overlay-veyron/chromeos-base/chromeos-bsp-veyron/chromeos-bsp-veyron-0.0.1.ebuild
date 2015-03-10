@@ -29,6 +29,10 @@ src_install() {
 	insinto "/usr/share/power_manager/board_specific"
 	doins "${FILESDIR}"/powerd_prefs/*
 
+	# Override default CPU clock speed governor
+	insinto "/etc/laptop-mode/conf.d/board-specific"
+	doins "${FILESDIR}/cpufreq.conf"
+
 	# Install platform specific files for bcm4354 bluetooth.
 	insinto "/etc/init"
 	doins "${FILESDIR}"/brcm_patchram_plus.conf
