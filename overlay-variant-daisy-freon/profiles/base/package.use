@@ -1,1 +1,5 @@
 >chromeos-base/chromeos-chrome-42.0.2309.2_rc-r1 ozone_platform_dri ozone_platform_gbm -ozone_platform_default_dri ozone_platform_default_gbm
+# temporary, to make daisy_freon builder build chrome for suitable for veyron
+>chromeos-base/chromeos-chrome-43.0.2328.0_rc-r1 v4lplugin
+media-libs/libv4lplugins rockchip
+
