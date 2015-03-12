@@ -29,8 +29,8 @@ src_install() {
 	doins "${FILESDIR}"/powerd_prefs/*
 
 	# Wiping scripts
-	doins "${FILESDIR}"/sbin/*.sh
+	dosbin "${FILESDIR}"/sbin/*.sh
 
-	insinto "usr/share/factory/images"
+	insinto "/usr/share/factory/images"
 	doins "${FILESDIR}"/images/*.png
 }
