@@ -10,7 +10,7 @@ DESCRIPTION="Veyron bsp (meta package to pull in driver/tool dependencies)"
 LICENSE="BSD-Google"
 SLOT="0"
 KEYWORDS="-* arm"
-IUSE=""
+IUSE="+veyron-brcmfmac-nvram"
 
 # Add dependencies on other ebuilds from within this board overlay
 DEPEND=""
@@ -39,4 +39,10 @@ src_install() {
 	udev_dorules "${FILESDIR}/99-rk3288-ehci-persist.rules"
 	# Install platform specific files to avoid wakeup system by gpio-charger
 	udev_dorules "${FILESDIR}/99-rk3288-gpio-charger.rules"
+
+	# Install platform specific NVRAM files for brcmfmac.
+	if use veyron-brcmfmac-nvram ; then
+		insinto "/lib/firmware/brcm"
+		doins "${FILESDIR}/firmware/brcmfmac4354-sdio.txt"
+	fi
 }
