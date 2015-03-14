@@ -1,0 +1,6 @@
+/sys/bus/usb/devices/usb1
+/sys/bus/usb/devices/usb2
+/sys/class/backlight/intel_backlight
+/sys/class/leds/chromeos::kbd_backlight
+/sys/devices/pci0000:00/0000:00:02.0
+/sys/devices/platform/cros_ec_lpc.0/cros-ec-dev.0
