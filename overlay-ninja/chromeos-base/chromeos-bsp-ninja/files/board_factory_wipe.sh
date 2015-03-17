@@ -22,6 +22,9 @@ for WIPE_OPTION in "$@"; do
     sleep 5m
     echo "The device isn't shutdown correctly."
     exit 1
+  elif [ "$WIPE_OPTION" = "reboot" ]; then
+    # reboot after factory wipe-out
+    /sbin/reboot
   fi
 done
 # reboot after return to clobber-state(default)
