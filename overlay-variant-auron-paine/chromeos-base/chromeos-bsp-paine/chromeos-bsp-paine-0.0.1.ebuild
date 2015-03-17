@@ -25,5 +25,5 @@ src_install() {
 
 	# Install Bluetooth ID override.
 	insinto "/etc/bluetooth"
-	doins "${FILEDIR}/main.conf"
+	doins "${FILESDIR}/main.conf"
 }
