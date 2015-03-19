@@ -2,4 +2,5 @@
 # temporary, to make daisy_freon builder build chrome for suitable for veyron
 >chromeos-base/chromeos-chrome-43.0.2328.0_rc-r1 v4lplugin
 media-libs/libv4lplugins rockchip
+>chromeos-base/chromeos-chrome-43.0.2337.2_rc-r1 -v4lplugin
 
