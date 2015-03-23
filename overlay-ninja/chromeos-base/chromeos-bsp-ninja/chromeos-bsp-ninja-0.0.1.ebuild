@@ -25,4 +25,8 @@ src_install() {
 	doappid "{555B868F-306A-3E26-6687-FC081968D43A}"
 	dosbin "${FILESDIR}/board_factory_wipe.sh"
 	dosbin "${FILESDIR}/board_factory_reset.sh"
+
+	# Install Bluetooth ID override.
+	insinto "/etc/bluetooth"
+	doins "${FILESDIR}/main.conf"
 }
