@@ -49,6 +49,7 @@ src_install() {
 
 	if use lxc; then
 		doins "${FILESDIR}/moblab-network-bridge-init.conf"
+		doins "${FILESDIR}/moblab-base-container-init.conf"
 	else
 		doins "${FILESDIR}/moblab-network-init.conf"
 	fi
