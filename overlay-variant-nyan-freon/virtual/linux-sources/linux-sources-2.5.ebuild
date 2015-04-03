@@ -9,8 +9,8 @@ HOMEPAGE="http://src.chromium.org"
 LICENSE="GPL-2"
 SLOT="0"
 KEYWORDS="*"
-IUSE="-kernel_sources"
+IUSE=""
 
 RDEPEND="
-	sys-kernel/kernel-freon[kernel_sources=]
+	sys-kernel/kernel-freon
 "

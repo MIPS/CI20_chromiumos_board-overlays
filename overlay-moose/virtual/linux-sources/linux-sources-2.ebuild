@@ -9,9 +9,8 @@ HOMEPAGE="http://src.chromium.org"
 LICENSE="GPL-2"
 SLOT="0"
 KEYWORDS="-* arm"
-
-IUSE="-kernel_sources"
+IUSE=""
 
 RDEPEND="
-	sys-kernel/moose-kernel[kernel_sources=]
+	sys-kernel/moose-kernel
 "

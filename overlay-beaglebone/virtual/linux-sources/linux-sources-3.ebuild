@@ -8,9 +8,9 @@ HOMEPAGE="http://src.chromium.org"
 
 LICENSE="GPL-2"
 SLOT="0"
-KEYWORDS="arm"
-IUSE="-kernel_sources"
+KEYWORDS="*"
+IUSE=""
 
 RDEPEND="
-	sys-kernel/kernel-beaglebone[kernel_sources=]
+	sys-kernel/kernel-beaglebone
 "
