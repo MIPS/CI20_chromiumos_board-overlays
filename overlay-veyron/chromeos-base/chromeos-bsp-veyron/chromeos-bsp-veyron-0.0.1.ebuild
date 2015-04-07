@@ -43,6 +43,8 @@ src_install() {
 	udev_dorules "${FILESDIR}/99-rk3288-ehci-persist.rules"
 	# Install platform specific files to avoid wakeup system by gpio-charger
 	udev_dorules "${FILESDIR}/99-rk3288-gpio-charger.rules"
+	# Install platform specific files to start Broadcom patchram
+	udev_dorules "${FILESDIR}/99-veyron-brcm.rules"
 
 	# Install platform specific NVRAM files for brcmfmac.
 	if use veyron-brcmfmac-nvram ; then
