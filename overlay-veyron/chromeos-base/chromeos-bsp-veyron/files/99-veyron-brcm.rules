@@ -1,4 +1,4 @@
 # Start patchram when we see the Broadcom SDIO module load
 
-ACTION=="add", SUBSYSTEM=="sdio", ENV{DRIVER}=="brcmfmac_sdio", RUN+="/sbin/initctl emit brcm-sdio-added"
+ACTION=="add", SUBSYSTEM=="sdio", ENV{SDIO_CLASS}=="02", ENV{SDIO_ID}=="02D0:4354", RUN+="/sbin/initctl emit brcm-sdio-added"
 
