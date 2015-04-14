@@ -10,7 +10,7 @@ DESCRIPTION="Veyron bsp (meta package to pull in driver/tool dependencies)"
 LICENSE="BSD-Google"
 SLOT="0"
 KEYWORDS="-* arm"
-IUSE="+veyron-brcmfmac-nvram"
+IUSE="bluetooth +veyron-brcmfmac-nvram"
 
 # Add dependencies on other ebuilds from within this board overlay
 DEPEND=""
@@ -18,7 +18,7 @@ RDEPEND="${DEPEND}
 	chromeos-base/AP6335-wifi-bin
 	x11-drivers/mali-rules
 	media-libs/media-rules
-	net-wireless/broadcom
+	bluetooth? ( net-wireless/broadcom )
 	chromeos-base/ec-utils
 "
 
@@ -34,17 +34,20 @@ src_install() {
 	doins "${FILESDIR}/cpufreq.conf"
 
 	# Install platform specific files for bcm4354 bluetooth.
-	insinto "/etc/init"
-	doins "${FILESDIR}"/brcm_patchram_plus.conf
-	insinto "/etc/modprobe.d"
-	doins "${FILESDIR}"/blacklist-btsdio.conf
+	if use bluetooth ; then
+		insinto "/etc/init"
+		doins "${FILESDIR}"/brcm_patchram_plus.conf
+		insinto "/etc/modprobe.d"
+		doins "${FILESDIR}"/blacklist-btsdio.conf
+
+		# Install platform specific files to start Broadcom patchram
+		udev_dorules "${FILESDIR}/99-veyron-brcm.rules"
+	fi
 
 	# Install platform specific files to enable persist on ehci-platform
 	udev_dorules "${FILESDIR}/99-rk3288-ehci-persist.rules"
 	# Install platform specific files to avoid wakeup system by gpio-charger
 	udev_dorules "${FILESDIR}/99-rk3288-gpio-charger.rules"
-	# Install platform specific files to start Broadcom patchram
-	udev_dorules "${FILESDIR}/99-veyron-brcm.rules"
 
 	# Install platform specific NVRAM files for brcmfmac.
 	if use veyron-brcmfmac-nvram ; then
