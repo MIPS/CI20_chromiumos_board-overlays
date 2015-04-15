@@ -26,4 +26,7 @@ S="${WORKDIR}"
 src_install() {
 	insinto /etc/privetd
 	doins "${FILESDIR}/privetd/privetd.conf"
+
+	insinto /etc/buffet
+	doins "${FILESDIR}/buffet/buffet.conf"
 }
