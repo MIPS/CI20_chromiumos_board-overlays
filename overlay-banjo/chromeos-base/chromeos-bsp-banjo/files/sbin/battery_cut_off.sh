@@ -33,8 +33,7 @@ else
   echo "===============================================" >"$TTY"
 fi
 
-ectool batterycutoff at-shutdown
-shutdown -h now
+ectool batterycutoff
 sleep 15
 
 # Couldn't have reached here
