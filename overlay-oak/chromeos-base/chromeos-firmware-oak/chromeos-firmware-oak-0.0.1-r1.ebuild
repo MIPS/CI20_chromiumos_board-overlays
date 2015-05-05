@@ -1,1 +1,0 @@
-chromeos-firmware-oak-0.0.1.ebuild
