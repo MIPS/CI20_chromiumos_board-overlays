@@ -1,0 +1,2419 @@
+From b27613b476baa9a8ff3924f5f9be85369162b1c0 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?St=C3=A9phane=20Marchesin?= <marcheu@chromium.org>
+Date: Fri, 1 May 2015 18:58:07 -0700
+Subject: [PATCH 1/5] CHROMIUM: drm/tegra: Make it work with nvhost
+
+This change makes tegra drm work with nvhost (as opposed to host1x).
+To do so:
+- we write a minimal host1x-like initiazation routine
+- we remove gr2d, gr3d and dsi completely
+- we stop depending on HOST1X in Kconfig
+- we fixup the Makefiles
+- we change the initialization ordering for dpaux to avoid probe_defer
+
+Change-Id: Ie3e49e596be0382ec7e4658e9b6004ae8d0cc6a7
+---
+ drivers/gpu/drm/tegra/Kconfig  |   1 -
+ drivers/gpu/drm/tegra/Makefile |   5 +-
+ drivers/gpu/drm/tegra/bus.c    | 115 ++---
+ drivers/gpu/drm/tegra/dc.c     |   4 +-
+ drivers/gpu/drm/tegra/drm.c    | 246 ++--------
+ drivers/gpu/drm/tegra/drm.h    |   3 +
+ drivers/gpu/drm/tegra/dsi.c    | 993 -----------------------------------------
+ drivers/gpu/drm/tegra/dsi.h    | 130 ------
+ drivers/gpu/drm/tegra/gr2d.c   | 219 ---------
+ drivers/gpu/drm/tegra/gr2d.h   |  28 --
+ drivers/gpu/drm/tegra/gr3d.c   | 354 ---------------
+ drivers/gpu/drm/tegra/gr3d.h   |  27 --
+ drivers/gpu/drm/tegra/hdmi.c   |   4 +-
+ drivers/gpu/drm/tegra/sor.c    |   4 +-
+ 14 files changed, 115 insertions(+), 2018 deletions(-)
+ delete mode 100644 drivers/gpu/drm/tegra/dsi.c
+ delete mode 100644 drivers/gpu/drm/tegra/dsi.h
+ delete mode 100644 drivers/gpu/drm/tegra/gr2d.c
+ delete mode 100644 drivers/gpu/drm/tegra/gr2d.h
+ delete mode 100644 drivers/gpu/drm/tegra/gr3d.c
+ delete mode 100644 drivers/gpu/drm/tegra/gr3d.h
+
+diff --git a/drivers/gpu/drm/tegra/Kconfig b/drivers/gpu/drm/tegra/Kconfig
+index 354ddb2..b435689 100644
+--- a/drivers/gpu/drm/tegra/Kconfig
++++ b/drivers/gpu/drm/tegra/Kconfig
+@@ -6,7 +6,6 @@ config DRM_TEGRA
+ 	select DRM_KMS_HELPER
+ 	select DRM_MIPI_DSI
+ 	select DRM_PANEL
+-	select TEGRA_HOST1X
+ 	help
+ 	  Choose this option if you have an NVIDIA Tegra SoC.
+ 
+diff --git a/drivers/gpu/drm/tegra/Makefile b/drivers/gpu/drm/tegra/Makefile
+index d43f21b..9a50428 100644
+--- a/drivers/gpu/drm/tegra/Makefile
++++ b/drivers/gpu/drm/tegra/Makefile
+@@ -10,10 +10,7 @@ tegra-drm-y := \
+ 	rgb.o \
+ 	hdmi.o \
+ 	mipi-phy.o \
+-	dsi.o \
+ 	sor.o \
+-	dpaux.o \
+-	gr2d.o \
+-	gr3d.o
++	dpaux.o
+ 
+ obj-$(CONFIG_DRM_TEGRA) += tegra-drm.o
+diff --git a/drivers/gpu/drm/tegra/bus.c b/drivers/gpu/drm/tegra/bus.c
+index 94c8f65..3c75d1f 100644
+--- a/drivers/gpu/drm/tegra/bus.c
++++ b/drivers/gpu/drm/tegra/bus.c
+@@ -8,69 +8,84 @@
+ 
+ #include "drm.h"
+ 
+-static int drm_host1x_set_busid(struct drm_device *dev,
+-				struct drm_master *master)
+-{
+-	const char *device = dev_name(dev->dev);
+-	const char *driver = dev->driver->name;
+-	const char *bus = dev->dev->bus->name;
+-	int length;
+-
+-	master->unique_len = strlen(bus) + 1 + strlen(device);
+-	master->unique_size = master->unique_len;
+-
+-	master->unique = kmalloc(master->unique_len + 1, GFP_KERNEL);
+-	if (!master->unique)
+-		return -ENOMEM;
+-
+-	snprintf(master->unique, master->unique_len + 1, "%s:%s", bus, device);
++static DEFINE_MUTEX(clients_lock);
++static LIST_HEAD(clients);
+ 
+-	length = strlen(driver) + 1 + master->unique_len;
+-
+-	dev->devname = kmalloc(length + 1, GFP_KERNEL);
+-	if (!dev->devname)
+-		return -ENOMEM;
+-
+-	snprintf(dev->devname, length + 1, "%s@%s", driver, master->unique);
++void drm_host1x_exit(struct drm_driver *driver, struct host1x_device *device)
++{
++	struct tegra_drm *tegra = dev_get_drvdata(&device->dev);
+ 
+-	return 0;
++	drm_put_dev(tegra->drm);
+ }
+ 
+-static struct drm_bus drm_host1x_bus = {
+-	.bus_type = DRIVER_BUS_HOST1X,
+-	.set_busid = drm_host1x_set_busid,
+-};
+ 
+ int drm_host1x_init(struct drm_driver *driver, struct host1x_device *device)
+ {
+-	struct drm_device *drm;
+-	int ret;
+-
+-	INIT_LIST_HEAD(&driver->device_list);
+-	driver->bus = &drm_host1x_bus;
++	mutex_init(&clients_lock);
++	INIT_LIST_HEAD(&device->clients);
+ 
+-	drm = drm_dev_alloc(driver, &device->dev);
+-	if (!drm)
+-		return -ENOMEM;
+-
+-	ret = drm_dev_register(drm, 0);
+-	if (ret)
+-		goto err_free;
+-
+-	DRM_INFO("Initialized %s %d.%d.%d %s on minor %d\n", driver->name,
+-		 driver->major, driver->minor, driver->patchlevel,
+-		 driver->date, drm->primary->index);
++	return 0;
++}
+ 
++int drm_host1x_register(struct host1x_client *client)
++{
++	mutex_lock(&clients_lock);
++	list_add_tail(&client->list, &clients);
++	mutex_unlock(&clients_lock);
+ 	return 0;
++}
+ 
+-err_free:
+-	kfree(drm);
+-	return ret;
++int drm_host1x_unregister(struct host1x_client *client)
++{
++	// FIXME
++	return 0;
+ }
+ 
+-void drm_host1x_exit(struct drm_driver *driver, struct host1x_device *device)
++int drm_host1x_device_init(struct drm_device *drm, struct host1x_device *device)
+ {
+-	struct tegra_drm *tegra = dev_get_drvdata(&device->dev);
++	struct host1x_client *client;
++	int err;
++
++	mutex_lock(&clients_lock);
++	list_for_each_entry_reverse(client, &clients, list) {
++		if (client->ops && client->ops->init) {
++			client->parent = drm->dev;
++			err = client->ops->init(client);
++			if (err < 0) {
++				dev_err(&device->dev,
++					"failed to initialize %s: %d\n",
++					dev_name(client->dev), err);
++				mutex_unlock(&clients_lock);
++				return err;
++			}
++		}
++	}
++
++	mutex_unlock(&clients_lock);
++	return 0;
++}
+ 
+-	drm_put_dev(tegra->drm);
++int drm_host1x_device_exit(struct host1x_device *device)
++{
++	struct host1x_client *client;
++	int err;
++
++	mutex_lock(&clients_lock);
++	list_for_each_entry_reverse(client, &clients, list) {
++		if (client->ops && client->ops->exit) {
++			err = client->ops->exit(client);
++			if (err < 0) {
++				dev_err(&device->dev,
++					"failed to cleanup %s: %d\n",
++					dev_name(client->dev), err);
++				mutex_unlock(&clients_lock);
++				return err;
++			}
++		}
++	}
++
++	mutex_unlock(&clients_lock);
++	return 0;
+ }
++
++
+diff --git a/drivers/gpu/drm/tegra/dc.c b/drivers/gpu/drm/tegra/dc.c
+index 5d3e372..4677e50 100644
+--- a/drivers/gpu/drm/tegra/dc.c
++++ b/drivers/gpu/drm/tegra/dc.c
+@@ -1601,7 +1601,7 @@ static int tegra_dc_probe(struct platform_device *pdev)
+ 		return err;
+ 	}
+ 
+-	err = host1x_client_register(&dc->client);
++	err = drm_host1x_register(&dc->client);
+ 	if (err < 0) {
+ 		dev_err(&pdev->dev, "failed to register host1x client: %d\n",
+ 			err);
+@@ -1618,7 +1618,7 @@ static int tegra_dc_remove(struct platform_device *pdev)
+ 	struct tegra_dc *dc = platform_get_drvdata(pdev);
+ 	int err;
+ 
+-	err = host1x_client_unregister(&dc->client);
++	err = drm_host1x_unregister(&dc->client);
+ 	if (err < 0) {
+ 		dev_err(&pdev->dev, "failed to unregister host1x client: %d\n",
+ 			err);
+diff --git a/drivers/gpu/drm/tegra/drm.c b/drivers/gpu/drm/tegra/drm.c
+index 9f8e8f7..8b09032 100644
+--- a/drivers/gpu/drm/tegra/drm.c
++++ b/drivers/gpu/drm/tegra/drm.c
+@@ -24,6 +24,10 @@ struct tegra_drm_file {
+ 	struct list_head contexts;
+ };
+ 
++static struct platform_device *tegra_drm_pdev;
++
++static struct drm_driver tegra_drm_driver;
++
+ static int tegra_drm_load(struct drm_device *drm, unsigned long flags)
+ {
+ 	struct host1x_device *device = to_host1x_device(drm->dev);
+@@ -59,7 +63,7 @@ static int tegra_drm_load(struct drm_device *drm, unsigned long flags)
+ 
+ 	drm_kms_helper_poll_init(drm);
+ 
+-	err = host1x_device_init(device);
++	err = drm_host1x_device_init(drm, device);
+ 	if (err < 0)
+ 		goto fbdev;
+ 
+@@ -83,7 +87,7 @@ static int tegra_drm_load(struct drm_device *drm, unsigned long flags)
+ vblank:
+ 	drm_vblank_cleanup(drm);
+ device:
+-	host1x_device_exit(device);
++	drm_host1x_exit(&tegra_drm_driver, device);
+ fbdev:
+ 	drm_kms_helper_poll_fini(drm);
+ 	tegra_drm_fb_free(drm);
+@@ -103,16 +107,13 @@ static int tegra_drm_unload(struct drm_device *drm)
+ {
+ 	struct host1x_device *device = to_host1x_device(drm->dev);
+ 	struct tegra_drm *tegra = drm->dev_private;
+-	int err;
+ 
+ 	drm_kms_helper_poll_fini(drm);
+ 	tegra_drm_fb_exit(drm);
+ 	drm_vblank_cleanup(drm);
+ 	drm_mode_config_cleanup(drm);
+ 
+-	err = host1x_device_exit(device);
+-	if (err < 0)
+-		return err;
++	drm_host1x_exit(&tegra_drm_driver, device);
+ 
+ 	if (tegra->domain) {
+ 		iommu_domain_free(tegra->domain);
+@@ -151,165 +152,6 @@ static void tegra_drm_lastclose(struct drm_device *drm)
+ #endif
+ }
+ 
+-static struct host1x_bo *
+-host1x_bo_lookup(struct drm_device *drm, struct drm_file *file, u32 handle)
+-{
+-	struct drm_gem_object *gem;
+-	struct tegra_bo *bo;
+-
+-	gem = drm_gem_object_lookup(drm, file, handle);
+-	if (!gem)
+-		return NULL;
+-
+-	mutex_lock(&drm->struct_mutex);
+-	drm_gem_object_unreference(gem);
+-	mutex_unlock(&drm->struct_mutex);
+-
+-	bo = to_tegra_bo(gem);
+-	return &bo->base;
+-}
+-
+-static int host1x_reloc_copy_from_user(struct host1x_reloc *dest,
+-				       struct drm_tegra_reloc __user *src,
+-				       struct drm_device *drm,
+-				       struct drm_file *file)
+-{
+-	u32 cmdbuf, target;
+-	int err;
+-
+-	err = get_user(cmdbuf, &src->cmdbuf.handle);
+-	if (err < 0)
+-		return err;
+-
+-	err = get_user(dest->cmdbuf.offset, &src->cmdbuf.offset);
+-	if (err < 0)
+-		return err;
+-
+-	err = get_user(target, &src->target.handle);
+-	if (err < 0)
+-		return err;
+-
+-	err = get_user(dest->target.offset, &src->cmdbuf.offset);
+-	if (err < 0)
+-		return err;
+-
+-	err = get_user(dest->shift, &src->shift);
+-	if (err < 0)
+-		return err;
+-
+-	dest->cmdbuf.bo = host1x_bo_lookup(drm, file, cmdbuf);
+-	if (!dest->cmdbuf.bo)
+-		return -ENOENT;
+-
+-	dest->target.bo = host1x_bo_lookup(drm, file, target);
+-	if (!dest->target.bo)
+-		return -ENOENT;
+-
+-	return 0;
+-}
+-
+-int tegra_drm_submit(struct tegra_drm_context *context,
+-		     struct drm_tegra_submit *args, struct drm_device *drm,
+-		     struct drm_file *file)
+-{
+-	unsigned int num_cmdbufs = args->num_cmdbufs;
+-	unsigned int num_relocs = args->num_relocs;
+-	unsigned int num_waitchks = args->num_waitchks;
+-	struct drm_tegra_cmdbuf __user *cmdbufs =
+-		(void __user *)(uintptr_t)args->cmdbufs;
+-	struct drm_tegra_reloc __user *relocs =
+-		(void __user *)(uintptr_t)args->relocs;
+-	struct drm_tegra_waitchk __user *waitchks =
+-		(void __user *)(uintptr_t)args->waitchks;
+-	struct drm_tegra_syncpt syncpt;
+-	struct host1x_job *job;
+-	int err;
+-
+-	/* We don't yet support other than one syncpt_incr struct per submit */
+-	if (args->num_syncpts != 1)
+-		return -EINVAL;
+-
+-	job = host1x_job_alloc(context->channel, args->num_cmdbufs,
+-			       args->num_relocs, args->num_waitchks);
+-	if (!job)
+-		return -ENOMEM;
+-
+-	job->num_relocs = args->num_relocs;
+-	job->num_waitchk = args->num_waitchks;
+-	job->client = (u32)args->context;
+-	job->class = context->client->base.class;
+-	job->serialize = true;
+-
+-	while (num_cmdbufs) {
+-		struct drm_tegra_cmdbuf cmdbuf;
+-		struct host1x_bo *bo;
+-
+-		if (copy_from_user(&cmdbuf, cmdbufs, sizeof(cmdbuf))) {
+-			err = -EFAULT;
+-			goto fail;
+-		}
+-
+-		bo = host1x_bo_lookup(drm, file, cmdbuf.handle);
+-		if (!bo) {
+-			err = -ENOENT;
+-			goto fail;
+-		}
+-
+-		host1x_job_add_gather(job, bo, cmdbuf.words, cmdbuf.offset);
+-		num_cmdbufs--;
+-		cmdbufs++;
+-	}
+-
+-	/* copy and resolve relocations from submit */
+-	while (num_relocs--) {
+-		err = host1x_reloc_copy_from_user(&job->relocarray[num_relocs],
+-						  &relocs[num_relocs], drm,
+-						  file);
+-		if (err < 0)
+-			goto fail;
+-	}
+-
+-	if (copy_from_user(job->waitchk, waitchks,
+-			   sizeof(*waitchks) * num_waitchks)) {
+-		err = -EFAULT;
+-		goto fail;
+-	}
+-
+-	if (copy_from_user(&syncpt, (void __user *)(uintptr_t)args->syncpts,
+-			   sizeof(syncpt))) {
+-		err = -EFAULT;
+-		goto fail;
+-	}
+-
+-	job->is_addr_reg = context->client->ops->is_addr_reg;
+-	job->syncpt_incrs = syncpt.incrs;
+-	job->syncpt_id = syncpt.id;
+-	job->timeout = 10000;
+-
+-	if (args->timeout && args->timeout < 10000)
+-		job->timeout = args->timeout;
+-
+-	err = host1x_job_pin(job, context->client->base.dev);
+-	if (err)
+-		goto fail;
+-
+-	err = host1x_job_submit(job);
+-	if (err)
+-		goto fail_submit;
+-
+-	args->fence = job->syncpt_end;
+-
+-	host1x_job_put(job);
+-	return 0;
+-
+-fail_submit:
+-	host1x_job_unpin(job);
+-fail:
+-	host1x_job_put(job);
+-	return err;
+-}
+-
+-
+ #ifdef CONFIG_DRM_TEGRA_STAGING
+ static struct tegra_drm_context *tegra_drm_get_context(__u64 context)
+ {
+@@ -850,18 +692,6 @@ int tegra_drm_unregister_client(struct tegra_drm *tegra,
+ 	return 0;
+ }
+ 
+-static int host1x_drm_probe(struct host1x_device *device)
+-{
+-	return drm_host1x_init(&tegra_drm_driver, device);
+-}
+-
+-static int host1x_drm_remove(struct host1x_device *device)
+-{
+-	drm_host1x_exit(&tegra_drm_driver, device);
+-
+-	return 0;
+-}
+-
+ static const struct of_device_id host1x_drm_subdevs[] = {
+ 	{ .compatible = "nvidia,tegra20-dc", },
+ 	{ .compatible = "nvidia,tegra20-hdmi", },
+@@ -880,26 +710,38 @@ static const struct of_device_id host1x_drm_subdevs[] = {
+ 	{ /* sentinel */ }
+ };
+ 
+-static struct host1x_driver host1x_drm_driver = {
+-	.name = "drm",
+-	.probe = host1x_drm_probe,
+-	.remove = host1x_drm_remove,
+-	.subdevs = host1x_drm_subdevs,
++static int tegra_drm_platform_probe(struct platform_device *pdev)
++{
++	return drm_platform_init(&tegra_drm_driver, pdev);
++}
++
++static int tegra_drm_platform_remove(struct platform_device *pdev)
++{
++	drm_platform_exit(&tegra_drm_driver, pdev);
++	return 0;
++}
++
++static struct platform_driver tegra_drm_platform_driver = {
++	.probe = tegra_drm_platform_probe,
++	.remove = tegra_drm_platform_remove,
++	.driver = {
++		.owner = THIS_MODULE,
++		.name = "tegra-drm",
++	},
+ };
+ 
+ static int __init host1x_drm_init(void)
+ {
+ 	int err;
+ 
+-	err = host1x_driver_register(&host1x_drm_driver);
++	err = platform_driver_register(&tegra_dpaux_driver);
+ 	if (err < 0)
+-		return err;
++		goto out;
+ 
+ 	err = platform_driver_register(&tegra_dc_driver);
+ 	if (err < 0)
+-		goto unregister_host1x;
++		goto unregister_dpaux;
+ 
+-	err = platform_driver_register(&tegra_dsi_driver);
+ 	if (err < 0)
+ 		goto unregister_dc;
+ 
+@@ -911,48 +753,40 @@ static int __init host1x_drm_init(void)
+ 	if (err < 0)
+ 		goto unregister_sor;
+ 
+-	err = platform_driver_register(&tegra_dpaux_driver);
++	err = platform_driver_register(&tegra_drm_platform_driver);
+ 	if (err < 0)
+ 		goto unregister_hdmi;
+ 
+-	err = platform_driver_register(&tegra_gr2d_driver);
+-	if (err < 0)
+-		goto unregister_dpaux;
+-
+-	err = platform_driver_register(&tegra_gr3d_driver);
+-	if (err < 0)
+-		goto unregister_gr2d;
++	tegra_drm_pdev = platform_device_register_simple("tegra-drm", -1, NULL, 0);
++	if (IS_ERR(tegra_drm_pdev)) {
++		err = PTR_ERR(tegra_drm_pdev);
++		goto unregister_platform;
++	}
+ 
+ 	return 0;
+ 
+-unregister_gr2d:
+-	platform_driver_unregister(&tegra_gr2d_driver);
+-unregister_dpaux:
+-	platform_driver_unregister(&tegra_dpaux_driver);
++unregister_platform:
++	platform_driver_unregister(&tegra_drm_platform_driver);
+ unregister_hdmi:
+ 	platform_driver_unregister(&tegra_hdmi_driver);
+ unregister_sor:
+ 	platform_driver_unregister(&tegra_sor_driver);
+ unregister_dsi:
+-	platform_driver_unregister(&tegra_dsi_driver);
+ unregister_dc:
+ 	platform_driver_unregister(&tegra_dc_driver);
+-unregister_host1x:
+-	host1x_driver_unregister(&host1x_drm_driver);
++unregister_dpaux:
++	platform_driver_unregister(&tegra_dpaux_driver);
++out:
+ 	return err;
+ }
+ module_init(host1x_drm_init);
+ 
+ static void __exit host1x_drm_exit(void)
+ {
+-	platform_driver_unregister(&tegra_gr3d_driver);
+-	platform_driver_unregister(&tegra_gr2d_driver);
+-	platform_driver_unregister(&tegra_dpaux_driver);
+ 	platform_driver_unregister(&tegra_hdmi_driver);
+ 	platform_driver_unregister(&tegra_sor_driver);
+-	platform_driver_unregister(&tegra_dsi_driver);
+ 	platform_driver_unregister(&tegra_dc_driver);
+-	host1x_driver_unregister(&host1x_drm_driver);
++	platform_driver_unregister(&tegra_dpaux_driver);
+ }
+ module_exit(host1x_drm_exit);
+ 
+diff --git a/drivers/gpu/drm/tegra/drm.h b/drivers/gpu/drm/tegra/drm.h
+index a39f5f3..2512bde 100644
+--- a/drivers/gpu/drm/tegra/drm.h
++++ b/drivers/gpu/drm/tegra/drm.h
+@@ -263,6 +263,9 @@ static inline int tegra_output_check_mode(struct tegra_output *output,
+ /* from bus.c */
+ int drm_host1x_init(struct drm_driver *driver, struct host1x_device *device);
+ void drm_host1x_exit(struct drm_driver *driver, struct host1x_device *device);
++int drm_host1x_register(struct host1x_client *client);
++int drm_host1x_unregister(struct host1x_client *client);
++int drm_host1x_device_init(struct drm_device *drm, struct host1x_device *device);
+ 
+ /* from rgb.c */
+ int tegra_dc_rgb_probe(struct tegra_dc *dc);
+diff --git a/drivers/gpu/drm/tegra/dsi.c b/drivers/gpu/drm/tegra/dsi.c
+deleted file mode 100644
+index 3838575..0000000
+--- a/drivers/gpu/drm/tegra/dsi.c
++++ /dev/null
+@@ -1,993 +0,0 @@
+-/*
+- * Copyright (C) 2013 NVIDIA Corporation
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- */
+-
+-#include <linux/clk.h>
+-#include <linux/debugfs.h>
+-#include <linux/host1x.h>
+-#include <linux/module.h>
+-#include <linux/of.h>
+-#include <linux/platform_device.h>
+-#include <linux/reset.h>
+-
+-#include <linux/regulator/consumer.h>
+-
+-#include <drm/drm_mipi_dsi.h>
+-#include <drm/drm_panel.h>
+-
+-#include <video/mipi_display.h>
+-
+-#include "dc.h"
+-#include "drm.h"
+-#include "dsi.h"
+-#include "mipi-phy.h"
+-
+-#define DSI_VIDEO_FIFO_DEPTH (1920 / 4)
+-#define DSI_HOST_FIFO_DEPTH 64
+-
+-struct tegra_dsi {
+-	struct host1x_client client;
+-	struct tegra_output output;
+-	struct device *dev;
+-
+-	void __iomem *regs;
+-
+-	struct reset_control *rst;
+-	struct clk *clk_parent;
+-	struct clk *clk_lp;
+-	struct clk *clk;
+-
+-	struct drm_info_list *debugfs_files;
+-	struct drm_minor *minor;
+-	struct dentry *debugfs;
+-
+-	unsigned long flags;
+-	enum mipi_dsi_pixel_format format;
+-	unsigned int lanes;
+-
+-	struct tegra_mipi_device *mipi;
+-	struct mipi_dsi_host host;
+-
+-	struct regulator *vdd;
+-	bool enabled;
+-};
+-
+-static inline struct tegra_dsi *
+-host1x_client_to_dsi(struct host1x_client *client)
+-{
+-	return container_of(client, struct tegra_dsi, client);
+-}
+-
+-static inline struct tegra_dsi *host_to_tegra(struct mipi_dsi_host *host)
+-{
+-	return container_of(host, struct tegra_dsi, host);
+-}
+-
+-static inline struct tegra_dsi *to_dsi(struct tegra_output *output)
+-{
+-	return container_of(output, struct tegra_dsi, output);
+-}
+-
+-static inline unsigned long tegra_dsi_readl(struct tegra_dsi *dsi,
+-					    unsigned long reg)
+-{
+-	return readl(dsi->regs + (reg << 2));
+-}
+-
+-static inline void tegra_dsi_writel(struct tegra_dsi *dsi, unsigned long value,
+-				    unsigned long reg)
+-{
+-	writel(value, dsi->regs + (reg << 2));
+-}
+-
+-static int tegra_dsi_show_regs(struct seq_file *s, void *data)
+-{
+-	struct drm_info_node *node = s->private;
+-	struct tegra_dsi *dsi = node->info_ent->data;
+-
+-#define DUMP_REG(name)						\
+-	seq_printf(s, "%-32s %#05x %08lx\n", #name, name,	\
+-		   tegra_dsi_readl(dsi, name))
+-
+-	DUMP_REG(DSI_INCR_SYNCPT);
+-	DUMP_REG(DSI_INCR_SYNCPT_CONTROL);
+-	DUMP_REG(DSI_INCR_SYNCPT_ERROR);
+-	DUMP_REG(DSI_CTXSW);
+-	DUMP_REG(DSI_RD_DATA);
+-	DUMP_REG(DSI_WR_DATA);
+-	DUMP_REG(DSI_POWER_CONTROL);
+-	DUMP_REG(DSI_INT_ENABLE);
+-	DUMP_REG(DSI_INT_STATUS);
+-	DUMP_REG(DSI_INT_MASK);
+-	DUMP_REG(DSI_HOST_CONTROL);
+-	DUMP_REG(DSI_CONTROL);
+-	DUMP_REG(DSI_SOL_DELAY);
+-	DUMP_REG(DSI_MAX_THRESHOLD);
+-	DUMP_REG(DSI_TRIGGER);
+-	DUMP_REG(DSI_TX_CRC);
+-	DUMP_REG(DSI_STATUS);
+-
+-	DUMP_REG(DSI_INIT_SEQ_CONTROL);
+-	DUMP_REG(DSI_INIT_SEQ_DATA_0);
+-	DUMP_REG(DSI_INIT_SEQ_DATA_1);
+-	DUMP_REG(DSI_INIT_SEQ_DATA_2);
+-	DUMP_REG(DSI_INIT_SEQ_DATA_3);
+-	DUMP_REG(DSI_INIT_SEQ_DATA_4);
+-	DUMP_REG(DSI_INIT_SEQ_DATA_5);
+-	DUMP_REG(DSI_INIT_SEQ_DATA_6);
+-	DUMP_REG(DSI_INIT_SEQ_DATA_7);
+-
+-	DUMP_REG(DSI_PKT_SEQ_0_LO);
+-	DUMP_REG(DSI_PKT_SEQ_0_HI);
+-	DUMP_REG(DSI_PKT_SEQ_1_LO);
+-	DUMP_REG(DSI_PKT_SEQ_1_HI);
+-	DUMP_REG(DSI_PKT_SEQ_2_LO);
+-	DUMP_REG(DSI_PKT_SEQ_2_HI);
+-	DUMP_REG(DSI_PKT_SEQ_3_LO);
+-	DUMP_REG(DSI_PKT_SEQ_3_HI);
+-	DUMP_REG(DSI_PKT_SEQ_4_LO);
+-	DUMP_REG(DSI_PKT_SEQ_4_HI);
+-	DUMP_REG(DSI_PKT_SEQ_5_LO);
+-	DUMP_REG(DSI_PKT_SEQ_5_HI);
+-
+-	DUMP_REG(DSI_DCS_CMDS);
+-
+-	DUMP_REG(DSI_PKT_LEN_0_1);
+-	DUMP_REG(DSI_PKT_LEN_2_3);
+-	DUMP_REG(DSI_PKT_LEN_4_5);
+-	DUMP_REG(DSI_PKT_LEN_6_7);
+-
+-	DUMP_REG(DSI_PHY_TIMING_0);
+-	DUMP_REG(DSI_PHY_TIMING_1);
+-	DUMP_REG(DSI_PHY_TIMING_2);
+-	DUMP_REG(DSI_BTA_TIMING);
+-
+-	DUMP_REG(DSI_TIMEOUT_0);
+-	DUMP_REG(DSI_TIMEOUT_1);
+-	DUMP_REG(DSI_TO_TALLY);
+-
+-	DUMP_REG(DSI_PAD_CONTROL_0);
+-	DUMP_REG(DSI_PAD_CONTROL_CD);
+-	DUMP_REG(DSI_PAD_CD_STATUS);
+-	DUMP_REG(DSI_VIDEO_MODE_CONTROL);
+-	DUMP_REG(DSI_PAD_CONTROL_1);
+-	DUMP_REG(DSI_PAD_CONTROL_2);
+-	DUMP_REG(DSI_PAD_CONTROL_3);
+-	DUMP_REG(DSI_PAD_CONTROL_4);
+-
+-	DUMP_REG(DSI_GANGED_MODE_CONTROL);
+-	DUMP_REG(DSI_GANGED_MODE_START);
+-	DUMP_REG(DSI_GANGED_MODE_SIZE);
+-
+-	DUMP_REG(DSI_RAW_DATA_BYTE_COUNT);
+-	DUMP_REG(DSI_ULTRA_LOW_POWER_CONTROL);
+-
+-	DUMP_REG(DSI_INIT_SEQ_DATA_8);
+-	DUMP_REG(DSI_INIT_SEQ_DATA_9);
+-	DUMP_REG(DSI_INIT_SEQ_DATA_10);
+-	DUMP_REG(DSI_INIT_SEQ_DATA_11);
+-	DUMP_REG(DSI_INIT_SEQ_DATA_12);
+-	DUMP_REG(DSI_INIT_SEQ_DATA_13);
+-	DUMP_REG(DSI_INIT_SEQ_DATA_14);
+-	DUMP_REG(DSI_INIT_SEQ_DATA_15);
+-
+-#undef DUMP_REG
+-
+-	return 0;
+-}
+-
+-static struct drm_info_list debugfs_files[] = {
+-	{ "regs", tegra_dsi_show_regs, 0, NULL },
+-};
+-
+-static int tegra_dsi_debugfs_init(struct tegra_dsi *dsi,
+-				  struct drm_minor *minor)
+-{
+-	const char *name = dev_name(dsi->dev);
+-	unsigned int i;
+-	int err;
+-
+-	dsi->debugfs = debugfs_create_dir(name, minor->debugfs_root);
+-	if (!dsi->debugfs)
+-		return -ENOMEM;
+-
+-	dsi->debugfs_files = kmemdup(debugfs_files, sizeof(debugfs_files),
+-				     GFP_KERNEL);
+-	if (!dsi->debugfs_files) {
+-		err = -ENOMEM;
+-		goto remove;
+-	}
+-
+-	for (i = 0; i < ARRAY_SIZE(debugfs_files); i++)
+-		dsi->debugfs_files[i].data = dsi;
+-
+-	err = drm_debugfs_create_files(dsi->debugfs_files,
+-				       ARRAY_SIZE(debugfs_files),
+-				       dsi->debugfs, minor);
+-	if (err < 0)
+-		goto free;
+-
+-	dsi->minor = minor;
+-
+-	return 0;
+-
+-free:
+-	kfree(dsi->debugfs_files);
+-	dsi->debugfs_files = NULL;
+-remove:
+-	debugfs_remove(dsi->debugfs);
+-	dsi->debugfs = NULL;
+-
+-	return err;
+-}
+-
+-static int tegra_dsi_debugfs_exit(struct tegra_dsi *dsi)
+-{
+-	drm_debugfs_remove_files(dsi->debugfs_files, ARRAY_SIZE(debugfs_files),
+-				 dsi->minor);
+-	dsi->minor = NULL;
+-
+-	kfree(dsi->debugfs_files);
+-	dsi->debugfs_files = NULL;
+-
+-	debugfs_remove(dsi->debugfs);
+-	dsi->debugfs = NULL;
+-
+-	return 0;
+-}
+-
+-#define PKT_ID0(id)	((((id) & 0x3f) <<  3) | (1 <<  9))
+-#define PKT_LEN0(len)	(((len) & 0x07) <<  0)
+-#define PKT_ID1(id)	((((id) & 0x3f) << 13) | (1 << 19))
+-#define PKT_LEN1(len)	(((len) & 0x07) << 10)
+-#define PKT_ID2(id)	((((id) & 0x3f) << 23) | (1 << 29))
+-#define PKT_LEN2(len)	(((len) & 0x07) << 20)
+-
+-#define PKT_LP		(1 << 30)
+-#define NUM_PKT_SEQ	12
+-
+-/*
+- * non-burst mode with sync pulses
+- */
+-static const u32 pkt_seq_video_non_burst_sync_pulses[NUM_PKT_SEQ] = {
+-	[ 0] = PKT_ID0(MIPI_DSI_V_SYNC_START) | PKT_LEN0(0) |
+-	       PKT_ID1(MIPI_DSI_BLANKING_PACKET) | PKT_LEN1(1) |
+-	       PKT_ID2(MIPI_DSI_H_SYNC_END) | PKT_LEN2(0) |
+-	       PKT_LP,
+-	[ 1] = 0,
+-	[ 2] = PKT_ID0(MIPI_DSI_V_SYNC_END) | PKT_LEN0(0) |
+-	       PKT_ID1(MIPI_DSI_BLANKING_PACKET) | PKT_LEN1(1) |
+-	       PKT_ID2(MIPI_DSI_H_SYNC_END) | PKT_LEN2(0) |
+-	       PKT_LP,
+-	[ 3] = 0,
+-	[ 4] = PKT_ID0(MIPI_DSI_H_SYNC_START) | PKT_LEN0(0) |
+-	       PKT_ID1(MIPI_DSI_BLANKING_PACKET) | PKT_LEN1(1) |
+-	       PKT_ID2(MIPI_DSI_H_SYNC_END) | PKT_LEN2(0) |
+-	       PKT_LP,
+-	[ 5] = 0,
+-	[ 6] = PKT_ID0(MIPI_DSI_H_SYNC_START) | PKT_LEN0(0) |
+-	       PKT_ID1(MIPI_DSI_BLANKING_PACKET) | PKT_LEN1(1) |
+-	       PKT_ID2(MIPI_DSI_H_SYNC_END) | PKT_LEN2(0),
+-	[ 7] = PKT_ID0(MIPI_DSI_BLANKING_PACKET) | PKT_LEN0(2) |
+-	       PKT_ID1(MIPI_DSI_PACKED_PIXEL_STREAM_24) | PKT_LEN1(3) |
+-	       PKT_ID2(MIPI_DSI_BLANKING_PACKET) | PKT_LEN2(4),
+-	[ 8] = PKT_ID0(MIPI_DSI_H_SYNC_START) | PKT_LEN0(0) |
+-	       PKT_ID1(MIPI_DSI_BLANKING_PACKET) | PKT_LEN1(1) |
+-	       PKT_ID2(MIPI_DSI_H_SYNC_END) | PKT_LEN2(0) |
+-	       PKT_LP,
+-	[ 9] = 0,
+-	[10] = PKT_ID0(MIPI_DSI_H_SYNC_START) | PKT_LEN0(0) |
+-	       PKT_ID1(MIPI_DSI_BLANKING_PACKET) | PKT_LEN1(1) |
+-	       PKT_ID2(MIPI_DSI_H_SYNC_END) | PKT_LEN2(0),
+-	[11] = PKT_ID0(MIPI_DSI_BLANKING_PACKET) | PKT_LEN0(2) |
+-	       PKT_ID1(MIPI_DSI_PACKED_PIXEL_STREAM_24) | PKT_LEN1(3) |
+-	       PKT_ID2(MIPI_DSI_BLANKING_PACKET) | PKT_LEN2(4),
+-};
+-
+-/*
+- * non-burst mode with sync events
+- */
+-static const u32 pkt_seq_video_non_burst_sync_events[NUM_PKT_SEQ] = {
+-	[ 0] = PKT_ID0(MIPI_DSI_V_SYNC_START) | PKT_LEN0(0) |
+-	       PKT_ID1(MIPI_DSI_END_OF_TRANSMISSION) | PKT_LEN1(7) |
+-	       PKT_LP,
+-	[ 1] = 0,
+-	[ 2] = PKT_ID0(MIPI_DSI_H_SYNC_START) | PKT_LEN0(0) |
+-	       PKT_ID1(MIPI_DSI_END_OF_TRANSMISSION) | PKT_LEN1(7) |
+-	       PKT_LP,
+-	[ 3] = 0,
+-	[ 4] = PKT_ID0(MIPI_DSI_H_SYNC_START) | PKT_LEN0(0) |
+-	       PKT_ID1(MIPI_DSI_END_OF_TRANSMISSION) | PKT_LEN1(7) |
+-	       PKT_LP,
+-	[ 5] = 0,
+-	[ 6] = PKT_ID0(MIPI_DSI_H_SYNC_START) | PKT_LEN0(0) |
+-	       PKT_ID1(MIPI_DSI_BLANKING_PACKET) | PKT_LEN1(2) |
+-	       PKT_ID2(MIPI_DSI_PACKED_PIXEL_STREAM_24) | PKT_LEN2(3),
+-	[ 7] = PKT_ID0(MIPI_DSI_BLANKING_PACKET) | PKT_LEN0(4),
+-	[ 8] = PKT_ID0(MIPI_DSI_H_SYNC_START) | PKT_LEN0(0) |
+-	       PKT_ID1(MIPI_DSI_END_OF_TRANSMISSION) | PKT_LEN1(7) |
+-	       PKT_LP,
+-	[ 9] = 0,
+-	[10] = PKT_ID0(MIPI_DSI_H_SYNC_START) | PKT_LEN0(0) |
+-	       PKT_ID1(MIPI_DSI_BLANKING_PACKET) | PKT_LEN1(2) |
+-	       PKT_ID2(MIPI_DSI_PACKED_PIXEL_STREAM_24) | PKT_LEN2(3),
+-	[11] = PKT_ID0(MIPI_DSI_BLANKING_PACKET) | PKT_LEN0(4),
+-};
+-
+-static int tegra_dsi_set_phy_timing(struct tegra_dsi *dsi)
+-{
+-	struct mipi_dphy_timing timing;
+-	unsigned long value, period;
+-	long rate;
+-	int err;
+-
+-	rate = clk_get_rate(dsi->clk);
+-	if (rate < 0)
+-		return rate;
+-
+-	period = DIV_ROUND_CLOSEST(1000000000UL, rate * 2);
+-
+-	err = mipi_dphy_timing_get_default(&timing, period);
+-	if (err < 0)
+-		return err;
+-
+-	err = mipi_dphy_timing_validate(&timing, period);
+-	if (err < 0) {
+-		dev_err(dsi->dev, "failed to validate D-PHY timing: %d\n", err);
+-		return err;
+-	}
+-
+-	/*
+-	 * The D-PHY timing fields below are expressed in byte-clock cycles,
+-	 * so multiply the period by 8.
+-	 */
+-	period *= 8;
+-
+-	value = DSI_TIMING_FIELD(timing.hsexit, period, 1) << 24 |
+-		DSI_TIMING_FIELD(timing.hstrail, period, 0) << 16 |
+-		DSI_TIMING_FIELD(timing.hszero, period, 3) << 8 |
+-		DSI_TIMING_FIELD(timing.hsprepare, period, 1);
+-	tegra_dsi_writel(dsi, value, DSI_PHY_TIMING_0);
+-
+-	value = DSI_TIMING_FIELD(timing.clktrail, period, 1) << 24 |
+-		DSI_TIMING_FIELD(timing.clkpost, period, 1) << 16 |
+-		DSI_TIMING_FIELD(timing.clkzero, period, 1) << 8 |
+-		DSI_TIMING_FIELD(timing.lpx, period, 1);
+-	tegra_dsi_writel(dsi, value, DSI_PHY_TIMING_1);
+-
+-	value = DSI_TIMING_FIELD(timing.clkprepare, period, 1) << 16 |
+-		DSI_TIMING_FIELD(timing.clkpre, period, 1) << 8 |
+-		DSI_TIMING_FIELD(0xff * period, period, 0) << 0;
+-	tegra_dsi_writel(dsi, value, DSI_PHY_TIMING_2);
+-
+-	value = DSI_TIMING_FIELD(timing.taget, period, 1) << 16 |
+-		DSI_TIMING_FIELD(timing.tasure, period, 1) << 8 |
+-		DSI_TIMING_FIELD(timing.tago, period, 1);
+-	tegra_dsi_writel(dsi, value, DSI_BTA_TIMING);
+-
+-	return 0;
+-}
+-
+-static int tegra_dsi_get_muldiv(enum mipi_dsi_pixel_format format,
+-				unsigned int *mulp, unsigned int *divp)
+-{
+-	switch (format) {
+-	case MIPI_DSI_FMT_RGB666_PACKED:
+-	case MIPI_DSI_FMT_RGB888:
+-		*mulp = 3;
+-		*divp = 1;
+-		break;
+-
+-	case MIPI_DSI_FMT_RGB565:
+-		*mulp = 2;
+-		*divp = 1;
+-		break;
+-
+-	case MIPI_DSI_FMT_RGB666:
+-		*mulp = 9;
+-		*divp = 4;
+-		break;
+-
+-	default:
+-		return -EINVAL;
+-	}
+-
+-	return 0;
+-}
+-
+-static int tegra_dsi_get_format(enum mipi_dsi_pixel_format format,
+-				enum tegra_dsi_format *fmt)
+-{
+-	switch (format) {
+-	case MIPI_DSI_FMT_RGB888:
+-		*fmt = TEGRA_DSI_FORMAT_24P;
+-		break;
+-
+-	case MIPI_DSI_FMT_RGB666:
+-		*fmt = TEGRA_DSI_FORMAT_18NP;
+-		break;
+-
+-	case MIPI_DSI_FMT_RGB666_PACKED:
+-		*fmt = TEGRA_DSI_FORMAT_18P;
+-		break;
+-
+-	case MIPI_DSI_FMT_RGB565:
+-		*fmt = TEGRA_DSI_FORMAT_16P;
+-		break;
+-
+-	default:
+-		return -EINVAL;
+-	}
+-
+-	return 0;
+-}
+-
+-static int tegra_output_dsi_enable(struct tegra_output *output)
+-{
+-	struct tegra_dc *dc = to_tegra_dc(output->encoder.crtc);
+-	struct drm_display_mode *mode = &dc->base.mode;
+-	unsigned int hact, hsw, hbp, hfp, i, mul, div;
+-	struct tegra_dsi *dsi = to_dsi(output);
+-	enum tegra_dsi_format format;
+-	unsigned long value;
+-	const u32 *pkt_seq;
+-	int err;
+-
+-	if (dsi->enabled)
+-		return 0;
+-
+-	if (dsi->flags & MIPI_DSI_MODE_VIDEO_SYNC_PULSE) {
+-		DRM_DEBUG_KMS("Non-burst video mode with sync pulses\n");
+-		pkt_seq = pkt_seq_video_non_burst_sync_pulses;
+-	} else {
+-		DRM_DEBUG_KMS("Non-burst video mode with sync events\n");
+-		pkt_seq = pkt_seq_video_non_burst_sync_events;
+-	}
+-
+-	err = tegra_dsi_get_muldiv(dsi->format, &mul, &div);
+-	if (err < 0)
+-		return err;
+-
+-	err = tegra_dsi_get_format(dsi->format, &format);
+-	if (err < 0)
+-		return err;
+-
+-	err = clk_enable(dsi->clk);
+-	if (err < 0)
+-		return err;
+-
+-	reset_control_deassert(dsi->rst);
+-
+-	value = DSI_CONTROL_CHANNEL(0) | DSI_CONTROL_FORMAT(format) |
+-		DSI_CONTROL_LANES(dsi->lanes - 1) |
+-		DSI_CONTROL_SOURCE(dc->pipe);
+-	tegra_dsi_writel(dsi, value, DSI_CONTROL);
+-
+-	tegra_dsi_writel(dsi, DSI_VIDEO_FIFO_DEPTH, DSI_MAX_THRESHOLD);
+-
+-	value = DSI_HOST_CONTROL_HS | DSI_HOST_CONTROL_CS |
+-		DSI_HOST_CONTROL_ECC;
+-	tegra_dsi_writel(dsi, value, DSI_HOST_CONTROL);
+-
+-	value = tegra_dsi_readl(dsi, DSI_CONTROL);
+-	value |= DSI_CONTROL_HS_CLK_CTRL;
+-	value &= ~DSI_CONTROL_TX_TRIG(3);
+-	value &= ~DSI_CONTROL_DCS_ENABLE;
+-	value |= DSI_CONTROL_VIDEO_ENABLE;
+-	value &= ~DSI_CONTROL_HOST_ENABLE;
+-	tegra_dsi_writel(dsi, value, DSI_CONTROL);
+-
+-	err = tegra_dsi_set_phy_timing(dsi);
+-	if (err < 0)
+-		return err;
+-
+-	for (i = 0; i < NUM_PKT_SEQ; i++)
+-		tegra_dsi_writel(dsi, pkt_seq[i], DSI_PKT_SEQ_0_LO + i);
+-
+-	/* horizontal active pixels */
+-	hact = mode->hdisplay * mul / div;
+-
+-	/* horizontal sync width */
+-	hsw = (mode->hsync_end - mode->hsync_start) * mul / div;
+-	hsw -= 10;
+-
+-	/* horizontal back porch */
+-	hbp = (mode->htotal - mode->hsync_end) * mul / div;
+-	hbp -= 14;
+-
+-	/* horizontal front porch */
+-	hfp = (mode->hsync_start  - mode->hdisplay) * mul / div;
+-	hfp -= 8;
+-
+-	tegra_dsi_writel(dsi, hsw << 16 | 0, DSI_PKT_LEN_0_1);
+-	tegra_dsi_writel(dsi, hact << 16 | hbp, DSI_PKT_LEN_2_3);
+-	tegra_dsi_writel(dsi, hfp, DSI_PKT_LEN_4_5);
+-	tegra_dsi_writel(dsi, 0x0f0f << 16, DSI_PKT_LEN_6_7);
+-
+-	/* set SOL delay */
+-	tegra_dsi_writel(dsi, 8 * mul / div, DSI_SOL_DELAY);
+-
+-	/* enable display controller */
+-	value = tegra_dc_readl(dc, DC_DISP_DISP_WIN_OPTIONS);
+-	value |= DSI_ENABLE;
+-	tegra_dc_writel(dc, value, DC_DISP_DISP_WIN_OPTIONS);
+-
+-	value = tegra_dc_readl(dc, DC_CMD_DISPLAY_COMMAND);
+-	value &= ~DISP_CTRL_MODE_MASK;
+-	value |= DISP_CTRL_MODE_C_DISPLAY;
+-	tegra_dc_writel(dc, value, DC_CMD_DISPLAY_COMMAND);
+-
+-	value = tegra_dc_readl(dc, DC_CMD_DISPLAY_POWER_CONTROL);
+-	value |= PW0_ENABLE | PW1_ENABLE | PW2_ENABLE | PW3_ENABLE |
+-		 PW4_ENABLE | PM0_ENABLE | PM1_ENABLE;
+-	tegra_dc_writel(dc, value, DC_CMD_DISPLAY_POWER_CONTROL);
+-
+-	tegra_dc_writel(dc, GENERAL_ACT_REQ << 8, DC_CMD_STATE_CONTROL);
+-	tegra_dc_writel(dc, GENERAL_ACT_REQ, DC_CMD_STATE_CONTROL);
+-
+-	/* enable DSI controller */
+-	value = tegra_dsi_readl(dsi, DSI_POWER_CONTROL);
+-	value |= DSI_POWER_CONTROL_ENABLE;
+-	tegra_dsi_writel(dsi, value, DSI_POWER_CONTROL);
+-
+-	dsi->enabled = true;
+-
+-	return 0;
+-}
+-
+-static int tegra_output_dsi_disable(struct tegra_output *output)
+-{
+-	struct tegra_dc *dc = to_tegra_dc(output->encoder.crtc);
+-	struct tegra_dsi *dsi = to_dsi(output);
+-	unsigned long value;
+-
+-	if (!dsi->enabled)
+-		return 0;
+-
+-	/* disable DSI controller */
+-	value = tegra_dsi_readl(dsi, DSI_POWER_CONTROL);
+-	value &= ~DSI_POWER_CONTROL_ENABLE;
+-	tegra_dsi_writel(dsi, value, DSI_POWER_CONTROL);
+-
+-	/*
+-	 * The following accesses registers of the display controller, so make
+-	 * sure it's only executed when the output is attached to one.
+-	 */
+-	if (dc) {
+-		value = tegra_dc_readl(dc, DC_CMD_DISPLAY_POWER_CONTROL);
+-		value &= ~(PW0_ENABLE | PW1_ENABLE | PW2_ENABLE | PW3_ENABLE |
+-			   PW4_ENABLE | PM0_ENABLE | PM1_ENABLE);
+-		tegra_dc_writel(dc, value, DC_CMD_DISPLAY_POWER_CONTROL);
+-
+-		value = tegra_dc_readl(dc, DC_CMD_DISPLAY_COMMAND);
+-		value &= ~DISP_CTRL_MODE_MASK;
+-		tegra_dc_writel(dc, value, DC_CMD_DISPLAY_COMMAND);
+-
+-		value = tegra_dc_readl(dc, DC_DISP_DISP_WIN_OPTIONS);
+-		value &= ~DSI_ENABLE;
+-		tegra_dc_writel(dc, value, DC_DISP_DISP_WIN_OPTIONS);
+-
+-		tegra_dc_writel(dc, GENERAL_ACT_REQ << 8, DC_CMD_STATE_CONTROL);
+-		tegra_dc_writel(dc, GENERAL_ACT_REQ, DC_CMD_STATE_CONTROL);
+-	}
+-
+-	clk_disable(dsi->clk);
+-
+-	dsi->enabled = false;
+-
+-	return 0;
+-}
+-
+-static int tegra_output_dsi_setup_clock(struct tegra_output *output,
+-					struct clk *clk, unsigned long pclk,
+-					unsigned int *divp)
+-{
+-	struct tegra_dc *dc = to_tegra_dc(output->encoder.crtc);
+-	struct drm_display_mode *mode = &dc->base.mode;
+-	unsigned int timeout, mul, div, vrefresh;
+-	struct tegra_dsi *dsi = to_dsi(output);
+-	unsigned long bclk, plld, value;
+-	int err;
+-
+-	err = tegra_dsi_get_muldiv(dsi->format, &mul, &div);
+-	if (err < 0)
+-		return err;
+-
+-	DRM_DEBUG_KMS("mul: %u, div: %u, lanes: %u\n", mul, div, dsi->lanes);
+-	vrefresh = drm_mode_vrefresh(mode);
+-	DRM_DEBUG_KMS("vrefresh: %u\n", vrefresh);
+-
+-	/* compute byte clock */
+-	bclk = (pclk * mul) / (div * dsi->lanes);
+-
+-	/*
+-	 * Compute bit clock and round up to the next MHz.
+-	 */
+-	plld = DIV_ROUND_UP(bclk * 8, 1000000) * 1000000;
+-
+-	/*
+-	 * We divide the frequency by two here, but we make up for that by
+-	 * setting the shift clock divider (further below) to half of the
+-	 * correct value.
+-	 */
+-	plld /= 2;
+-
+-	err = clk_set_parent(clk, dsi->clk_parent);
+-	if (err < 0) {
+-		dev_err(dsi->dev, "failed to set parent clock: %d\n", err);
+-		return err;
+-	}
+-
+-	err = clk_set_rate(dsi->clk_parent, plld);
+-	if (err < 0) {
+-		dev_err(dsi->dev, "failed to set base clock rate to %lu Hz\n",
+-			plld);
+-		return err;
+-	}
+-
+-	/*
+-	 * Derive pixel clock from bit clock using the shift clock divider.
+-	 * Note that this is only half of what we would expect, but we need
+-	 * that to make up for the fact that we divided the bit clock by a
+-	 * factor of two above.
+-	 *
+-	 * It's not clear exactly why this is necessary, but the display is
+-	 * not working properly otherwise. Perhaps the PLLs cannot generate
+-	 * frequencies sufficiently high.
+-	 */
+-	*divp = ((8 * mul) / (div * dsi->lanes)) - 2;
+-
+-	/*
+-	 * XXX: Move the below somewhere else so that we don't need to have
+-	 * access to the vrefresh in this function?
+-	 */
+-
+-	/* one frame high-speed transmission timeout */
+-	timeout = (bclk / vrefresh) / 512;
+-	value = DSI_TIMEOUT_LRX(0x2000) | DSI_TIMEOUT_HTX(timeout);
+-	tegra_dsi_writel(dsi, value, DSI_TIMEOUT_0);
+-
+-	/* 2 ms peripheral timeout for panel */
+-	timeout = 2 * bclk / 512 * 1000;
+-	value = DSI_TIMEOUT_PR(timeout) | DSI_TIMEOUT_TA(0x2000);
+-	tegra_dsi_writel(dsi, value, DSI_TIMEOUT_1);
+-
+-	value = DSI_TALLY_TA(0) | DSI_TALLY_LRX(0) | DSI_TALLY_HTX(0);
+-	tegra_dsi_writel(dsi, value, DSI_TO_TALLY);
+-
+-	return 0;
+-}
+-
+-static int tegra_output_dsi_check_mode(struct tegra_output *output,
+-				       struct drm_display_mode *mode,
+-				       enum drm_mode_status *status)
+-{
+-	/*
+-	 * FIXME: For now, always assume that the mode is okay.
+-	 */
+-
+-	*status = MODE_OK;
+-
+-	return 0;
+-}
+-
+-static const struct tegra_output_ops dsi_ops = {
+-	.enable = tegra_output_dsi_enable,
+-	.disable = tegra_output_dsi_disable,
+-	.setup_clock = tegra_output_dsi_setup_clock,
+-	.check_mode = tegra_output_dsi_check_mode,
+-};
+-
+-static int tegra_dsi_pad_enable(struct tegra_dsi *dsi)
+-{
+-	unsigned long value;
+-
+-	value = DSI_PAD_CONTROL_VS1_PULLDN(0) | DSI_PAD_CONTROL_VS1_PDIO(0);
+-	tegra_dsi_writel(dsi, value, DSI_PAD_CONTROL_0);
+-
+-	return 0;
+-}
+-
+-static int tegra_dsi_pad_calibrate(struct tegra_dsi *dsi)
+-{
+-	unsigned long value;
+-
+-	tegra_dsi_writel(dsi, 0, DSI_PAD_CONTROL_0);
+-	tegra_dsi_writel(dsi, 0, DSI_PAD_CONTROL_1);
+-	tegra_dsi_writel(dsi, 0, DSI_PAD_CONTROL_2);
+-	tegra_dsi_writel(dsi, 0, DSI_PAD_CONTROL_3);
+-	tegra_dsi_writel(dsi, 0, DSI_PAD_CONTROL_4);
+-
+-	/* start calibration */
+-	tegra_dsi_pad_enable(dsi);
+-
+-	value = DSI_PAD_SLEW_UP(0x7) | DSI_PAD_SLEW_DN(0x7) |
+-		DSI_PAD_LP_UP(0x1) | DSI_PAD_LP_DN(0x1) |
+-		DSI_PAD_OUT_CLK(0x0);
+-	tegra_dsi_writel(dsi, value, DSI_PAD_CONTROL_2);
+-
+-	return tegra_mipi_calibrate(dsi->mipi);
+-}
+-
+-static int tegra_dsi_init(struct host1x_client *client)
+-{
+-	struct tegra_drm *tegra = dev_get_drvdata(client->parent);
+-	struct tegra_dsi *dsi = host1x_client_to_dsi(client);
+-	int err;
+-
+-	dsi->output.type = TEGRA_OUTPUT_DSI;
+-	dsi->output.dev = client->dev;
+-	dsi->output.ops = &dsi_ops;
+-
+-	err = tegra_output_init(tegra->drm, &dsi->output);
+-	if (err < 0) {
+-		dev_err(client->dev, "output setup failed: %d\n", err);
+-		return err;
+-	}
+-
+-	if (IS_ENABLED(CONFIG_DEBUG_FS)) {
+-		err = tegra_dsi_debugfs_init(dsi, tegra->drm->primary);
+-		if (err < 0)
+-			dev_err(dsi->dev, "debugfs setup failed: %d\n", err);
+-	}
+-
+-	err = tegra_dsi_pad_calibrate(dsi);
+-	if (err < 0) {
+-		dev_err(dsi->dev, "MIPI calibration failed: %d\n", err);
+-		return err;
+-	}
+-
+-	return 0;
+-}
+-
+-static int tegra_dsi_exit(struct host1x_client *client)
+-{
+-	struct tegra_dsi *dsi = host1x_client_to_dsi(client);
+-	int err;
+-
+-	if (IS_ENABLED(CONFIG_DEBUG_FS)) {
+-		err = tegra_dsi_debugfs_exit(dsi);
+-		if (err < 0)
+-			dev_err(dsi->dev, "debugfs cleanup failed: %d\n", err);
+-	}
+-
+-	err = tegra_output_disable(&dsi->output);
+-	if (err < 0) {
+-		dev_err(client->dev, "output failed to disable: %d\n", err);
+-		return err;
+-	}
+-
+-	err = tegra_output_exit(&dsi->output);
+-	if (err < 0) {
+-		dev_err(client->dev, "output cleanup failed: %d\n", err);
+-		return err;
+-	}
+-
+-	return 0;
+-}
+-
+-static const struct host1x_client_ops dsi_client_ops = {
+-	.init = tegra_dsi_init,
+-	.exit = tegra_dsi_exit,
+-};
+-
+-static int tegra_dsi_setup_clocks(struct tegra_dsi *dsi)
+-{
+-	struct clk *parent;
+-	int err;
+-
+-	parent = clk_get_parent(dsi->clk);
+-	if (!parent)
+-		return -EINVAL;
+-
+-	err = clk_set_parent(parent, dsi->clk_parent);
+-	if (err < 0)
+-		return err;
+-
+-	return 0;
+-}
+-
+-static int tegra_dsi_host_attach(struct mipi_dsi_host *host,
+-				 struct mipi_dsi_device *device)
+-{
+-	struct tegra_dsi *dsi = host_to_tegra(host);
+-	struct tegra_output *output = &dsi->output;
+-
+-	dsi->flags = device->mode_flags;
+-	dsi->format = device->format;
+-	dsi->lanes = device->lanes;
+-
+-	output->panel = of_drm_find_panel(device->dev.of_node);
+-	if (output->panel) {
+-		if (output->connector.dev)
+-			drm_helper_hpd_irq_event(output->connector.dev);
+-	}
+-
+-	return 0;
+-}
+-
+-static int tegra_dsi_host_detach(struct mipi_dsi_host *host,
+-				 struct mipi_dsi_device *device)
+-{
+-	struct tegra_dsi *dsi = host_to_tegra(host);
+-	struct tegra_output *output = &dsi->output;
+-
+-	if (output->panel && &device->dev == output->panel->dev) {
+-		if (output->connector.dev)
+-			drm_helper_hpd_irq_event(output->connector.dev);
+-
+-		output->panel = NULL;
+-	}
+-
+-	return 0;
+-}
+-
+-static const struct mipi_dsi_host_ops tegra_dsi_host_ops = {
+-	.attach = tegra_dsi_host_attach,
+-	.detach = tegra_dsi_host_detach,
+-};
+-
+-static int tegra_dsi_probe(struct platform_device *pdev)
+-{
+-	struct tegra_dsi *dsi;
+-	struct resource *regs;
+-	int err;
+-
+-	dsi = devm_kzalloc(&pdev->dev, sizeof(*dsi), GFP_KERNEL);
+-	if (!dsi)
+-		return -ENOMEM;
+-
+-	dsi->output.dev = dsi->dev = &pdev->dev;
+-
+-	err = tegra_output_probe(&dsi->output);
+-	if (err < 0)
+-		return err;
+-
+-	/*
+-	 * Assume these values by default. When a DSI peripheral driver
+-	 * attaches to the DSI host, the parameters will be taken from
+-	 * the attached device.
+-	 */
+-	dsi->flags = MIPI_DSI_MODE_VIDEO;
+-	dsi->format = MIPI_DSI_FMT_RGB888;
+-	dsi->lanes = 4;
+-
+-	dsi->rst = devm_reset_control_get(&pdev->dev, "dsi");
+-	if (IS_ERR(dsi->rst))
+-		return PTR_ERR(dsi->rst);
+-
+-	dsi->clk = devm_clk_get(&pdev->dev, NULL);
+-	if (IS_ERR(dsi->clk)) {
+-		dev_err(&pdev->dev, "cannot get DSI clock\n");
+-		return PTR_ERR(dsi->clk);
+-	}
+-
+-	err = clk_prepare_enable(dsi->clk);
+-	if (err < 0) {
+-		dev_err(&pdev->dev, "cannot enable DSI clock\n");
+-		return err;
+-	}
+-
+-	dsi->clk_lp = devm_clk_get(&pdev->dev, "lp");
+-	if (IS_ERR(dsi->clk_lp)) {
+-		dev_err(&pdev->dev, "cannot get low-power clock\n");
+-		return PTR_ERR(dsi->clk_lp);
+-	}
+-
+-	err = clk_prepare_enable(dsi->clk_lp);
+-	if (err < 0) {
+-		dev_err(&pdev->dev, "cannot enable low-power clock\n");
+-		return err;
+-	}
+-
+-	dsi->clk_parent = devm_clk_get(&pdev->dev, "parent");
+-	if (IS_ERR(dsi->clk_parent)) {
+-		dev_err(&pdev->dev, "cannot get parent clock\n");
+-		return PTR_ERR(dsi->clk_parent);
+-	}
+-
+-	err = clk_prepare_enable(dsi->clk_parent);
+-	if (err < 0) {
+-		dev_err(&pdev->dev, "cannot enable parent clock\n");
+-		return err;
+-	}
+-
+-	dsi->vdd = devm_regulator_get(&pdev->dev, "avdd-dsi-csi");
+-	if (IS_ERR(dsi->vdd)) {
+-		dev_err(&pdev->dev, "cannot get VDD supply\n");
+-		return PTR_ERR(dsi->vdd);
+-	}
+-
+-	err = regulator_enable(dsi->vdd);
+-	if (err < 0) {
+-		dev_err(&pdev->dev, "cannot enable VDD supply\n");
+-		return err;
+-	}
+-
+-	err = tegra_dsi_setup_clocks(dsi);
+-	if (err < 0) {
+-		dev_err(&pdev->dev, "cannot setup clocks\n");
+-		return err;
+-	}
+-
+-	regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	dsi->regs = devm_ioremap_resource(&pdev->dev, regs);
+-	if (IS_ERR(dsi->regs))
+-		return PTR_ERR(dsi->regs);
+-
+-	dsi->mipi = tegra_mipi_request(&pdev->dev);
+-	if (IS_ERR(dsi->mipi))
+-		return PTR_ERR(dsi->mipi);
+-
+-	dsi->host.ops = &tegra_dsi_host_ops;
+-	dsi->host.dev = &pdev->dev;
+-
+-	err = mipi_dsi_host_register(&dsi->host);
+-	if (err < 0) {
+-		dev_err(&pdev->dev, "failed to register DSI host: %d\n", err);
+-		return err;
+-	}
+-
+-	INIT_LIST_HEAD(&dsi->client.list);
+-	dsi->client.ops = &dsi_client_ops;
+-	dsi->client.dev = &pdev->dev;
+-
+-	err = host1x_client_register(&dsi->client);
+-	if (err < 0) {
+-		dev_err(&pdev->dev, "failed to register host1x client: %d\n",
+-			err);
+-		return err;
+-	}
+-
+-	platform_set_drvdata(pdev, dsi);
+-
+-	return 0;
+-}
+-
+-static int tegra_dsi_remove(struct platform_device *pdev)
+-{
+-	struct tegra_dsi *dsi = platform_get_drvdata(pdev);
+-	int err;
+-
+-	err = host1x_client_unregister(&dsi->client);
+-	if (err < 0) {
+-		dev_err(&pdev->dev, "failed to unregister host1x client: %d\n",
+-			err);
+-		return err;
+-	}
+-
+-	mipi_dsi_host_unregister(&dsi->host);
+-	tegra_mipi_free(dsi->mipi);
+-
+-	regulator_disable(dsi->vdd);
+-	clk_disable_unprepare(dsi->clk_parent);
+-	clk_disable_unprepare(dsi->clk_lp);
+-	clk_disable_unprepare(dsi->clk);
+-	reset_control_assert(dsi->rst);
+-
+-	err = tegra_output_remove(&dsi->output);
+-	if (err < 0) {
+-		dev_err(&pdev->dev, "failed to remove output: %d\n", err);
+-		return err;
+-	}
+-
+-	return 0;
+-}
+-
+-static const struct of_device_id tegra_dsi_of_match[] = {
+-	{ .compatible = "nvidia,tegra114-dsi", },
+-	{ },
+-};
+-
+-struct platform_driver tegra_dsi_driver = {
+-	.driver = {
+-		.name = "tegra-dsi",
+-		.of_match_table = tegra_dsi_of_match,
+-	},
+-	.probe = tegra_dsi_probe,
+-	.remove = tegra_dsi_remove,
+-};
+diff --git a/drivers/gpu/drm/tegra/dsi.h b/drivers/gpu/drm/tegra/dsi.h
+deleted file mode 100644
+index 5ce610d..0000000
+--- a/drivers/gpu/drm/tegra/dsi.h
++++ /dev/null
+@@ -1,130 +0,0 @@
+-/*
+- * Copyright (C) 2013 NVIDIA Corporation
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- */
+-
+-#ifndef DRM_TEGRA_DSI_H
+-#define DRM_TEGRA_DSI_H
+-
+-#define DSI_INCR_SYNCPT			0x00
+-#define DSI_INCR_SYNCPT_CONTROL		0x01
+-#define DSI_INCR_SYNCPT_ERROR		0x02
+-#define DSI_CTXSW			0x08
+-#define DSI_RD_DATA			0x09
+-#define DSI_WR_DATA			0x0a
+-#define DSI_POWER_CONTROL		0x0b
+-#define DSI_POWER_CONTROL_ENABLE	(1 << 0)
+-#define DSI_INT_ENABLE			0x0c
+-#define DSI_INT_STATUS			0x0d
+-#define DSI_INT_MASK			0x0e
+-#define DSI_HOST_CONTROL		0x0f
+-#define DSI_HOST_CONTROL_RAW		(1 << 6)
+-#define DSI_HOST_CONTROL_HS		(1 << 5)
+-#define DSI_HOST_CONTROL_BTA		(1 << 2)
+-#define DSI_HOST_CONTROL_CS		(1 << 1)
+-#define DSI_HOST_CONTROL_ECC		(1 << 0)
+-#define DSI_CONTROL			0x10
+-#define DSI_CONTROL_HS_CLK_CTRL		(1 << 20)
+-#define DSI_CONTROL_CHANNEL(c)		(((c) & 0x3) << 16)
+-#define DSI_CONTROL_FORMAT(f)		(((f) & 0x3) << 12)
+-#define DSI_CONTROL_TX_TRIG(x)		(((x) & 0x3) <<  8)
+-#define DSI_CONTROL_LANES(n)		(((n) & 0x3) <<  4)
+-#define DSI_CONTROL_DCS_ENABLE		(1 << 3)
+-#define DSI_CONTROL_SOURCE(s)		(((s) & 0x1) <<  2)
+-#define DSI_CONTROL_VIDEO_ENABLE	(1 << 1)
+-#define DSI_CONTROL_HOST_ENABLE		(1 << 0)
+-#define DSI_SOL_DELAY			0x11
+-#define DSI_MAX_THRESHOLD		0x12
+-#define DSI_TRIGGER			0x13
+-#define DSI_TX_CRC			0x14
+-#define DSI_STATUS			0x15
+-#define DSI_STATUS_IDLE			(1 << 10)
+-#define DSI_INIT_SEQ_CONTROL		0x1a
+-#define DSI_INIT_SEQ_DATA_0		0x1b
+-#define DSI_INIT_SEQ_DATA_1		0x1c
+-#define DSI_INIT_SEQ_DATA_2		0x1d
+-#define DSI_INIT_SEQ_DATA_3		0x1e
+-#define DSI_INIT_SEQ_DATA_4		0x1f
+-#define DSI_INIT_SEQ_DATA_5		0x20
+-#define DSI_INIT_SEQ_DATA_6		0x21
+-#define DSI_INIT_SEQ_DATA_7		0x22
+-#define DSI_PKT_SEQ_0_LO		0x23
+-#define DSI_PKT_SEQ_0_HI		0x24
+-#define DSI_PKT_SEQ_1_LO		0x25
+-#define DSI_PKT_SEQ_1_HI		0x26
+-#define DSI_PKT_SEQ_2_LO		0x27
+-#define DSI_PKT_SEQ_2_HI		0x28
+-#define DSI_PKT_SEQ_3_LO		0x29
+-#define DSI_PKT_SEQ_3_HI		0x2a
+-#define DSI_PKT_SEQ_4_LO		0x2b
+-#define DSI_PKT_SEQ_4_HI		0x2c
+-#define DSI_PKT_SEQ_5_LO		0x2d
+-#define DSI_PKT_SEQ_5_HI		0x2e
+-#define DSI_DCS_CMDS			0x33
+-#define DSI_PKT_LEN_0_1			0x34
+-#define DSI_PKT_LEN_2_3			0x35
+-#define DSI_PKT_LEN_4_5			0x36
+-#define DSI_PKT_LEN_6_7			0x37
+-#define DSI_PHY_TIMING_0		0x3c
+-#define DSI_PHY_TIMING_1		0x3d
+-#define DSI_PHY_TIMING_2		0x3e
+-#define DSI_BTA_TIMING			0x3f
+-
+-#define DSI_TIMING_FIELD(value, period, hwinc) \
+-	((DIV_ROUND_CLOSEST(value, period) - (hwinc)) & 0xff)
+-
+-#define DSI_TIMEOUT_0			0x44
+-#define DSI_TIMEOUT_LRX(x)		(((x) & 0xffff) << 16)
+-#define DSI_TIMEOUT_HTX(x)		(((x) & 0xffff) <<  0)
+-#define DSI_TIMEOUT_1			0x45
+-#define DSI_TIMEOUT_PR(x)		(((x) & 0xffff) << 16)
+-#define DSI_TIMEOUT_TA(x)		(((x) & 0xffff) <<  0)
+-#define DSI_TO_TALLY			0x46
+-#define DSI_TALLY_TA(x)			(((x) & 0xff) << 16)
+-#define DSI_TALLY_LRX(x)		(((x) & 0xff) <<  8)
+-#define DSI_TALLY_HTX(x)		(((x) & 0xff) <<  0)
+-#define DSI_PAD_CONTROL_0		0x4b
+-#define DSI_PAD_CONTROL_VS1_PDIO(x)	(((x) & 0xf) <<  0)
+-#define DSI_PAD_CONTROL_VS1_PDIO_CLK	(1 <<  8)
+-#define DSI_PAD_CONTROL_VS1_PULLDN(x)	(((x) & 0xf) << 16)
+-#define DSI_PAD_CONTROL_VS1_PULLDN_CLK	(1 << 24)
+-#define DSI_PAD_CONTROL_CD		0x4c
+-#define DSI_PAD_CD_STATUS		0x4d
+-#define DSI_VIDEO_MODE_CONTROL		0x4e
+-#define DSI_PAD_CONTROL_1		0x4f
+-#define DSI_PAD_CONTROL_2		0x50
+-#define DSI_PAD_OUT_CLK(x)		(((x) & 0x7) <<  0)
+-#define DSI_PAD_LP_DN(x)		(((x) & 0x7) <<  4)
+-#define DSI_PAD_LP_UP(x)		(((x) & 0x7) <<  8)
+-#define DSI_PAD_SLEW_DN(x)		(((x) & 0x7) << 12)
+-#define DSI_PAD_SLEW_UP(x)		(((x) & 0x7) << 16)
+-#define DSI_PAD_CONTROL_3		0x51
+-#define DSI_PAD_CONTROL_4		0x52
+-#define DSI_GANGED_MODE_CONTROL		0x53
+-#define DSI_GANGED_MODE_START		0x54
+-#define DSI_GANGED_MODE_SIZE		0x55
+-#define DSI_RAW_DATA_BYTE_COUNT		0x56
+-#define DSI_ULTRA_LOW_POWER_CONTROL	0x57
+-#define DSI_INIT_SEQ_DATA_8		0x58
+-#define DSI_INIT_SEQ_DATA_9		0x59
+-#define DSI_INIT_SEQ_DATA_10		0x5a
+-#define DSI_INIT_SEQ_DATA_11		0x5b
+-#define DSI_INIT_SEQ_DATA_12		0x5c
+-#define DSI_INIT_SEQ_DATA_13		0x5d
+-#define DSI_INIT_SEQ_DATA_14		0x5e
+-#define DSI_INIT_SEQ_DATA_15		0x5f
+-
+-/*
+- * pixel format as used in the DSI_CONTROL_FORMAT field
+- */
+-enum tegra_dsi_format {
+-	TEGRA_DSI_FORMAT_16P,
+-	TEGRA_DSI_FORMAT_18NP,
+-	TEGRA_DSI_FORMAT_18P,
+-	TEGRA_DSI_FORMAT_24P,
+-};
+-
+-#endif
+diff --git a/drivers/gpu/drm/tegra/gr2d.c b/drivers/gpu/drm/tegra/gr2d.c
+deleted file mode 100644
+index 2c7ca74..0000000
+--- a/drivers/gpu/drm/tegra/gr2d.c
++++ /dev/null
+@@ -1,219 +0,0 @@
+-/*
+- * Copyright (c) 2012-2013, NVIDIA Corporation.
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- */
+-
+-#include <linux/clk.h>
+-
+-#include "drm.h"
+-#include "gem.h"
+-#include "gr2d.h"
+-
+-struct gr2d {
+-	struct tegra_drm_client client;
+-	struct host1x_channel *channel;
+-	struct clk *clk;
+-
+-	DECLARE_BITMAP(addr_regs, GR2D_NUM_REGS);
+-};
+-
+-static inline struct gr2d *to_gr2d(struct tegra_drm_client *client)
+-{
+-	return container_of(client, struct gr2d, client);
+-}
+-
+-static int gr2d_init(struct host1x_client *client)
+-{
+-	struct tegra_drm_client *drm = host1x_to_drm_client(client);
+-	struct tegra_drm *tegra = dev_get_drvdata(client->parent);
+-	unsigned long flags = HOST1X_SYNCPT_HAS_BASE;
+-	struct gr2d *gr2d = to_gr2d(drm);
+-
+-	gr2d->channel = host1x_channel_request(client->dev);
+-	if (!gr2d->channel)
+-		return -ENOMEM;
+-
+-	client->syncpts[0] = host1x_syncpt_request(client->dev, flags);
+-	if (!client->syncpts[0]) {
+-		host1x_channel_free(gr2d->channel);
+-		return -ENOMEM;
+-	}
+-
+-	return tegra_drm_register_client(tegra, drm);
+-}
+-
+-static int gr2d_exit(struct host1x_client *client)
+-{
+-	struct tegra_drm_client *drm = host1x_to_drm_client(client);
+-	struct tegra_drm *tegra = dev_get_drvdata(client->parent);
+-	struct gr2d *gr2d = to_gr2d(drm);
+-	int err;
+-
+-	err = tegra_drm_unregister_client(tegra, drm);
+-	if (err < 0)
+-		return err;
+-
+-	host1x_syncpt_free(client->syncpts[0]);
+-	host1x_channel_free(gr2d->channel);
+-
+-	return 0;
+-}
+-
+-static const struct host1x_client_ops gr2d_client_ops = {
+-	.init = gr2d_init,
+-	.exit = gr2d_exit,
+-};
+-
+-static int gr2d_open_channel(struct tegra_drm_client *client,
+-			     struct tegra_drm_context *context)
+-{
+-	struct gr2d *gr2d = to_gr2d(client);
+-
+-	context->channel = host1x_channel_get(gr2d->channel);
+-	if (!context->channel)
+-		return -ENOMEM;
+-
+-	return 0;
+-}
+-
+-static void gr2d_close_channel(struct tegra_drm_context *context)
+-{
+-	host1x_channel_put(context->channel);
+-}
+-
+-static int gr2d_is_addr_reg(struct device *dev, u32 class, u32 offset)
+-{
+-	struct gr2d *gr2d = dev_get_drvdata(dev);
+-
+-	switch (class) {
+-	case HOST1X_CLASS_HOST1X:
+-		if (offset == 0x2b)
+-			return 1;
+-
+-		break;
+-
+-	case HOST1X_CLASS_GR2D:
+-	case HOST1X_CLASS_GR2D_SB:
+-		if (offset >= GR2D_NUM_REGS)
+-			break;
+-
+-		if (test_bit(offset, gr2d->addr_regs))
+-			return 1;
+-
+-		break;
+-	}
+-
+-	return 0;
+-}
+-
+-static const struct tegra_drm_client_ops gr2d_ops = {
+-	.open_channel = gr2d_open_channel,
+-	.close_channel = gr2d_close_channel,
+-	.is_addr_reg = gr2d_is_addr_reg,
+-	.submit = tegra_drm_submit,
+-};
+-
+-static const struct of_device_id gr2d_match[] = {
+-	{ .compatible = "nvidia,tegra30-gr2d" },
+-	{ .compatible = "nvidia,tegra20-gr2d" },
+-	{ },
+-};
+-
+-static const u32 gr2d_addr_regs[] = {
+-	GR2D_UA_BASE_ADDR,
+-	GR2D_VA_BASE_ADDR,
+-	GR2D_PAT_BASE_ADDR,
+-	GR2D_DSTA_BASE_ADDR,
+-	GR2D_DSTB_BASE_ADDR,
+-	GR2D_DSTC_BASE_ADDR,
+-	GR2D_SRCA_BASE_ADDR,
+-	GR2D_SRCB_BASE_ADDR,
+-	GR2D_SRC_BASE_ADDR_SB,
+-	GR2D_DSTA_BASE_ADDR_SB,
+-	GR2D_DSTB_BASE_ADDR_SB,
+-	GR2D_UA_BASE_ADDR_SB,
+-	GR2D_VA_BASE_ADDR_SB,
+-};
+-
+-static int gr2d_probe(struct platform_device *pdev)
+-{
+-	struct device *dev = &pdev->dev;
+-	struct host1x_syncpt **syncpts;
+-	struct gr2d *gr2d;
+-	unsigned int i;
+-	int err;
+-
+-	gr2d = devm_kzalloc(dev, sizeof(*gr2d), GFP_KERNEL);
+-	if (!gr2d)
+-		return -ENOMEM;
+-
+-	syncpts = devm_kzalloc(dev, sizeof(*syncpts), GFP_KERNEL);
+-	if (!syncpts)
+-		return -ENOMEM;
+-
+-	gr2d->clk = devm_clk_get(dev, NULL);
+-	if (IS_ERR(gr2d->clk)) {
+-		dev_err(dev, "cannot get clock\n");
+-		return PTR_ERR(gr2d->clk);
+-	}
+-
+-	err = clk_prepare_enable(gr2d->clk);
+-	if (err) {
+-		dev_err(dev, "cannot turn on clock\n");
+-		return err;
+-	}
+-
+-	INIT_LIST_HEAD(&gr2d->client.base.list);
+-	gr2d->client.base.ops = &gr2d_client_ops;
+-	gr2d->client.base.dev = dev;
+-	gr2d->client.base.class = HOST1X_CLASS_GR2D;
+-	gr2d->client.base.syncpts = syncpts;
+-	gr2d->client.base.num_syncpts = 1;
+-
+-	INIT_LIST_HEAD(&gr2d->client.list);
+-	gr2d->client.ops = &gr2d_ops;
+-
+-	err = host1x_client_register(&gr2d->client.base);
+-	if (err < 0) {
+-		dev_err(dev, "failed to register host1x client: %d\n", err);
+-		clk_disable_unprepare(gr2d->clk);
+-		return err;
+-	}
+-
+-	/* initialize address register map */
+-	for (i = 0; i < ARRAY_SIZE(gr2d_addr_regs); i++)
+-		set_bit(gr2d_addr_regs[i], gr2d->addr_regs);
+-
+-	platform_set_drvdata(pdev, gr2d);
+-
+-	return 0;
+-}
+-
+-static int gr2d_remove(struct platform_device *pdev)
+-{
+-	struct gr2d *gr2d = platform_get_drvdata(pdev);
+-	int err;
+-
+-	err = host1x_client_unregister(&gr2d->client.base);
+-	if (err < 0) {
+-		dev_err(&pdev->dev, "failed to unregister host1x client: %d\n",
+-			err);
+-		return err;
+-	}
+-
+-	clk_disable_unprepare(gr2d->clk);
+-
+-	return 0;
+-}
+-
+-struct platform_driver tegra_gr2d_driver = {
+-	.driver = {
+-		.name = "tegra-gr2d",
+-		.of_match_table = gr2d_match,
+-	},
+-	.probe = gr2d_probe,
+-	.remove = gr2d_remove,
+-};
+diff --git a/drivers/gpu/drm/tegra/gr2d.h b/drivers/gpu/drm/tegra/gr2d.h
+deleted file mode 100644
+index 4d7304f..0000000
+--- a/drivers/gpu/drm/tegra/gr2d.h
++++ /dev/null
+@@ -1,28 +0,0 @@
+-/*
+- * Copyright (C) 2013 NVIDIA Corporation
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- */
+-
+-#ifndef TEGRA_GR2D_H
+-#define TEGRA_GR2D_H
+-
+-#define GR2D_UA_BASE_ADDR		0x1a
+-#define GR2D_VA_BASE_ADDR		0x1b
+-#define GR2D_PAT_BASE_ADDR		0x26
+-#define GR2D_DSTA_BASE_ADDR		0x2b
+-#define GR2D_DSTB_BASE_ADDR		0x2c
+-#define GR2D_DSTC_BASE_ADDR		0x2d
+-#define GR2D_SRCA_BASE_ADDR		0x31
+-#define GR2D_SRCB_BASE_ADDR		0x32
+-#define GR2D_SRC_BASE_ADDR_SB		0x48
+-#define GR2D_DSTA_BASE_ADDR_SB		0x49
+-#define GR2D_DSTB_BASE_ADDR_SB		0x4a
+-#define GR2D_UA_BASE_ADDR_SB		0x4b
+-#define GR2D_VA_BASE_ADDR_SB		0x4c
+-
+-#define GR2D_NUM_REGS			0x4d
+-
+-#endif
+diff --git a/drivers/gpu/drm/tegra/gr3d.c b/drivers/gpu/drm/tegra/gr3d.c
+deleted file mode 100644
+index f629e38..0000000
+--- a/drivers/gpu/drm/tegra/gr3d.c
++++ /dev/null
+@@ -1,354 +0,0 @@
+-/*
+- * Copyright (C) 2013 Avionic Design GmbH
+- * Copyright (C) 2013 NVIDIA Corporation
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- */
+-
+-#include <linux/clk.h>
+-#include <linux/host1x.h>
+-#include <linux/module.h>
+-#include <linux/platform_device.h>
+-#include <linux/reset.h>
+-#include <linux/tegra-powergate.h>
+-
+-#include "drm.h"
+-#include "gem.h"
+-#include "gr3d.h"
+-
+-struct gr3d {
+-	struct tegra_drm_client client;
+-	struct host1x_channel *channel;
+-	struct clk *clk_secondary;
+-	struct clk *clk;
+-	struct reset_control *rst_secondary;
+-	struct reset_control *rst;
+-
+-	DECLARE_BITMAP(addr_regs, GR3D_NUM_REGS);
+-};
+-
+-static inline struct gr3d *to_gr3d(struct tegra_drm_client *client)
+-{
+-	return container_of(client, struct gr3d, client);
+-}
+-
+-static int gr3d_init(struct host1x_client *client)
+-{
+-	struct tegra_drm_client *drm = host1x_to_drm_client(client);
+-	struct tegra_drm *tegra = dev_get_drvdata(client->parent);
+-	unsigned long flags = HOST1X_SYNCPT_HAS_BASE;
+-	struct gr3d *gr3d = to_gr3d(drm);
+-
+-	gr3d->channel = host1x_channel_request(client->dev);
+-	if (!gr3d->channel)
+-		return -ENOMEM;
+-
+-	client->syncpts[0] = host1x_syncpt_request(client->dev, flags);
+-	if (!client->syncpts[0]) {
+-		host1x_channel_free(gr3d->channel);
+-		return -ENOMEM;
+-	}
+-
+-	return tegra_drm_register_client(tegra, drm);
+-}
+-
+-static int gr3d_exit(struct host1x_client *client)
+-{
+-	struct tegra_drm_client *drm = host1x_to_drm_client(client);
+-	struct tegra_drm *tegra = dev_get_drvdata(client->parent);
+-	struct gr3d *gr3d = to_gr3d(drm);
+-	int err;
+-
+-	err = tegra_drm_unregister_client(tegra, drm);
+-	if (err < 0)
+-		return err;
+-
+-	host1x_syncpt_free(client->syncpts[0]);
+-	host1x_channel_free(gr3d->channel);
+-
+-	return 0;
+-}
+-
+-static const struct host1x_client_ops gr3d_client_ops = {
+-	.init = gr3d_init,
+-	.exit = gr3d_exit,
+-};
+-
+-static int gr3d_open_channel(struct tegra_drm_client *client,
+-			     struct tegra_drm_context *context)
+-{
+-	struct gr3d *gr3d = to_gr3d(client);
+-
+-	context->channel = host1x_channel_get(gr3d->channel);
+-	if (!context->channel)
+-		return -ENOMEM;
+-
+-	return 0;
+-}
+-
+-static void gr3d_close_channel(struct tegra_drm_context *context)
+-{
+-	host1x_channel_put(context->channel);
+-}
+-
+-static int gr3d_is_addr_reg(struct device *dev, u32 class, u32 offset)
+-{
+-	struct gr3d *gr3d = dev_get_drvdata(dev);
+-
+-	switch (class) {
+-	case HOST1X_CLASS_HOST1X:
+-		if (offset == 0x2b)
+-			return 1;
+-
+-		break;
+-
+-	case HOST1X_CLASS_GR3D:
+-		if (offset >= GR3D_NUM_REGS)
+-			break;
+-
+-		if (test_bit(offset, gr3d->addr_regs))
+-			return 1;
+-
+-		break;
+-	}
+-
+-	return 0;
+-}
+-
+-static const struct tegra_drm_client_ops gr3d_ops = {
+-	.open_channel = gr3d_open_channel,
+-	.close_channel = gr3d_close_channel,
+-	.is_addr_reg = gr3d_is_addr_reg,
+-	.submit = tegra_drm_submit,
+-};
+-
+-static const struct of_device_id tegra_gr3d_match[] = {
+-	{ .compatible = "nvidia,tegra114-gr3d" },
+-	{ .compatible = "nvidia,tegra30-gr3d" },
+-	{ .compatible = "nvidia,tegra20-gr3d" },
+-	{ }
+-};
+-
+-static const u32 gr3d_addr_regs[] = {
+-	GR3D_IDX_ATTRIBUTE( 0),
+-	GR3D_IDX_ATTRIBUTE( 1),
+-	GR3D_IDX_ATTRIBUTE( 2),
+-	GR3D_IDX_ATTRIBUTE( 3),
+-	GR3D_IDX_ATTRIBUTE( 4),
+-	GR3D_IDX_ATTRIBUTE( 5),
+-	GR3D_IDX_ATTRIBUTE( 6),
+-	GR3D_IDX_ATTRIBUTE( 7),
+-	GR3D_IDX_ATTRIBUTE( 8),
+-	GR3D_IDX_ATTRIBUTE( 9),
+-	GR3D_IDX_ATTRIBUTE(10),
+-	GR3D_IDX_ATTRIBUTE(11),
+-	GR3D_IDX_ATTRIBUTE(12),
+-	GR3D_IDX_ATTRIBUTE(13),
+-	GR3D_IDX_ATTRIBUTE(14),
+-	GR3D_IDX_ATTRIBUTE(15),
+-	GR3D_IDX_INDEX_BASE,
+-	GR3D_QR_ZTAG_ADDR,
+-	GR3D_QR_CTAG_ADDR,
+-	GR3D_QR_CZ_ADDR,
+-	GR3D_TEX_TEX_ADDR( 0),
+-	GR3D_TEX_TEX_ADDR( 1),
+-	GR3D_TEX_TEX_ADDR( 2),
+-	GR3D_TEX_TEX_ADDR( 3),
+-	GR3D_TEX_TEX_ADDR( 4),
+-	GR3D_TEX_TEX_ADDR( 5),
+-	GR3D_TEX_TEX_ADDR( 6),
+-	GR3D_TEX_TEX_ADDR( 7),
+-	GR3D_TEX_TEX_ADDR( 8),
+-	GR3D_TEX_TEX_ADDR( 9),
+-	GR3D_TEX_TEX_ADDR(10),
+-	GR3D_TEX_TEX_ADDR(11),
+-	GR3D_TEX_TEX_ADDR(12),
+-	GR3D_TEX_TEX_ADDR(13),
+-	GR3D_TEX_TEX_ADDR(14),
+-	GR3D_TEX_TEX_ADDR(15),
+-	GR3D_DW_MEMORY_OUTPUT_ADDRESS,
+-	GR3D_GLOBAL_SURFADDR( 0),
+-	GR3D_GLOBAL_SURFADDR( 1),
+-	GR3D_GLOBAL_SURFADDR( 2),
+-	GR3D_GLOBAL_SURFADDR( 3),
+-	GR3D_GLOBAL_SURFADDR( 4),
+-	GR3D_GLOBAL_SURFADDR( 5),
+-	GR3D_GLOBAL_SURFADDR( 6),
+-	GR3D_GLOBAL_SURFADDR( 7),
+-	GR3D_GLOBAL_SURFADDR( 8),
+-	GR3D_GLOBAL_SURFADDR( 9),
+-	GR3D_GLOBAL_SURFADDR(10),
+-	GR3D_GLOBAL_SURFADDR(11),
+-	GR3D_GLOBAL_SURFADDR(12),
+-	GR3D_GLOBAL_SURFADDR(13),
+-	GR3D_GLOBAL_SURFADDR(14),
+-	GR3D_GLOBAL_SURFADDR(15),
+-	GR3D_GLOBAL_SPILLSURFADDR,
+-	GR3D_GLOBAL_SURFOVERADDR( 0),
+-	GR3D_GLOBAL_SURFOVERADDR( 1),
+-	GR3D_GLOBAL_SURFOVERADDR( 2),
+-	GR3D_GLOBAL_SURFOVERADDR( 3),
+-	GR3D_GLOBAL_SURFOVERADDR( 4),
+-	GR3D_GLOBAL_SURFOVERADDR( 5),
+-	GR3D_GLOBAL_SURFOVERADDR( 6),
+-	GR3D_GLOBAL_SURFOVERADDR( 7),
+-	GR3D_GLOBAL_SURFOVERADDR( 8),
+-	GR3D_GLOBAL_SURFOVERADDR( 9),
+-	GR3D_GLOBAL_SURFOVERADDR(10),
+-	GR3D_GLOBAL_SURFOVERADDR(11),
+-	GR3D_GLOBAL_SURFOVERADDR(12),
+-	GR3D_GLOBAL_SURFOVERADDR(13),
+-	GR3D_GLOBAL_SURFOVERADDR(14),
+-	GR3D_GLOBAL_SURFOVERADDR(15),
+-	GR3D_GLOBAL_SAMP01SURFADDR( 0),
+-	GR3D_GLOBAL_SAMP01SURFADDR( 1),
+-	GR3D_GLOBAL_SAMP01SURFADDR( 2),
+-	GR3D_GLOBAL_SAMP01SURFADDR( 3),
+-	GR3D_GLOBAL_SAMP01SURFADDR( 4),
+-	GR3D_GLOBAL_SAMP01SURFADDR( 5),
+-	GR3D_GLOBAL_SAMP01SURFADDR( 6),
+-	GR3D_GLOBAL_SAMP01SURFADDR( 7),
+-	GR3D_GLOBAL_SAMP01SURFADDR( 8),
+-	GR3D_GLOBAL_SAMP01SURFADDR( 9),
+-	GR3D_GLOBAL_SAMP01SURFADDR(10),
+-	GR3D_GLOBAL_SAMP01SURFADDR(11),
+-	GR3D_GLOBAL_SAMP01SURFADDR(12),
+-	GR3D_GLOBAL_SAMP01SURFADDR(13),
+-	GR3D_GLOBAL_SAMP01SURFADDR(14),
+-	GR3D_GLOBAL_SAMP01SURFADDR(15),
+-	GR3D_GLOBAL_SAMP23SURFADDR( 0),
+-	GR3D_GLOBAL_SAMP23SURFADDR( 1),
+-	GR3D_GLOBAL_SAMP23SURFADDR( 2),
+-	GR3D_GLOBAL_SAMP23SURFADDR( 3),
+-	GR3D_GLOBAL_SAMP23SURFADDR( 4),
+-	GR3D_GLOBAL_SAMP23SURFADDR( 5),
+-	GR3D_GLOBAL_SAMP23SURFADDR( 6),
+-	GR3D_GLOBAL_SAMP23SURFADDR( 7),
+-	GR3D_GLOBAL_SAMP23SURFADDR( 8),
+-	GR3D_GLOBAL_SAMP23SURFADDR( 9),
+-	GR3D_GLOBAL_SAMP23SURFADDR(10),
+-	GR3D_GLOBAL_SAMP23SURFADDR(11),
+-	GR3D_GLOBAL_SAMP23SURFADDR(12),
+-	GR3D_GLOBAL_SAMP23SURFADDR(13),
+-	GR3D_GLOBAL_SAMP23SURFADDR(14),
+-	GR3D_GLOBAL_SAMP23SURFADDR(15),
+-};
+-
+-static int gr3d_probe(struct platform_device *pdev)
+-{
+-	struct device_node *np = pdev->dev.of_node;
+-	struct host1x_syncpt **syncpts;
+-	struct gr3d *gr3d;
+-	unsigned int i;
+-	int err;
+-
+-	gr3d = devm_kzalloc(&pdev->dev, sizeof(*gr3d), GFP_KERNEL);
+-	if (!gr3d)
+-		return -ENOMEM;
+-
+-	syncpts = devm_kzalloc(&pdev->dev, sizeof(*syncpts), GFP_KERNEL);
+-	if (!syncpts)
+-		return -ENOMEM;
+-
+-	gr3d->clk = devm_clk_get(&pdev->dev, NULL);
+-	if (IS_ERR(gr3d->clk)) {
+-		dev_err(&pdev->dev, "cannot get clock\n");
+-		return PTR_ERR(gr3d->clk);
+-	}
+-
+-	gr3d->rst = devm_reset_control_get(&pdev->dev, "3d");
+-	if (IS_ERR(gr3d->rst)) {
+-		dev_err(&pdev->dev, "cannot get reset\n");
+-		return PTR_ERR(gr3d->rst);
+-	}
+-
+-	if (of_device_is_compatible(np, "nvidia,tegra30-gr3d")) {
+-		gr3d->clk_secondary = devm_clk_get(&pdev->dev, "3d2");
+-		if (IS_ERR(gr3d->clk)) {
+-			dev_err(&pdev->dev, "cannot get secondary clock\n");
+-			return PTR_ERR(gr3d->clk);
+-		}
+-
+-		gr3d->rst_secondary = devm_reset_control_get(&pdev->dev,
+-								"3d2");
+-		if (IS_ERR(gr3d->rst_secondary)) {
+-			dev_err(&pdev->dev, "cannot get secondary reset\n");
+-			return PTR_ERR(gr3d->rst_secondary);
+-		}
+-	}
+-
+-	err = tegra_powergate_sequence_power_up(TEGRA_POWERGATE_3D, gr3d->clk);
+-	if (err < 0) {
+-		dev_err(&pdev->dev, "failed to power up 3D unit\n");
+-		return err;
+-	}
+-
+-	if (gr3d->clk_secondary) {
+-		err = tegra_powergate_sequence_power_up(TEGRA_POWERGATE_3D1,
+-							gr3d->clk_secondary);
+-		if (err < 0) {
+-			dev_err(&pdev->dev,
+-				"failed to power up secondary 3D unit\n");
+-			return err;
+-		}
+-	}
+-
+-	INIT_LIST_HEAD(&gr3d->client.base.list);
+-	gr3d->client.base.ops = &gr3d_client_ops;
+-	gr3d->client.base.dev = &pdev->dev;
+-	gr3d->client.base.class = HOST1X_CLASS_GR3D;
+-	gr3d->client.base.syncpts = syncpts;
+-	gr3d->client.base.num_syncpts = 1;
+-
+-	INIT_LIST_HEAD(&gr3d->client.list);
+-	gr3d->client.ops = &gr3d_ops;
+-
+-	err = host1x_client_register(&gr3d->client.base);
+-	if (err < 0) {
+-		dev_err(&pdev->dev, "failed to register host1x client: %d\n",
+-			err);
+-		return err;
+-	}
+-
+-	/* initialize address register map */
+-	for (i = 0; i < ARRAY_SIZE(gr3d_addr_regs); i++)
+-		set_bit(gr3d_addr_regs[i], gr3d->addr_regs);
+-
+-	platform_set_drvdata(pdev, gr3d);
+-
+-	return 0;
+-}
+-
+-static int gr3d_remove(struct platform_device *pdev)
+-{
+-	struct gr3d *gr3d = platform_get_drvdata(pdev);
+-	int err;
+-
+-	err = host1x_client_unregister(&gr3d->client.base);
+-	if (err < 0) {
+-		dev_err(&pdev->dev, "failed to unregister host1x client: %d\n",
+-			err);
+-		return err;
+-	}
+-
+-	if (gr3d->clk_secondary) {
+-		tegra_powergate_power_off(TEGRA_POWERGATE_3D1);
+-		clk_disable_unprepare(gr3d->clk_secondary);
+-	}
+-
+-	tegra_powergate_power_off(TEGRA_POWERGATE_3D);
+-	clk_disable_unprepare(gr3d->clk);
+-
+-	return 0;
+-}
+-
+-struct platform_driver tegra_gr3d_driver = {
+-	.driver = {
+-		.name = "tegra-gr3d",
+-		.of_match_table = tegra_gr3d_match,
+-	},
+-	.probe = gr3d_probe,
+-	.remove = gr3d_remove,
+-};
+diff --git a/drivers/gpu/drm/tegra/gr3d.h b/drivers/gpu/drm/tegra/gr3d.h
+deleted file mode 100644
+index 0c30a13..0000000
+--- a/drivers/gpu/drm/tegra/gr3d.h
++++ /dev/null
+@@ -1,27 +0,0 @@
+-/*
+- * Copyright (C) 2013 NVIDIA Corporation
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- */
+-
+-#ifndef TEGRA_GR3D_H
+-#define TEGRA_GR3D_H
+-
+-#define GR3D_IDX_ATTRIBUTE(x)		(0x100 + (x) * 2)
+-#define GR3D_IDX_INDEX_BASE		0x121
+-#define GR3D_QR_ZTAG_ADDR		0x415
+-#define GR3D_QR_CTAG_ADDR		0x417
+-#define GR3D_QR_CZ_ADDR			0x419
+-#define GR3D_TEX_TEX_ADDR(x)		(0x710 + (x))
+-#define GR3D_DW_MEMORY_OUTPUT_ADDRESS	0x904
+-#define GR3D_GLOBAL_SURFADDR(x)		(0xe00 + (x))
+-#define GR3D_GLOBAL_SPILLSURFADDR	0xe2a
+-#define GR3D_GLOBAL_SURFOVERADDR(x)	(0xe30 + (x))
+-#define GR3D_GLOBAL_SAMP01SURFADDR(x)	(0xe50 + (x))
+-#define GR3D_GLOBAL_SAMP23SURFADDR(x)	(0xe60 + (x))
+-
+-#define GR3D_NUM_REGS			0xe88
+-
+-#endif
+diff --git a/drivers/gpu/drm/tegra/hdmi.c b/drivers/gpu/drm/tegra/hdmi.c
+index fec1a63..754a930 100644
+--- a/drivers/gpu/drm/tegra/hdmi.c
++++ b/drivers/gpu/drm/tegra/hdmi.c
+@@ -1534,7 +1534,7 @@ static int tegra_hdmi_probe(struct platform_device *pdev)
+ 	hdmi->client.ops = &hdmi_client_ops;
+ 	hdmi->client.dev = &pdev->dev;
+ 
+-	err = host1x_client_register(&hdmi->client);
++	err = drm_host1x_register(&hdmi->client);
+ 	if (err < 0) {
+ 		dev_err(&pdev->dev, "failed to register host1x client: %d\n",
+ 			err);
+@@ -1551,7 +1551,7 @@ static int tegra_hdmi_remove(struct platform_device *pdev)
+ 	struct tegra_hdmi *hdmi = platform_get_drvdata(pdev);
+ 	int err;
+ 
+-	err = host1x_client_unregister(&hdmi->client);
++	err = drm_host1x_unregister(&hdmi->client);
+ 	if (err < 0) {
+ 		dev_err(&pdev->dev, "failed to unregister host1x client: %d\n",
+ 			err);
+diff --git a/drivers/gpu/drm/tegra/sor.c b/drivers/gpu/drm/tegra/sor.c
+index 67ccb7f..c528387 100644
+--- a/drivers/gpu/drm/tegra/sor.c
++++ b/drivers/gpu/drm/tegra/sor.c
+@@ -1591,7 +1591,7 @@ static int tegra_sor_probe(struct platform_device *pdev)
+ 
+ 	mutex_init(&sor->lock);
+ 
+-	err = host1x_client_register(&sor->client);
++	err = drm_host1x_register(&sor->client);
+ 	if (err < 0) {
+ 		dev_err(&pdev->dev, "failed to register host1x client: %d\n",
+ 			err);
+@@ -1608,7 +1608,7 @@ static int tegra_sor_remove(struct platform_device *pdev)
+ 	struct tegra_sor *sor = platform_get_drvdata(pdev);
+ 	int err;
+ 
+-	err = host1x_client_unregister(&sor->client);
++	err = drm_host1x_unregister(&sor->client);
+ 	if (err < 0) {
+ 		dev_err(&pdev->dev, "failed to unregister host1x client: %d\n",
+ 			err);
+-- 
+2.2.0.rc0.207.ga3a616c
+

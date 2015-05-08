@@ -1,0 +1,70 @@
+From 05bb6297e22f9b439b92f05ef216b0cd1f30c179 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?St=C3=A9phane=20Marchesin?= <marcheu@chromium.org>
+Date: Thu, 7 May 2015 19:57:21 -0700
+Subject: [PATCH 5/5] HACK: DT: swap DC order
+
+Somehow with the new init, the DCs end up inverted. As a workaround
+let's swap them in the DT.
+
+Change-Id: Ibc836e4536cce29a4456ba7eaab7f370ed57c8a5
+---
+ arch/arm/boot/dts/tegra124.dtsi | 36 ++++++++++++++++++------------------
+ 1 file changed, 18 insertions(+), 18 deletions(-)
+
+diff --git a/arch/arm/boot/dts/tegra124.dtsi b/arch/arm/boot/dts/tegra124.dtsi
+index c16ccbc..9825e70 100644
+--- a/arch/arm/boot/dts/tegra124.dtsi
++++ b/arch/arm/boot/dts/tegra124.dtsi
+@@ -41,6 +41,24 @@
+ 
+ 		ranges = <0x54000000 0x0 0x54000000 0x0c000000>;
+ 
++		dc@54240000 {
++			compatible = "nvidia,tegra124-dc";
++			reg = <0x54240000 0x00040000>,
++			      <0x54280000 0x00040000>;
++			reg-names = "dc", "hdmi";
++			interrupts = <GIC_SPI 74 IRQ_TYPE_LEVEL_HIGH>;
++			interrupt-names = "dc";
++			clocks = <&tegra_car TEGRA124_CLK_DISP2>,
++				 <&tegra_car TEGRA124_CLK_PLL_P>,
++				 <&tegra_car TEGRA124_CLK_DISP2_EMC>,
++				 <&tegra_car TEGRA124_CLK_HDMI>;
++			clock-names = "dc", "parent", "emc", "hdmi";
++			iommus = <&smmu TEGRA_SWGROUP_CELLS(DCB)>;
++			resets = <&tegra_car TEGRA124_CLK_DISP2>;
++			reset-names = "dc";
++			nvidia,head = <1>;
++		};
++
+ 		dc@54200000 {
+ 			compatible = "nvidia,tegra124-dc";
+ 			reg = <0x54200000 0x00040000>,
+@@ -64,24 +82,6 @@
+ 			nvidia,head = <0>;
+ 		};
+ 
+-		dc@54240000 {
+-			compatible = "nvidia,tegra124-dc";
+-			reg = <0x54240000 0x00040000>,
+-			      <0x54280000 0x00040000>;
+-			reg-names = "dc", "hdmi";
+-			interrupts = <GIC_SPI 74 IRQ_TYPE_LEVEL_HIGH>;
+-			interrupt-names = "dc";
+-			clocks = <&tegra_car TEGRA124_CLK_DISP2>,
+-				 <&tegra_car TEGRA124_CLK_PLL_P>,
+-				 <&tegra_car TEGRA124_CLK_DISP2_EMC>,
+-				 <&tegra_car TEGRA124_CLK_HDMI>;
+-			clock-names = "dc", "parent", "emc", "hdmi";
+-			iommus = <&smmu TEGRA_SWGROUP_CELLS(DCB)>;
+-			resets = <&tegra_car TEGRA124_CLK_DISP2>;
+-			reset-names = "dc";
+-			nvidia,head = <1>;
+-		};
+-
+ 		sor@54540000 {
+ 			compatible = "nvidia,tegra124-sor";
+ 			reg = <0x54540000 0x00040000>;
+-- 
+2.2.0.rc0.207.ga3a616c
+

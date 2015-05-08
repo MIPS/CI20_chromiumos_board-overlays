@@ -1,0 +1,44 @@
+From 12d874aa5d1c31f48e52f2174088f25718837ddb Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?St=C3=A9phane=20Marchesin?= <marcheu@chromium.org>
+Date: Thu, 16 Apr 2015 18:30:54 -0700
+Subject: [PATCH 3/5] CHROMIUM: CONFIG: Disable CONFIG_TEGRA_DC
+
+We're going to use tegra DRM for display.
+
+Change-Id: I26fed397129ba970032eeeb14deefd0a0ae1c4ac
+---
+ chromeos/config/armel/chromeos-tegra.flavour.config | 18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/chromeos/config/armel/chromeos-tegra.flavour.config b/chromeos/config/armel/chromeos-tegra.flavour.config
+index 9d48f39..21e8eb4 100644
+--- a/chromeos/config/armel/chromeos-tegra.flavour.config
++++ b/chromeos/config/armel/chromeos-tegra.flavour.config
+@@ -197,15 +197,15 @@ CONFIG_TEGRA_124_DFLL_COOLING=y
+ CONFIG_TEGRA_124_DVFS=y
+ CONFIG_TEGRA_CPUQUIET=y
+ CONFIG_TEGRA_CPU_EDP_LIMITS=y
+-CONFIG_TEGRA_DC=y
+-CONFIG_TEGRA_DC_BLENDER_DEPTH=y
+-CONFIG_TEGRA_DC_BLENDER_GEN2=y
+-CONFIG_TEGRA_DC_BLOCK_LINEAR=y
+-CONFIG_TEGRA_DC_CLOCK_GEN2=y
+-CONFIG_TEGRA_DC_EXTENSIONS=y
+-CONFIG_TEGRA_DC_INTERLACE=y
+-CONFIG_TEGRA_DC_LOW_LATENCY_CURSOR=y
+-CONFIG_TEGRA_DC_TEMPORAL_DITHER=y
++CONFIG_TEGRA_DC=n
++CONFIG_TEGRA_DC_BLENDER_DEPTH=n
++CONFIG_TEGRA_DC_BLENDER_GEN2=n
++CONFIG_TEGRA_DC_BLOCK_LINEAR=n
++CONFIG_TEGRA_DC_CLOCK_GEN2=n
++CONFIG_TEGRA_DC_EXTENSIONS=n
++CONFIG_TEGRA_DC_INTERLACE=n
++CONFIG_TEGRA_DC_LOW_LATENCY_CURSOR=n
++CONFIG_TEGRA_DC_TEMPORAL_DITHER=n
+ # CONFIG_TEGRA_DEBUG_UARTB is not set
+ CONFIG_TEGRA_DEBUG_UART_AUTO_ODMDATA=y
+ CONFIG_TEGRA_DVFS=y
+-- 
+2.2.0.rc0.207.ga3a616c
+

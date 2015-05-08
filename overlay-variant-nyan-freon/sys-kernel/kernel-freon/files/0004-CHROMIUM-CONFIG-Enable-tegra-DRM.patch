@@ -1,0 +1,55 @@
+From a51a41a51bd59ee86399c5a71570c6533f2b71e4 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?St=C3=A9phane=20Marchesin?= <marcheu@chromium.org>
+Date: Thu, 16 Apr 2015 19:28:21 -0700
+Subject: [PATCH 4/5] CHROMIUM: CONFIG: Enable tegra DRM
+
+This enables tegra DRM.
+
+Change-Id: I500405d0fd457a4b80497ffb49db53492e862d93
+---
+ chromeos/config/armel/chromeos-tegra.flavour.config | 11 ++++++++++-
+ chromeos/config/armel/common.config                 |  2 +-
+ 2 files changed, 11 insertions(+), 2 deletions(-)
+
+diff --git a/chromeos/config/armel/chromeos-tegra.flavour.config b/chromeos/config/armel/chromeos-tegra.flavour.config
+index 21e8eb4..c615c8e 100644
+--- a/chromeos/config/armel/chromeos-tegra.flavour.config
++++ b/chromeos/config/armel/chromeos-tegra.flavour.config
+@@ -53,11 +53,20 @@ CONFIG_DMA_ENGINE=y
+ CONFIG_DMA_OF=y
+ # CONFIG_DW_DMAC is not set
+ # CONFIG_DW_WATCHDOG is not set
++CONFIG_PCI=y
++CONFIG_TEGRA_PCI=y
++CONFIG_DRM=y
++CONFIG_DRM_KMS_HELPER=y
++CONFIG_AGP=y
++CONFIG_DRM_PANEL=y
++CONFIG_DRM_PANEL_SIMPLE=y
++CONFIG_DRM_TEGRA=y
++CONFIG_DRM_TEGRA_FBDEV=n
+ CONFIG_EDP_MANAGEMENT=y
+ CONFIG_FB_CFB_COPYAREA=y
+ CONFIG_FB_CFB_FILLRECT=y
+ CONFIG_FB_CFB_IMAGEBLIT=y
+-CONFIG_FB_TEGRA=y
++CONFIG_FB_TEGRA=n
+ CONFIG_FRAMEBUFFER_CONSOLE_DETECT_PRIMARY=y
+ CONFIG_GENERIC_PINCONF=y
+ CONFIG_GPIO_TPS6586X=y
+diff --git a/chromeos/config/armel/common.config b/chromeos/config/armel/common.config
+index eb0f897..c1dfa4d 100644
+--- a/chromeos/config/armel/common.config
++++ b/chromeos/config/armel/common.config
+@@ -435,7 +435,7 @@ CONFIG_TEGRA_DP=y
+ # CONFIG_TEGRA_GRHOST_FORCE_NVMAP is not set
+ # CONFIG_TEGRA_GRHOST_GK20A_PHYS_PAGE_TABLES is not set
+ CONFIG_TEGRA_GRHOST_USE_DMABUF=y
+-# CONFIG_TEGRA_HOST1X is not set
++#CONFIG_TEGRA_HOST1X is not set
+ # CONFIG_TEGRA_LVDS is not set
+ CONFIG_TEGRA_MIPI_CAL=y
+ # CONFIG_TEGRA_PCI is not set
+-- 
+2.2.0.rc0.207.ga3a616c
+
