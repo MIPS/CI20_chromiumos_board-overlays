@@ -1,0 +1,2 @@
+bootargs=console=ttyS0,115200 console=ttyS4,115200 console=tty0 mem=256M@0x0 mem=768M@0x30000000 root=/dev/mmcblk0p3 cros_debug
+bootcmd=mtdparts default; ubi part system; ubifsmount ubi:boot; ubifsload 0x88000000 vmlinux.img; bootm 0x88000000
