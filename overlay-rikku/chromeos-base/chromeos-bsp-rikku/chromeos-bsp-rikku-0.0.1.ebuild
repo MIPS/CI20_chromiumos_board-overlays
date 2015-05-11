@@ -16,6 +16,7 @@ S="${WORKDIR}"
 # Add dependencies on other ebuilds from within this board overlay
 RDEPEND="
 	chromeos-base/chromeos-bsp-baseboard-jecht
+	chromeos-base/jabra-vold
 	sys-kernel/linux-firmware
 	media-gfx/ply-image
 	media-libs/go2001-fw
