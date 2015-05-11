@@ -11,6 +11,6 @@ KEYWORDS="*"
 IUSE=""
 
 RDEPEND="
-	media-libs/mesa[egl,gles2]
+	x11-drivers/opengles-bin
 	"
 DEPEND=""
