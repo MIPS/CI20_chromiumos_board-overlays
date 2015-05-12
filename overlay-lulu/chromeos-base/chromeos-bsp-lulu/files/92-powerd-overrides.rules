@@ -1,0 +1,2 @@
+# Disable wakeups via touchscreen on this system
+ENV{POWERD_ROLE}=="internal_touchscreen", ENV{POWERD_TAGS_WAKEUP}="wakeup wakeup_disabled"
