@@ -4,4 +4,4 @@ media-libs/waffle gbm
 x11-libs/libva egl
 
 # Temporarily provide X11 libs in the chrome SDK to smooth transition.
-<=chromeos-base/chromeos-chrome-44.0.2401.3_rc-r1 X
+<=chromeos-base/chromeos-chrome-44.0.2402.0_rc-r1 X
