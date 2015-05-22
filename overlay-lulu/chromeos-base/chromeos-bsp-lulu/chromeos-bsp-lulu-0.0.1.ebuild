@@ -19,7 +19,6 @@ RDEPEND="
 	chromeos-base/chromeos-bsp-baseboard-auron
 	chromeos-base/ec-utils
 	sys-kernel/linux-firmware
-	media-gfx/ply-image
 "
 DEPEND="${RDEPEND}"
 
@@ -33,6 +32,4 @@ src_install() {
 
 	# Wiping scripts.
 	dosbin "${FILESDIR}"/sbin/*.sh
-	insinto "/usr/share/factory/images"
-	doins "${FILESDIR}"/images/*.png
 }
