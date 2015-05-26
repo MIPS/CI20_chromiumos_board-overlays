@@ -8,14 +8,17 @@
 #
 
 DISPLAY_MESSAGE="/usr/sbin/display_wipe_message.sh"
-modprobe i2c_dev
 
+modprobe i2c_dev
 if (ectool battery | grep -q AC_PRESENT); then
   "${DISPLAY_MESSAGE}" "remove_ac"
   while (ectool battery | grep -q AC_PRESENT) ; do
     sleep 0.5;
   done
 fi
+
+# Discharge battery to ensure battery capacity in desired range
+/usr/sbin/board_discharge_battery.sh
 
 "${DISPLAY_MESSAGE}" "cutting_off"
 

@@ -28,6 +28,10 @@ usage_help() {
             Arg #1: the current battery level.
             Arg #2: the minimum battery level to charge.
 
+  discharging: Message when charging battery.
+            Arg #1: the current battery level.
+            Arg #2: the maximum battery level to discharge.
+
   cutting_off: Message when running cut off commands.
 
   cutoff_failed: Message when cut off failed.
@@ -74,6 +78,16 @@ mode_charging() {
                   "当前电量：${current_level}%%"
 }
 
+mode_discharging() {
+  local current_level="$1"
+  local max_level="$2"
+
+  display_message "Discharging battery to ${max_level}%%..." \
+                  "Current level: ${current_level}%%" \
+                  "正在放电至${max_level}%%..." \
+                  "当前电量：${current_level}%%"
+}
+
 mode_cutting_off() {
   display_message "Cutting off battery" \
                   "Please wait..." \
@@ -97,7 +111,7 @@ main() {
   shift
 
   case "${mode}" in
-    "connect_ac" | "remove_ac" | "charging" | "cutting_off" | "cutoff_failed" )
+    "connect_ac" | "remove_ac" | "charging" | "discharging" | "cutting_off" | "cutoff_failed" )
       mode_"${mode}" "$@"
       ;;
     * )
