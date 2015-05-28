@@ -3,11 +3,11 @@
 
 EAPI=4
 
-DESCRIPTION="CI20 bsp (meta package to pull in driver/tool dependencies)"
+DESCRIPTION="Chrome OS Firmware virtual package"
+HOMEPAGE="http://src.chromium.org"
 
 LICENSE="GPL-2"
 SLOT="0"
-KEYWORDS="-* mips"
-IUSE=""
+KEYWORDS="*"
 
-RDEPEND="sys-boot/ci20-u-boot"
+RDEPEND="chromeos-base/chromeos-firmware-ci20"
