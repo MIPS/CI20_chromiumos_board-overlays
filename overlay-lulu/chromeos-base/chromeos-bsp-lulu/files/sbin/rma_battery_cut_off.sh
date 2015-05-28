@@ -17,15 +17,13 @@ if (ectool battery | grep -q AC_PRESENT); then
   done
 fi
 
-# Discharge battery to ensure battery capacity in desired range
-/usr/sbin/board_discharge_battery.sh
-
 "${DISPLAY_MESSAGE}" "cutting_off"
 
 ectool batterycutoff at-shutdown
 shutdown -h now
 sleep 15
 
+# Couldn't have reached here
 "${DISPLAY_MESSAGE}" "cutoff_failed"
 
 sleep 1d

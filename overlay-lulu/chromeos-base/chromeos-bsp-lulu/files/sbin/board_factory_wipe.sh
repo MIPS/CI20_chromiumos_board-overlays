@@ -21,9 +21,9 @@ for WIPE_OPTION in "$@"; do
   elif [ "$WIPE_OPTION" = "shutdown" ]; then
     # shutdown after factory wipe-out
     /sbin/shutdown -h now
-  elif [ "$WIPE_OPTION" = "reboot" ]; then
-    # reboot after factory wipe-out
-    /sbin/reboot
+  elif [ "$WIPE_OPTION" = "rma_battery_cut_off" ]; then
+    # rma shim battery cut-off 
+    /usr/sbin/rma_battery_cut_off.sh
   fi
 done
 
